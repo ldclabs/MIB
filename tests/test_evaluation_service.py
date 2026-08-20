@@ -6,9 +6,10 @@ import threading
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 
+from mib_runner import __version__
 from mib_runner.evaluation_service import EvaluationService, ServiceConfig
 from mib_runner.leaderboard import paired_compare_reports
-from mib_runner.service_api import make_service_handler
+from mib_runner.service_api import ServiceAuthError, make_service_handler
 from mib_runner.service_signing import derive_ed25519_private_key, sign_json_ed25519, verify_json_ed25519
 
 import pytest
@@ -81,14 +82,38 @@ def test_recover_running_jobs(tmp_path):
     assert svc.db.job(job['id'])['status']=='queued'
 
 
-def test_service_http_health(tmp_path):
+def test_service_http_requires_api_token(tmp_path, monkeypatch):
+    """Mutating endpoints run participant code, so the API must not start open."""
     svc=make_service(tmp_path)
+    monkeypatch.delenv(svc.config.api_token_env, raising=False)
+    with pytest.raises(ServiceAuthError):
+        make_service_handler(svc)
+
+
+def test_service_http_health(tmp_path, monkeypatch):
+    svc=make_service(tmp_path)
+    monkeypatch.setenv(svc.config.api_token_env,'test-token')
     server=ThreadingHTTPServer(('127.0.0.1',0),make_service_handler(svc)); th=threading.Thread(target=server.serve_forever,daemon=True); th.start()
     try:
-        import urllib.request
+        import urllib.request,urllib.error
         with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/health') as r:
             body=json.loads(r.read())
-        assert body['ok'] is True and body['version']=='0.5.0'
+        assert body['ok'] is True and body['version']==__version__
+
+        # An unauthenticated POST must be refused before the body is parsed.
+        req=urllib.request.Request(
+            f'http://127.0.0.1:{server.server_port}/jobs',
+            data=json.dumps({'submission_id':'x'}).encode(),
+            headers={'Content-Type':'application/json'},method='POST')
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            urllib.request.urlopen(req)
+        assert exc.value.code==401
+
+        # A wrong token is refused too.
+        req.add_header('Authorization','Bearer wrong-token')
+        with pytest.raises(urllib.error.HTTPError) as exc:
+            urllib.request.urlopen(req)
+        assert exc.value.code==401
     finally:
         server.shutdown(); server.server_close(); th.join(timeout=2)
 

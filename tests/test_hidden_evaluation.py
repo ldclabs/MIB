@@ -13,7 +13,8 @@ from mib_runner.runner import run_scenario
 from mib_runner.server import make_http_handler
 from mib_runner.submission import build_submission_runtime, load_submission_spec
 from mib_runner.transports import HttpAgentAdapter
-from mib_runner.sandbox import SandboxPolicy, spawn_sandboxed_stdio
+from mib_runner.submission import MAX_MEMORY_MB, sandbox_policy_for
+from mib_runner.sandbox import SandboxPolicy, SandboxPolicyError, _stage, spawn_sandboxed_stdio
 
 import pytest
 
@@ -122,14 +123,57 @@ def test_http_external_agent_profile():
 
 @pytest.mark.skipif(not SANDBOX_AVAILABLE, reason=SANDBOX_REASON)
 def test_namespace_sandbox_hides_evaluator_storage_when_supported():
-    policy = SandboxPolicy(network="disabled_strict", hide_paths=["/mnt/data"], memory_mb=512, cpu_seconds=10)
-    box = spawn_sandboxed_stdio(["python", "-c", "import os; print('visible' if os.path.exists('/mnt/data/MIB-Reference-Runner-M4/private-eval-store-demo') else 'hidden', flush=True)"], policy=policy)
+    """The evaluator-only store must be invisible inside the sandbox."""
+    store = str(PRIVATE_EVAL_STORE_DEMO.resolve())
+    manifest = str((PRIVATE_EVAL_STORE_DEMO / "manifest.private.json").resolve())
+    policy = SandboxPolicy(network="disabled_strict", hide_paths=[store], memory_mb=512, cpu_seconds=10)
+    box = spawn_sandboxed_stdio(
+        ["python3", "-c",
+         f"import os; print('visible' if os.path.exists({manifest!r}) else 'hidden', flush=True)"],
+        policy=policy,
+    )
     try:
         assert box.network_isolated is True
         assert box.filesystem_isolated is True
         assert box.process.stdout.readline().strip() == "hidden"
     finally:
         box.terminate()
+
+
+def test_submission_cannot_widen_its_own_containment():
+    """A submission spec must not be able to relax the evaluator's policy."""
+    spec = {
+        "id": "greedy", "transport": "stdio", "command": ["true"], "_spec_dir": str(EXAMPLES),
+        "sandbox": {
+            "env_allowlist": ["MIB_SERVICE_ROOT_SECRET", "PATH"],
+            "network": "inherit",
+            "hide_paths": [],
+            "memory_mb": 10 ** 9,
+        },
+    }
+    policy = sandbox_policy_for(spec, network="disabled_strict", hide_paths=["/nonexistent"])
+    assert policy.network == "disabled_strict"
+    assert "MIB_SERVICE_ROOT_SECRET" not in policy.env_allowlist
+    assert policy.hide_paths == ["/nonexistent"]
+    assert policy.memory_mb <= MAX_MEMORY_MB
+
+
+def test_staging_cannot_exfiltrate_hidden_content_or_escape_workdir(tmp_path):
+    store = str(PRIVATE_EVAL_STORE_DEMO.resolve())
+    policy = SandboxPolicy(hide_paths=[store])
+
+    # The store itself, and any ancestor that contains it, are both refused:
+    # staging happens on the host before the mount namespace exists.
+    for source in (store, str(PRIVATE_EVAL_STORE_DEMO.resolve().parent)):
+        with pytest.raises(SandboxPolicyError):
+            _stage(str(tmp_path), [{"source": source, "dest": "leak"}], policy)
+
+    # Absolute and traversing destinations may not escape the workdir.
+    payload = tmp_path / "payload.txt"
+    payload.write_text("x", encoding="utf-8")
+    for dest in ("/tmp/mib-escape", "../../escape"):
+        with pytest.raises(SandboxPolicyError):
+            _stage(str(tmp_path), [{"source": str(payload), "dest": dest}], policy)
 
 def test_hidden_pack_report_can_be_redacted_and_still_verify():
     store = HiddenEvalStore(STORE)
@@ -146,7 +190,10 @@ def test_hidden_pack_report_can_be_redacted_and_still_verify():
         bootstrap_seed=99,
     )
     assert summary["mib_score"] == 100.0
-    assert report["aggregates"]["mib_score"]["official"] is True
+    # The demo store is explicitly demo_only, so its Profile is not official.
+    # `official` must track the Profile flag rather than the execution path.
+    assert report["aggregates"]["mib_score"]["official"] is False
+    assert report["aggregates"]["mib_score"]["profile_eligible"] is True
     public = redact_report_for_public(report, aliases=aliases, redaction_key="report-key")
     validate_report(public, REPORT_SCHEMA)
     checked = verify_score(public)

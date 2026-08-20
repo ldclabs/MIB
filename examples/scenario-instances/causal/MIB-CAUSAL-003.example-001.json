@@ -1,0 +1,304 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-CAUSAL-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "No-Memory Gap",
+  "description": "Demonstrates the behavioral gap between a memory-enabled run and a no-history control.",
+  "suite": "causal",
+  "dimensions": [
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "no-memory",
+    "causal-gap",
+    "action"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 2,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "experience_steps": 4,
+    "probe_indirectness": 0.6
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "observe",
+      "act",
+      "tools"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 12,
+    "max_tool_calls": 10,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "workspace": {
+        "workspace_required": true,
+        "selected_workspace": null,
+        "edited": false,
+        "saved": false
+      }
+    },
+    "tools": [
+      {
+        "id": "workspace",
+        "version": "0.1.0",
+        "simulator_binding": "mib.workspace.v1",
+        "operations": [
+          {
+            "name": "select_workspace",
+            "description": "Select the workspace in which the record will be saved.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "workspace": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "workspace"
+              ]
+            }
+          },
+          {
+            "name": "edit_record",
+            "description": "Edit the current record.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "save",
+            "description": "Save the edited record.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "inspect_status",
+            "description": "Inspect current workspace save state.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e1",
+      "stage": "past",
+      "type": "tool_result",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "payload": {
+        "operation": "save",
+        "success": false,
+        "error": "workspace_required"
+      },
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e2",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "content": "We learned from the failure: select the workspace before saving.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "agent",
+      "content": "Unrelated note about meeting-room capacity.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 100
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-action",
+      "kind": "action",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Edit and save the record.",
+        "available_tools": [
+          "workspace.select_workspace",
+          "workspace.edit_record",
+          "workspace.save"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/workspace/saved",
+            "operator": "eq",
+            "value": true
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "required_action",
+            "action": "workspace.select_workspace"
+          },
+          {
+            "type": "before",
+            "first": "workspace.select_workspace",
+            "second": "workspace.save"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-no-memory",
+      "kind": "no_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e1",
+          "e2",
+          "d1"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "causal_memory_impact": 1.0
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1-Dev-M3",
+    "milestone": "Reference Runner M2"
+  },
+  "instantiation": {
+    "template_id": "MIB-CAUSAL-003",
+    "template_version": "0.1.0",
+    "seed": 101,
+    "parameter_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
+  }
+}

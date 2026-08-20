@@ -61,12 +61,12 @@ def validate_scenario(scenario: dict[str, Any], schema: dict[str, Any]) -> Valid
             errors.append(f"semantic:{p.get('id')}: unresolved trigger {after}")
         unsupported = set(trigger) - {"after_event"}
         if unsupported:
-            warnings.append(f"milestone2:{p.get('id')}: trigger kinds not executable yet: {sorted(unsupported)}")
+            warnings.append(f"unsupported:{p.get('id')}: trigger kinds not executable by the reference Runner: {sorted(unsupported)}")
         for eid in p.get("evaluators", []):
             if eid not in evaluator_ids:
                 errors.append(f"semantic:{p.get('id')}: unresolved evaluator {eid}")
         if p.get("delivery") not in {"respond", "act"}:
-            warnings.append(f"milestone2:{p.get('id')}: delivery={p.get('delivery')} not executable yet")
+            warnings.append(f"unsupported:{p.get('id')}: delivery={p.get('delivery')} not executable by the reference Runner")
         if p.get("delivery") == "act":
             for name in (p.get("input") or {}).get("available_tools", []):
                 if name not in tool_names:
@@ -89,7 +89,7 @@ def validate_scenario(scenario: dict[str, Any], schema: dict[str, Any]) -> Valid
             if eid not in timeline_ids:
                 errors.append(f"semantic:{a.get('id')}: unresolved event {eid}")
         if a.get("method") != "replay_excluding_events":
-            warnings.append(f"milestone2:{a.get('id')}: ablation method {a.get('method')} not executable yet")
+            warnings.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
 
     seqs = [e.get("at", {}).get("sequence") for e in timeline]
     numeric = [s for s in seqs if isinstance(s, int)]

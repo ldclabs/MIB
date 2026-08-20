@@ -338,14 +338,12 @@
     "causal_metrics": [
       "causal_memory_impact",
       "memory_benefit",
-      "irrelevant_memory_stability",
-      "negative_transfer",
-      "error_recurrence"
+      "irrelevant_memory_stability"
     ]
   },
   "metadata": {
     "visibility": "private_holdout",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Hidden-M4-Demo",
     "milestone": "Reference Runner M2",
     "demo_fixture": true,
     "not_canonical_hidden_content": true

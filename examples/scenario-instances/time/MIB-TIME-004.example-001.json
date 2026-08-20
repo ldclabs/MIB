@@ -52,7 +52,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Kori"
+      "display_name": "Sana"
     }
   ],
   "world": {
@@ -62,11 +62,11 @@
       "timezone": "UTC"
     },
     "state": {
-      "office": "Cedar Hall"
+      "office": "East Lab"
     },
     "hidden_ground_truth": {
-      "office": "Green Annex",
-      "serial": "BR-72"
+      "office": "West Lab",
+      "serial": "AX-91"
     }
   },
   "timeline": [
@@ -75,7 +75,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -90,11 +91,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 2
+        "sequence": 2,
+        "time": "2026-01-01T09:12:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Correction: I misspoke. The serial is BR-72.",
+      "content": "Correction: I misspoke. The serial is AX-91.",
       "tags": [
         "relevant",
         "correction"
@@ -105,11 +107,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 10
+        "sequence": 10,
+        "time": "2026-01-02T10:30:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Our office is currently Cedar Hall.",
+      "content": "Our office is currently East Lab.",
       "tags": [
         "relevant",
         "historical"
@@ -120,14 +123,15 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 20
+        "sequence": 20,
+        "time": "2026-01-19T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
         {
           "op": "set",
           "path": "/office",
-          "value": "Green Annex"
+          "value": "West Lab"
         }
       ]
     },
@@ -136,11 +140,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 21
+        "sequence": 21,
+        "time": "2026-01-19T17:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "We moved offices. We are now in Green Annex.",
+      "content": "We moved offices. We are now in West Lab.",
       "tags": [
         "relevant",
         "current"
@@ -151,7 +156,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 35
+        "sequence": 35,
+        "time": "2026-01-20T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -169,7 +175,7 @@
       },
       "oracle": {
         "accepted": [
-          "BR-72"
+          "AX-91"
         ]
       },
       "evaluators": [
@@ -217,7 +223,7 @@
       },
       "oracle": {
         "accepted": [
-          "Green Annex"
+          "West Lab"
         ]
       },
       "evaluators": [
@@ -240,7 +246,7 @@
       },
       "oracle": {
         "accepted": [
-          "Cedar Hall"
+          "East Lab"
         ]
       },
       "evaluators": [
@@ -304,28 +310,20 @@
     },
     "causal_metrics": [
       "causal_memory_impact",
-      "irrelevant_memory_stability"
+      "memory_benefit"
     ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Kori",
-      "mistaken_serial": "CP-44",
-      "correct_serial": "BR-72",
-      "old_office": "Cedar Hall",
-      "new_office": "Green Annex"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-TIME-004",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "0b999e5f00d20740d3b065d7e52e6e1e1f5aae145de3039d7ef67cba4373aa52",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "b90a72b1ccf3e9ebfe49382b256554b3ff4b765bc88f2bc034d7aff1c206248c",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

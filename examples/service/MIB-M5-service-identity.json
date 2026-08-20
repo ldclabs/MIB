@@ -2,8 +2,8 @@
   "mib": "0.1",
   "kind": "MIBEvaluationServiceIdentity",
   "version": "0.5.0",
-  "db": "/mnt/data/MIB-Reference-Runner-M5/service/state/service.sqlite3",
-  "artifact_root": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts",
+  "db": "/opt/mib/service/state/service.sqlite3",
+  "artifact_root": "/opt/mib/service/artifacts",
   "backend": "local_namespace",
   "job_signing": {
     "scheme": "ed25519",

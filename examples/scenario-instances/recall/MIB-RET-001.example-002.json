@@ -50,7 +50,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Tomas"
+      "display_name": "Jonah"
     }
   ],
   "world": {
@@ -71,7 +71,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "The access code for my private demo project is CEDAR-28.",
+      "content": "The access code for my private demo project is NOVA-63.",
       "tags": [
         "relevant"
       ]
@@ -85,7 +85,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Unrelated note about commute: nothing here changes the project code.",
+      "content": "Unrelated note about lunch: nothing here changes the project code.",
       "tags": [
         "irrelevant"
       ]
@@ -127,7 +127,7 @@
       },
       "oracle": {
         "accepted": [
-          "CEDAR-28"
+          "NOVA-63"
         ]
       },
       "evaluators": [
@@ -213,21 +213,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Tomas",
-      "project_code": "CEDAR-28",
-      "distractor_topic": "commute"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-RET-001",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "426104dfc694882da4abcc616d3bddcc229bddeba29d4b0460d9655c6eba9fd3",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "776bc0ac7f1cb789849d118d853f0c11491f6b7ab0717dae61ce49501476c926",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

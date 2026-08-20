@@ -55,6 +55,28 @@ Runner 执行引擎、场景包调度器与隐藏评测器已完整内置并全�
 
 ---
 
+## 平台前置条件
+
+评测服务通过参考提交沙箱执行参赛方提供的 stdio 提交，其隔离能力依赖 Linux 非特权
+用户 / 挂载 / 网络命名空间（`unshare`）。因此所有会拉起提交进程的命令——
+`register-submission`（除非指定 `--no-smoke`）、`worker-once` 以及
+`POST /worker/once` 接口——要求运行环境满足：
+
+```text
+Linux
+可用的非特权 user / mount / network 命名空间
+PATH 中存在 `unshare`
+```
+
+macOS 与 Windows 上不存在上述命名空间隔离，地址空间限额也无法生效，禁止在这些平台上
+执行上述命令：未隔离的提交进程将获得完整的宿主机网络与文件系统可见性。其余服务命令
+（`init`、`register-cycle`、`activate-cycle`、`enqueue`、`job`、`jobs`、`leaderboard`、
+`compare`、`verify-result`、`verify-attestation-file`、`serve`）不拉起提交进程，跨平台可用；
+`mib` 的 `validate`、`run`、`run-pack`、`benchmark`、`capability-card`、`verify-score`
+同样跨平台可用。
+
+---
+
 ## 3. 环境安装
 
 ```bash
@@ -75,8 +97,14 @@ cryptography >= 46
 参考开发配置文件位于：
 
 ```text
-service/service-config.json
+examples/service/service-config.json
 ```
+
+该配置中的相对路径以配置文件自身所在目录为基准解析：五个 Schema 条目指向仓库
+`schemas/` 目录，运行期状态写入仓库根目录下的 `service/state/` 与 `service/artifacts/`。
+这两个运行期目录已被 gitignore，首次使用时自动创建。`mib-service` 的 `--config` 默认值为
+`service/service-config.json`，全新克隆的仓库中并不存在该文件，因此需显式传入
+`--config examples/service/service-config.json`，或将该文件复制到自有部署位置。
 
 通过环境变量注入服务根私钥：
 
@@ -91,7 +119,7 @@ export MIB_SERVICE_ROOT_SECRET='use-a-real-secret-manager-in-production'
 ## 5. 初始化与服务身份核验
 
 ```bash
-mib-service --config service/service-config.json init
+mib-service --config examples/service/service-config.json init
 ```
 
 执行后输出公开 Ed25519 公钥及 `key_id`，用于通过可信发布渠道锚定可信公钥。
@@ -101,7 +129,7 @@ mib-service --config service/service-config.json init
 ## 6. 注册 Agent 提交规范
 
 ```bash
-mib-service --config service/service-config.json register-submission \
+mib-service --config examples/service/service-config.json register-submission \
   examples/submissions/reference-stdio.json \
   --name 'Reference Fixture'
 ```
@@ -119,9 +147,9 @@ examples/submissions/no-memory-stdio.json
 ## 7. 注册并激活隐藏评测周期
 
 ```bash
-mib-service --config service/service-config.json register-cycle \
+mib-service --config examples/service/service-config.json register-cycle \
   cycle-m5-demo-001 \
-  --store private-eval-store-demo \
+  --store fixtures/private-eval-store-demo \
   --profile profiles/MIB-Core-0.1-Hidden-M4-Demo.json \
   --activate
 ```
@@ -131,8 +159,8 @@ mib-service --config service/service-config.json register-cycle \
 ## 8. 任务入队与 Worker 执行
 
 ```bash
-mib-service --config service/service-config.json enqueue mib-reference-fixture-stdio
-mib-service --config service/service-config.json worker-once
+mib-service --config examples/service/service-config.json enqueue mib-reference-fixture-stdio
+mib-service --config examples/service/service-config.json worker-once
 ```
 
 任务在入队时被数字签名。Worker 在执行前若发现 Submission、私有题库或 Profile 配置与签名清单不一致，将拒绝执行。
@@ -142,7 +170,7 @@ mib-service --config service/service-config.json worker-once
 ## 9. 查看排行榜
 
 ```bash
-mib-service --config service/service-config.json leaderboard
+mib-service --config examples/service/service-config.json leaderboard
 ```
 
 ---
@@ -150,7 +178,7 @@ mib-service --config service/service-config.json leaderboard
 ## 10. 配对显著性比对
 
 ```bash
-mib-service --config service/service-config.json compare \
+mib-service --config examples/service/service-config.json compare \
   result_A result_B \
   --resamples 5000
 ```
@@ -164,7 +192,7 @@ mib-service --config service/service-config.json compare \
 服务端内部核验：
 
 ```bash
-mib-service --config service/service-config.json verify-result result_xxx
+mib-service --config examples/service/service-config.json verify-result result_xxx
 ```
 
 第三方完全公开离线核验（无需服务密钥）：
@@ -181,7 +209,7 @@ mib-service verify-attestation-file \
 ## 12. HTTP 服务 API 接口
 
 ```bash
-mib-service --config service/service-config.json serve \
+mib-service --config examples/service/service-config.json serve \
   --host 127.0.0.1 \
   --port 8088
 ```
@@ -217,8 +245,10 @@ microvm_command   已预留路由协议接口
 ## 14. 自动化回归测试
 
 ```bash
-PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m pytest tests -q
 ```
+
+其中需要拉起沙箱提交进程的服务测试在非 Linux 宿主机上会自动跳过。
 
 ---
 

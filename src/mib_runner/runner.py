@@ -124,7 +124,7 @@ def run_condition(
         ablation_id = ablation["id"]
         ablation_method = ablation.get("method")
         if ablation_method != "replay_excluding_events":
-            raise NotImplementedError(f"Milestone 4 implements replay_excluding_events only, got {ablation_method!r}")
+            raise NotImplementedError(f"reference Runner implements replay_excluding_events only, got {ablation_method!r}")
         removed_ids = set((ablation.get("targets") or {}).get("event_ids", []))
         selected_probe_ids = set(ablation.get("probes", []))
 
@@ -134,7 +134,7 @@ def run_condition(
             continue
         trigger = p.get("trigger") or {}
         if "after_event" not in trigger:
-            raise NotImplementedError(f"Milestone 4 only implements after_event trigger: {p['id']}")
+            raise NotImplementedError(f"reference Runner only implements the after_event trigger: {p['id']}")
         probes_by_trigger.setdefault(trigger["after_event"], []).append(p)
 
     probe_results: list[dict[str, Any]] = []
@@ -260,7 +260,7 @@ def run_condition(
             elif sampled.get("delivery") == "act":
                 execute_act_probe(sampled)
             else:
-                raise NotImplementedError(f"Milestone 4 implements respond/act probes, got {sampled.get('delivery')!r}")
+                raise NotImplementedError(f"reference Runner implements respond/act Probes, got {sampled.get('delivery')!r}")
         except Exception as exc:
             probe_results.append({
                 "probe_id": sampled["id"],
@@ -278,21 +278,37 @@ def run_condition(
                 "extensions": {"mib.runner.error": repr(exc)},
             })
 
-    for event in scenario.get("timeline", []):
-        virtual_time = _virtual_time_for_event(event, virtual_time)
-        for update in event.get("world_updates", []):
-            world.apply(update)
-        if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
-            if event["type"] not in {"checkpoint", "world_update"}:
-                deliver_observation(_project_observation(event, actor_by_id, virtual_time))
-        for p in probes_by_trigger.get(event["id"], []):
-            execute_probe(p)
+    def close_agent() -> None:
+        # A transport-backed Adapter may own one subprocess per condition.  It
+        # must be released on every exit path, or a failing pack run leaks one
+        # sandboxed process and its pipes per Scenario.
+        close = getattr(agent, "close", None)
+        if not callable(close):
+            return
+        try:
+            close(run_id=run_id)
+        except TypeError:
+            close()
 
-    expected_probe_ids = {p["id"] for p in scenario.get("probes", []) if selected_probe_ids is None or p["id"] in selected_probe_ids}
-    executed_probe_ids = {p["probe_id"] for p in probe_results}
-    missing = expected_probe_ids - executed_probe_ids
-    if missing:
-        raise RunnerError(f"untriggered probes: {sorted(missing)}")
+    try:
+        for event in scenario.get("timeline", []):
+            virtual_time = _virtual_time_for_event(event, virtual_time)
+            for update in event.get("world_updates", []):
+                world.apply(update)
+            if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
+                if event["type"] not in {"checkpoint", "world_update"}:
+                    deliver_observation(_project_observation(event, actor_by_id, virtual_time))
+            for p in probes_by_trigger.get(event["id"], []):
+                execute_probe(p)
+
+        expected_probe_ids = {p["id"] for p in scenario.get("probes", []) if selected_probe_ids is None or p["id"] in selected_probe_ids}
+        executed_probe_ids = {p["probe_id"] for p in probe_results}
+        missing = expected_probe_ids - executed_probe_ids
+        if missing:
+            raise RunnerError(f"untriggered probes: {sorted(missing)}")
+    except BaseException:
+        close_agent()
+        raise
 
     completed = utc_now()
     status = "failed" if any(p["outcome"] == "execution_failure" for p in probe_results) else "succeeded"
@@ -321,14 +337,8 @@ def run_condition(
             "mib.runner.probe_variant_digests": probe_variant_digests,
         },
     }
-    # A transport-backed Adapter may own one subprocess per condition.  Close it
-    # only after all observations, Probes, and result traces are complete.
-    close = getattr(agent, "close", None)
-    if callable(close):
-        try:
-            close(run_id=run_id)
-        except TypeError:
-            close()
+    # Closed only after all observations, Probes, and result traces complete.
+    close_agent()
     return result
 
 

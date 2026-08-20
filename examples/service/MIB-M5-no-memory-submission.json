@@ -3,7 +3,7 @@
   "display_name": "No-Memory Fixture",
   "owner": "MIB",
   "track": "integrated_agent",
-  "spec_path": "/mnt/data/MIB-Reference-Runner-M5/examples/submissions/no-memory-stdio.json",
+  "spec_path": "/opt/mib/examples/submissions/no-memory-stdio.json",
   "spec_digest": "sha256:0d33b1cac96642598f61c445f8ae5f6c2b1109a9b5db11bafbe2fba8f059e526",
   "status": "accepted",
   "descriptor_json": "{\"protocol\":\"mib-agent/0.1\",\"implementation\":{\"name\":\"MIB No-Memory Fixture\",\"version\":\"0.5.0\",\"vendor\":\"MIB\"},\"track_support\":[\"integrated_agent\"],\"capabilities\":{\"observe\":true,\"respond\":true,\"act\":true,\"spontaneous_emissions\":false,\"runner_managed_tools\":true,\"structured_output\":false,\"virtual_time\":true,\"seedable\":true},\"state\":{\"run_isolation\":\"hard\",\"observe_visibility\":\"read_after_write\",\"request_idempotency\":true},\"extensions\":{\"mib.sandbox\":{\"transport\":\"stdio\",\"network_isolated\":true,\"filesystem_isolated\":false,\"warnings\":[]}}}",

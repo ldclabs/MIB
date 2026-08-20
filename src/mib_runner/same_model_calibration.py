@@ -545,22 +545,60 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     seed_policy = str(model_cfg.get("seed_policy", "paired_per_call"))
     deterministic_decoding = float(params.get("temperature", 0.0)) == 0.0 or "seed" in params or seed_policy == "paired_per_call"
 
+    # The audit is computed from what the run actually sent to the model, not
+    # asserted from configuration.  Each fingerprint set must collapse to one
+    # value across every condition; the memory policy is the only thing allowed
+    # to differ.
+    def _union(field: str) -> set[str]:
+        out: set[str] = set()
+        for t in telemetry.values():
+            out.update(t.get(field) or [])
+        return out
+
+    model_identities = _union("model_identities")
+    system_prompt_shas = _union("system_prompt_shas")
+    reasoning_policy_shas = _union("reasoning_policy_shas")
+    decoding_fingerprints = _union("decoding_fingerprints")
+    memory_policy_ids = _union("memory_policy_ids")
+    condition_label_leaks = sum(int(t.get("condition_label_visible_calls", 0)) for t in telemetry.values())
+    observed_calls = sum(int(t.get("model_calls", 0)) for t in telemetry.values())
+    # With no calls there is no evidence, so nothing may be reported as verified.
+    have_evidence = observed_calls > 0
+
     fairness_checks = {
-        "single_model_identity": True,
-        "single_model_client_configuration": True,
-        "identical_system_prompt": True,
-        "identical_reasoning_policy": True,
-        "identical_tool_interface": True,
-        "identical_decoding_parameters": True,
+        "single_model_identity": have_evidence and len(model_identities) == 1,
+        "single_model_client_configuration": have_evidence and len(decoding_fingerprints) == 1,
+        "identical_system_prompt": have_evidence and len(system_prompt_shas) == 1,
+        "identical_reasoning_policy": have_evidence and len(reasoning_policy_shas) == 1,
+        "identical_tool_interface": True,  # Tools come from the Scenario, not the condition.
+        "identical_decoding_parameters": have_evidence and len(decoding_fingerprints) == 1,
         "deterministic_or_seeded_decoding": deterministic_decoding,
-        "stateless_model_contract": True,
+        "stateless_model_contract": bool(preflight.get("passed")),
         "statelessness_preflight": bool(preflight.get("passed")),
-        "only_memory_policy_varies": True,
-        "condition_label_not_model_visible": True,
+        # One memory policy per executed condition, and nothing else varying.
+        "only_memory_policy_varies": (
+            have_evidence
+            and len(memory_policy_ids) == len([b for b in CONDITIONS if telemetry.get(b, {}).get("model_calls")])
+            and len(system_prompt_shas) == 1
+            and len(decoding_fingerprints) == 1
+        ),
+        "condition_label_not_model_visible": have_evidence and condition_label_leaks == 0,
         "counterbalanced_condition_order": bool(schedule_audit["balanced"]),
         "paired_agent_seed_and_future_probe": bool(pairing_audit["valid"]),
         "b1_full_context_not_truncated": b1_truncations == 0,
         "no_model_transport_or_parse_errors": model_errors == 0,
+    }
+    fairness_evidence = {
+        "observed_model_calls": observed_calls,
+        "distinct_model_identities": len(model_identities),
+        "distinct_system_prompts": len(system_prompt_shas),
+        "distinct_reasoning_policies": len(reasoning_policy_shas),
+        "distinct_decoding_fingerprints": len(decoding_fingerprints),
+        "memory_policy_ids": sorted(memory_policy_ids),
+        "condition_label_visible_calls": condition_label_leaks,
+        "transport_errors": sum(int(t.get("transport_errors", 0)) for t in telemetry.values()),
+        "parse_errors": sum(int(t.get("parse_errors", 0)) for t in telemetry.values()),
+        "verification": "computed from recorded model invocations",
     }
     fairness_valid = all(fairness_checks.values())
     n = int(base_report["summary"]["template_count"])
@@ -590,7 +628,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "statelessness_preflight": preflight,
         "condition_order_audit": schedule_audit,
         "pairing_audit": pairing_audit,
-        "fairness_audit": {"valid": fairness_valid, "checks": fairness_checks},
+        "fairness_audit": {"valid": fairness_valid, "checks": fairness_checks, "evidence": fairness_evidence},
         "telemetry": telemetry,
         "empirical_release_gate": {
             "eligible": release_eligible,

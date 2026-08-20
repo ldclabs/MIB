@@ -1,13 +1,51 @@
 from __future__ import annotations
 
+import collections
 import json
 import os
+import select
 import subprocess
 import threading
-import urllib.request
 import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Protocol
+
+MAX_SUBPROCESS_RESPONSE_CHARS = 8 * 1024 * 1024
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects.
+
+    urllib replays the original headers on a redirect, so a model endpoint that
+    answers 302 would receive—and could forward—the Authorization bearer token
+    to a host the operator never configured.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        raise RuntimeError(f"model endpoint attempted a redirect to {newurl!r}; refusing to follow")
+
+
+def _require_secure_endpoint(endpoint: str) -> None:
+    """Bearer credentials may only leave the host over TLS."""
+    parsed = urllib.parse.urlparse(endpoint)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme == "https" or host in {"localhost", "127.0.0.1", "::1"}:
+        return
+    raise RuntimeError(
+        f"refusing to send model credentials to non-local plaintext endpoint {endpoint!r}; use https"
+    )
+
+
+def _open_no_redirect(req, timeout: float, max_bytes: int = 16 * 1024 * 1024) -> bytes:
+    opener = urllib.request.build_opener(_NoRedirectHandler)
+    with opener.open(req, timeout=timeout) as resp:
+        raw = resp.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        raise RuntimeError(f"model response exceeded {max_bytes} bytes")
+    return raw
+
 
 
 @dataclass(slots=True)
@@ -45,7 +83,13 @@ class HttpJsonModelClient:
             token = os.environ.get(api_key_env)
             if not token:
                 raise RuntimeError(f"missing model API key environment variable: {api_key_env}")
-            self.headers.setdefault("Authorization", f"Bearer {token}")
+            if "Authorization" in self.headers:
+                raise RuntimeError(
+                    "model config sets both api_key_env and an explicit Authorization header; "
+                    "remove one so the credential in use is unambiguous"
+                )
+            _require_secure_endpoint(endpoint)
+            self.headers["Authorization"] = f"Bearer {token}"
 
     def identity(self) -> dict[str, Any]:
         return {"client": "http_json", "model_id": self.model_id, "endpoint": self.endpoint}
@@ -60,8 +104,7 @@ class HttpJsonModelClient:
         headers = {"Content-Type": "application/json", **self.headers}
         req = urllib.request.Request(self.endpoint, data=body, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-                payload = json.loads(resp.read().decode("utf-8"))
+            payload = json.loads(_open_no_redirect(req, self.timeout_s).decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:2000]
             raise RuntimeError(f"model HTTP {exc.code}: {detail}") from exc
@@ -94,7 +137,13 @@ class OpenAICompatibleChatClient:
             token = os.environ.get(api_key_env)
             if not token:
                 raise RuntimeError(f"missing model API key environment variable: {api_key_env}")
-            self.headers.setdefault("Authorization", f"Bearer {token}")
+            if "Authorization" in self.headers:
+                raise RuntimeError(
+                    "model config sets both api_key_env and an explicit Authorization header; "
+                    "remove one so the credential in use is unambiguous"
+                )
+            _require_secure_endpoint(endpoint)
+            self.headers["Authorization"] = f"Bearer {token}"
 
     def identity(self) -> dict[str, Any]:
         return {"client": "openai_compatible_chat", "model_id": self.model_id, "endpoint": self.endpoint}
@@ -105,8 +154,7 @@ class OpenAICompatibleChatClient:
         headers = {"Content-Type": "application/json", "X-MIB-Request-ID": request_id, **self.headers}
         req = urllib.request.Request(self.endpoint, data=body, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-                out = json.loads(resp.read().decode("utf-8"))
+            out = json.loads(_open_no_redirect(req, self.timeout_s).decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:2000]
             raise RuntimeError(f"model HTTP {exc.code}: {detail}") from exc
@@ -125,9 +173,11 @@ class OpenAICompatibleChatClient:
 class SubprocessJsonlModelClient:
     """Persistent JSONL subprocess model adapter for local servers/wrappers."""
 
-    def __init__(self, *, command: list[str], model_id: str, cwd: str | None = None, env: dict[str, str] | None = None) -> None:
+    def __init__(self, *, command: list[str], model_id: str, cwd: str | None = None,
+                 env: dict[str, str] | None = None, timeout_s: float = 120.0) -> None:
         self.command = list(command)
         self.model_id = model_id
+        self.timeout_s = float(timeout_s)
         child_env = os.environ.copy()
         child_env.update(env or {})
         self.proc = subprocess.Popen(
@@ -141,6 +191,25 @@ class SubprocessJsonlModelClient:
             env=child_env,
         )
         self._lock = threading.Lock()
+        # stderr must be drained continuously: a chatty local model server fills
+        # the pipe buffer and blocks while we block reading stdout, deadlocking
+        # a multi-thousand-call calibration run.
+        self._stderr_tail: collections.deque[str] = collections.deque(maxlen=256)
+        if self.proc.stderr is not None:
+            threading.Thread(target=self._drain_stderr, daemon=True).start()
+
+    def _drain_stderr(self) -> None:
+        stream = self.proc.stderr
+        if stream is None:
+            return
+        try:
+            for line in stream:
+                self._stderr_tail.append(line)
+        except Exception:
+            return
+
+    def _stderr_snapshot(self) -> str:
+        return "".join(self._stderr_tail)[-2000:]
 
     def identity(self) -> dict[str, Any]:
         return {"client": "subprocess_jsonl", "model_id": self.model_id, "command": self.command}
@@ -150,12 +219,23 @@ class SubprocessJsonlModelClient:
             raise RuntimeError("model subprocess pipes unavailable")
         req = {"model": self.model_id, "messages": messages, "parameters": parameters, "request_id": request_id}
         with self._lock:
+            if self.proc.poll() is not None:
+                raise RuntimeError(
+                    f"model subprocess exited with code {self.proc.returncode}: {self._stderr_snapshot()}"
+                )
             self.proc.stdin.write(json.dumps(req, ensure_ascii=False) + "\n")
             self.proc.stdin.flush()
-            line = self.proc.stdout.readline()
+            # Bounded wait: a wedged local model server must fail the run rather
+            # than hang it forever.
+            if hasattr(self.proc.stdout, "fileno"):
+                ready, _, _ = select.select([self.proc.stdout], [], [], self.timeout_s)
+                if not ready:
+                    raise TimeoutError(f"model subprocess timed out after {self.timeout_s}s")
+            line = self.proc.stdout.readline(MAX_SUBPROCESS_RESPONSE_CHARS)
         if not line:
-            err = self.proc.stderr.read()[-2000:] if self.proc.stderr else ""
-            raise RuntimeError(f"model subprocess exited without response: {err}")
+            raise RuntimeError(f"model subprocess exited without response: {self._stderr_snapshot()}")
+        if not line.endswith("\n") and len(line) >= MAX_SUBPROCESS_RESPONSE_CHARS:
+            raise RuntimeError(f"model subprocess response exceeded {MAX_SUBPROCESS_RESPONSE_CHARS} characters")
         out = json.loads(line)
         if "error" in out:
             raise RuntimeError(f"model subprocess error: {out['error']}")
@@ -176,6 +256,10 @@ class SubprocessJsonlModelClient:
                 self.proc.wait(timeout=2)
             except Exception:
                 self.proc.kill()
+                try:
+                    self.proc.wait(timeout=2)
+                except Exception:
+                    pass
 
 
 class DeterministicStubModelClient:

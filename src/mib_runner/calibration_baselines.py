@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import copy
-import math
 import re
 from collections import Counter
 from typing import Any, Iterable
 
 from .agents.reference_memory import ReferenceMemoryAgent
+from . import __version__
 from .types import ActStep, AgentOutput, Observation
 
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+.-]*")
@@ -74,7 +73,7 @@ class CalibrationReasonerAgent(ReferenceMemoryAgent):
         d = super().describe()
         d["implementation"] = {
             "name": self.baseline_name,
-            "version": "0.6.0",
+            "version": __version__,
             "vendor": "MIB",
         }
         d.setdefault("extensions", {})["mib.calibration"] = {
@@ -517,6 +516,19 @@ class NoMemoryBaselineAgent(CalibrationReasonerAgent):
             return super().observe(run_id=run_id, request_id=request_id, observation=observation)
         self.seen_observe_requests.add((run_id, request_id))
         return {"accepted": True, "emissions": []}
+
+    def act(self, **kwargs) -> ActStep:
+        # A No-Memory baseline may use tool results from the task it is currently
+        # executing, but nothing may survive the end of that task.  Without this
+        # purge B0 carries a previous task's diagnosis into the next one, scores
+        # like a memory-enabled agent, and deflates the measured discriminativeness.
+        task_id = kwargs["task_id"]
+        if task_id != getattr(self, "_current_action_task", None):
+            self._current_action_task = task_id
+            self.observations = [
+                o for o in self.observations if not o.observation_id.startswith("obs_tool_")
+            ]
+        return super().act(**kwargs)
 
 
 class FullContextBaselineAgent(CalibrationReasonerAgent):

@@ -69,7 +69,7 @@ MIB-v0.1-Official-Canonical-Pack-PRIVATE/
 ## 4. 运行参考校准
 
 ```bash
-./run-reference-calibration.sh /path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE
+tools/run-reference-calibration.sh /path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE
 ```
 
 或直接调用 Python CLI：
@@ -118,11 +118,13 @@ mib-calibrate ... \
 ## 7. 自动化测试
 
 ```bash
-PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m pytest tests -q
 ```
 
-预期通过结果：
+`tests/test_calibration.py` 中的校准测试需要执行官方模板，因此在未通过
+`MIB_OFFICIAL_PACK` 指向私有题库包时会被整体跳过：
 
-```text
-32 passed
+```bash
+MIB_OFFICIAL_PACK=/path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE \
+  PYTHONPATH=src python -m pytest tests/test_calibration.py -q
 ```

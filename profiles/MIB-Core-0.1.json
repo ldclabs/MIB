@@ -2,6 +2,7 @@
   "id": "MIB-Core-0.1",
   "version": "0.1.0",
   "description": "Official v0.1 six-dimension profile. Hidden Eval + Private Holdout only.",
+  "official": true,
   "track": "integrated_agent",
   "scale": "MIB-M",
   "scenario_pack": {

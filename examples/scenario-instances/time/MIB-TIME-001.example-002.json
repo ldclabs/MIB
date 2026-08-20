@@ -51,7 +51,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Darin"
+      "display_name": "Oren"
     }
   ],
   "world": {
@@ -61,10 +61,10 @@
       "timezone": "UTC"
     },
     "state": {
-      "current_timezone": "UTC-4"
+      "current_timezone": "UTC+3"
     },
     "hidden_ground_truth": {
-      "current_timezone": "UTC+8"
+      "current_timezone": "UTC-1"
     }
   },
   "timeline": [
@@ -73,11 +73,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "My current timezone is UTC-4.",
+      "content": "My current timezone is UTC+3.",
       "tags": [
         "relevant",
         "historical"
@@ -88,14 +89,15 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-01-08T12:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
         {
           "op": "set",
           "path": "/current_timezone",
-          "value": "UTC+8"
+          "value": "UTC-1"
         }
       ],
       "tags": [
@@ -107,11 +109,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 31
+        "sequence": 31,
+        "time": "2026-01-08T12:05:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "I have moved. My current timezone is now UTC+8.",
+      "content": "I have moved. My current timezone is now UTC-1.",
       "tags": [
         "relevant",
         "current"
@@ -122,7 +125,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 45
+        "sequence": 45,
+        "time": "2026-01-08T15:30:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -136,7 +140,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 60
+        "sequence": 60,
+        "time": "2026-01-09T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -154,10 +159,10 @@
       },
       "oracle": {
         "accepted": [
-          "UTC+8"
+          "UTC-1"
         ],
         "forbidden": [
-          "UTC-4"
+          "UTC+3"
         ],
         "expected_status": "known"
       },
@@ -227,21 +232,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Darin",
-      "old_zone": "UTC-4",
-      "new_zone": "UTC+8"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-TIME-001",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "e87666c2957d2a3d96bd6e38ba1fe1b0f58ba3f2a4c94eaef3116c1e83688949",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "c5429fd4e18aea41e4a18741c25df26a5e0d54337f51c8d2e8c24a60342e6f7d",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

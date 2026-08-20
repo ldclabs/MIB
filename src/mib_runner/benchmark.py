@@ -11,9 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from . import __version__
 from .materialize import materialize
 from .report import strip_extensions_for_report
 from .runner import run_scenario
+from .scoring import ablation_tolerances, tolerant_harm_resistance, tolerant_stability
 from .validation import validate_scenario
 
 CAUSAL_DIM = "causal_memory_impact"
@@ -114,8 +116,13 @@ def validate_causal_pairs(runs: list[dict[str, Any]]) -> tuple[bool, list[str], 
     return valid, pair_ids, notes
 
 
-def paired_causal_metrics(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Compute paired causal metrics, preserving repetition pairing and Probe subsets."""
+def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, float] | None = None) -> list[dict[str, Any]]:
+    """Compute paired causal metrics, preserving repetition pairing and Probe subsets.
+
+    ``tolerances`` maps ablation id to the Scenario-declared tolerance used by
+    the tolerant IMS/HRS forms in MIB-Scoring 58 and 62.
+    """
+    tolerances = tolerances or {}
     full_by_rep = {int(r["repetition"]): r for r in runs if r.get("condition") == "full"}
     benefits: list[tuple[float, str]] = []
     hmb: list[float] = []
@@ -145,11 +152,13 @@ def paired_causal_metrics(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if denom > 0.02:
                 hmb.append(max(0.0, delta) / denom)
         elif cond == "irrelevant_ablation":
-            ims.append(max(0.0, min(1.0, 1.0 - abs(f - v))))
+            tau = tolerances.get(variant.get("ablation_id"), 0.0)
+            ims.append(tolerant_stability(f - v, tau))
         elif cond in {"harmful_memory", "stale_memory"}:
+            tau = tolerances.get(variant.get("ablation_id"), 0.0)
             harm = max(0.0, f - v)
             harms.append(harm)
-            hrs.append(1.0 - harm)
+            hrs.append(tolerant_harm_resistance(harm, tau))
         elif cond == "counterexample":
             # A generic counterexample ablation demonstrates applicability sensitivity,
             # but it is not the standardized Negative Transfer control from MIB-Scoring.md.
@@ -218,7 +227,7 @@ def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]
     if not full_runs:
         raise ValueError("Scenario Instance requires at least one full run")
     valid, pair_ids, notes = validate_causal_pairs(runs)
-    metrics = paired_causal_metrics(runs)
+    metrics = paired_causal_metrics(runs, ablation_tolerances(scenario))
     dimensions: dict[str, float] = {}
     for d in scenario.get("dimensions", []):
         if d == CAUSAL_DIM:
@@ -381,21 +390,6 @@ def describe_agent_factory(agent_factory: Callable[[], Any]) -> dict[str, Any]:
                 pass
 
 
-def _sample_instance_from_runs(template: dict[str, Any], runs: list[dict[str, Any]], rng: random.Random) -> dict[str, Any]:
-    reps = sorted({int(r["repetition"]) for r in runs if r.get("condition") == "full"})
-    if not reps:
-        raise ValueError("bootstrap source instance has no full repetitions")
-    sampled_reps = [rng.choice(reps) for _ in reps]
-    sampled_runs = []
-    for new_rep, old_rep in enumerate(sampled_reps):
-        for r in runs:
-            if int(r["repetition"]) == old_rep:
-                rr = copy.deepcopy(r)
-                rr["repetition"] = new_rep
-                sampled_runs.append(rr)
-    return build_instance_aggregate(template, sampled_runs)
-
-
 def hierarchical_bootstrap(
     *,
     templates: list[dict[str, Any]],
@@ -437,7 +431,7 @@ def hierarchical_bootstrap(
                     continue
                 x = weighted_probe_score(full, dimension=d)
                 dims[d] = float(full.get("scenario_score", 0.0)) if x is None else x
-            metrics = paired_causal_metrics(rr)
+            metrics = paired_causal_metrics(rr, ablation_tolerances(scenario))
             cscore, _ = causal_score01(metrics)
             if cscore is not None and CAUSAL_DIM in scenario.get("dimensions", []):
                 dims[CAUSAL_DIM] = cscore
@@ -598,7 +592,7 @@ def build_pack_report(
         })
     else:
         warnings.append({
-            "code": "development.milestone4_dev_profile",
+            "code": "development.dev_profile",
             "severity": "info",
             "message": "This is a Public Dev Pack score, not an official Hidden Eval leaderboard score.",
             "scope": "report",
@@ -637,9 +631,9 @@ def build_pack_report(
             }
         },
         "environment": {
-            "runner": {"name": "MIB Reference Runner", "version": "0.4.0"},
-            "world_simulator": {"name": "MIB Milestone 4 World", "version": "0.4.0"},
-            "evaluator_bundle": {"name": "MIB M4 Evaluator Bundle", "version": "0.4.0"},
+            "runner": {"name": "MIB Reference Runner", "version": __version__},
+            "world_simulator": {"name": "MIB Reference World Simulator", "version": __version__},
+            "evaluator_bundle": {"name": "MIB Reference Evaluator Bundle", "version": __version__},
             **({"platform": {"submission_sandbox": copy.deepcopy((agent_descriptor.get("extensions") or {}).get("mib.sandbox"))}}
                if (agent_descriptor.get("extensions") or {}).get("mib.sandbox") else {}),
         },
@@ -690,7 +684,7 @@ def build_pack_report(
         "warnings": warnings,
         "provenance": {
             "generated_by": "MIB Reference Runner",
-            "generator_version": "0.4.0",
+            "generator_version": __version__,
             "score_recomputed": True,
             "verification_status": "verified",
         },

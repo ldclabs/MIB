@@ -8,6 +8,10 @@ from typing import Any
 
 import jsonschema
 
+from . import __version__
+
+from .scoring import ablation_tolerances, tolerant_harm_resistance, tolerant_stability
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -33,8 +37,9 @@ def _mean_selected(full_probe_scores: dict[str, float], probe_ids: set[str]) -> 
     return sum(vals) / len(vals) if vals else None
 
 
-def _causal_metrics(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Compute paired Milestone 4 causal metrics on each intervention's Probe subset."""
+def _causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, float] | None = None) -> list[dict[str, Any]]:
+    """Compute paired causal metrics on each intervention's Probe subset."""
+    tolerances = tolerances or {}
     full_runs = [r for r in runs if r["condition"] == "full"]
     if not full_runs:
         return []
@@ -71,11 +76,13 @@ def _causal_metrics(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             if denom > 0.02:
                 hmbs.append(max(0.0, delta) / denom)
         elif condition == "irrelevant_ablation":
-            irrelevant_stabilities.append(max(0.0, min(1.0, 1.0 - abs(full_match - variant))))
+            tau = tolerances.get(run.get("ablation_id"), 0.0)
+            irrelevant_stabilities.append(tolerant_stability(full_match - variant, tau))
         elif condition in {"harmful_memory", "stale_memory"}:
+            tau = tolerances.get(run.get("ablation_id"), 0.0)
             harm = max(0.0, full_match - variant)
             harms.append(harm)
-            harm_resistance.append(1.0 - harm)
+            harm_resistance.append(tolerant_harm_resistance(harm, tau))
         elif condition == "counterexample":
             # Counterexample removal is not the standardized Negative Transfer control.
             pass
@@ -128,11 +135,11 @@ def build_basic_report(
     instance = scenario.get("instantiation") or {}
     iid = full_runs[0]["scenario_instance_id"]
     template_id = instance.get("template_id", scenario["id"])
-    metrics = _causal_metrics(runs)
+    metrics = _causal_metrics(runs, ablation_tolerances(scenario))
     conditions = _condition_scores(runs)
 
     dim_scores01: dict[str, float] = {}
-    # Milestone 1 uses full Scenario score as evidence for non-causal dimensions.
+    # Single-Scenario reports use the full Scenario score as evidence for non-causal dimensions.
     for d in scenario.get("dimensions", []):
         if d != "causal_memory_impact":
             dim_scores01[d] = full_score
@@ -187,7 +194,7 @@ def build_basic_report(
         "scope": "internal",
         "benchmark": {
             "mib_version": "0.1",
-            "profile": {"id": "MIB-Core-0.1-Dev-M2", "version": "0.1.0"},
+            "profile": {"id": "MIB-Core-0.1-Dev-Single", "version": "0.1.0"},
             "track": "integrated_agent",
             "scale": "MIB-S",
             "scenario_pack": {"id": "single-scenario-dev", "version": "0.1.0"},
@@ -209,9 +216,9 @@ def build_basic_report(
             }
         },
         "environment": {
-            "runner": {"name": "MIB Reference Runner", "version": "0.4.0"},
-            "world_simulator": {"name": "MIB Milestone 4 World", "version": "0.4.0"},
-            "evaluator_bundle": {"name": "MIB M4 Evaluator Bundle", "version": "0.4.0"},
+            "runner": {"name": "MIB Reference Runner", "version": __version__},
+            "world_simulator": {"name": "MIB Reference World Simulator", "version": __version__},
+            "evaluator_bundle": {"name": "MIB Reference Evaluator Bundle", "version": __version__},
         },
         "execution": {
             "started_at": min(r.get("started_at") for r in runs),
@@ -272,21 +279,21 @@ def build_basic_report(
             "by_dimension": {d: 1.0 for d in dim_scores01},
             "missing_required_templates": [],
             "unsupported_required_templates": [],
-            "partial_score_reason": "Milestone 4 single-scenario development report; not an official profile score.",
+            "partial_score_reason": "Single-Scenario development report; not an official profile score.",
         },
         "statistics": {
             "confidence_level": 0.95,
             "mib_score": {"value": mib_score, "n": 1},
         },
         "warnings": [{
-            "code": "development.milestone2_partial_score",
+            "code": "development.single_scenario_partial_score",
             "severity": "info",
-            "message": "This is a Milestone 4 development report, not an official MIB-Core-0.1 score.",
+            "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
             "scope": "report",
         }],
         "provenance": {
             "generated_by": "MIB Reference Runner",
-            "generator_version": "0.4.0",
+            "generator_version": __version__,
             "score_recomputed": True,
             "verification_status": "partially_verified",
         },

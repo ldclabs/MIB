@@ -255,7 +255,7 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1
   }

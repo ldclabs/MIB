@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 from mib_runner.model_clients import ModelCompletion
 from mib_runner.same_model_agent import (
@@ -14,6 +15,8 @@ from mib_runner.same_model_agent import (
 )
 from mib_runner.same_model_calibration import build_experiment_lock, load_experiment, _condition_schedule, _schedule_audit
 from mib_runner.types import Observation
+
+from paths import OFFICIAL_PACK
 
 
 class RecordingModel:
@@ -85,8 +88,10 @@ def test_structured_policy_keeps_correction_salient():
 
 
 def test_experiment_lock_is_stable_and_valid():
+    # Uses the public dev-pack experiment so the suite passes on a clean clone;
+    # the private canonical pack is evaluator-only.
     root = Path(__file__).resolve().parents[1]
-    cfg_path = root / "examples" / "same-model" / "same-model-experiment.stub.json"
+    cfg_path = root / "examples" / "same-model" / "same-model-experiment.dev.json"
     cfg, paths = load_experiment(cfg_path)
     a = build_experiment_lock(cfg, paths)
     b = build_experiment_lock(cfg, paths)
@@ -113,6 +118,27 @@ def test_estimate_only_honors_output_json(tmp_path):
     root = Path(__file__).resolve().parents[1]
     output = tmp_path / "estimate.json"
     rc = main([
+        str(root / "examples" / "same-model" / "same-model-experiment.dev.json"),
+        "--estimate-only",
+        "--output-json", str(output),
+        "--experiment-schema", str(root / "schemas" / "mib-same-model-experiment.schema.json"),
+    ])
+    assert rc == 0
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload["estimate"]["template_count"] == len(list((root / "scenarios" / "dev").rglob("MIB-*.json")))
+    assert payload["experiment_lock"].startswith("sha256:")
+
+
+@pytest.mark.skipif(
+    not (OFFICIAL_PACK / "templates").is_dir(),
+    reason=f"official private pack not available at {OFFICIAL_PACK}",
+)
+def test_official_pack_experiment_estimates_full_release_shape(tmp_path):
+    """The shipped canonical-pack stub covers the 36-Template release shape."""
+    from mib_runner.same_model_cli import main
+    root = Path(__file__).resolve().parents[1]
+    output = tmp_path / "estimate.json"
+    rc = main([
         str(root / "examples" / "same-model" / "same-model-experiment.stub.json"),
         "--estimate-only",
         "--output-json", str(output),
@@ -121,4 +147,3 @@ def test_estimate_only_honors_output_json(tmp_path):
     assert rc == 0
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["estimate"]["template_count"] == 36
-    assert payload["experiment_lock"].startswith("sha256:")

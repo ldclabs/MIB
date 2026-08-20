@@ -49,6 +49,28 @@ The Runner, pack executor, and hidden evaluator are included and regression-test
 
 See [MIB-Leaderboard-Evaluation-Service.md](MIB-Leaderboard-Evaluation-Service.md) for the trust and service model.
 
+## Platform prerequisites
+
+The service executes participant-supplied stdio submissions inside the reference
+submission sandbox, which contains them with Linux unprivileged user, mount, and
+network namespaces (`unshare`). Any command that launches a submission —
+`register-submission` (unless `--no-smoke`), `worker-once`, and the
+`POST /worker/once` endpoint — therefore requires:
+
+```text
+Linux
+unprivileged user / mount / network namespaces
+the `unshare` binary on PATH
+```
+
+On macOS and Windows no namespace isolation exists, address-space limits are not
+enforced, and those commands must not be used: an unisolated submission would run
+with full host network and filesystem visibility. The remaining service commands
+(`init`, `register-cycle`, `activate-cycle`, `enqueue`, `job`, `jobs`,
+`leaderboard`, `compare`, `verify-result`, `verify-attestation-file`, `serve`) do
+not spawn submissions and are cross-platform, as are the `mib` commands
+`validate`, `run`, `run-pack`, `benchmark`, `capability-card`, and `verify-score`.
+
 ## Install
 
 ```bash
@@ -67,8 +89,16 @@ cryptography >= 46
 The included development config is:
 
 ```text
-service/service-config.json
+examples/service/service-config.json
 ```
+
+It resolves its relative paths against its own directory: the five schema entries
+point at the repository `schemas/` directory, and the runtime state lands in
+`service/state/` and `service/artifacts/` at the repository root. Both runtime
+directories are gitignored and are created on first use. `mib-service` defaults to
+`service/service-config.json`, which does not exist in a fresh clone, so pass
+`--config examples/service/service-config.json` explicitly or copy the file to a
+deployment location of your own.
 
 Provide the root service secret through the environment:
 
@@ -81,7 +111,7 @@ The secret is used to derive independent keys for hidden Instance generation, re
 ## Initialize and inspect service identity
 
 ```bash
-mib-service --config service/service-config.json init
+mib-service --config examples/service/service-config.json init
 ```
 
 The output contains public Ed25519 keys and `key_id` values that should be pinned through a trusted MIB release channel.
@@ -89,7 +119,7 @@ The output contains public Ed25519 keys and `key_id` values that should be pinne
 ## Register submissions
 
 ```bash
-mib-service --config service/service-config.json register-submission \
+mib-service --config examples/service/service-config.json register-submission \
   examples/submissions/reference-stdio.json \
   --name 'Reference Fixture'
 ```
@@ -105,9 +135,9 @@ It exists only to validate leaderboard discrimination.
 ## Register and activate a hidden cycle
 
 ```bash
-mib-service --config service/service-config.json register-cycle \
+mib-service --config examples/service/service-config.json register-cycle \
   cycle-m5-demo-001 \
-  --store private-eval-store-demo \
+  --store fixtures/private-eval-store-demo \
   --profile profiles/MIB-Core-0.1-Hidden-M4-Demo.json \
   --activate
 ```
@@ -117,8 +147,8 @@ The included store is an infrastructure fixture, not the canonical future MIB le
 ## Enqueue and execute
 
 ```bash
-mib-service --config service/service-config.json enqueue mib-reference-fixture-stdio
-mib-service --config service/service-config.json worker-once
+mib-service --config examples/service/service-config.json enqueue mib-reference-fixture-stdio
+mib-service --config examples/service/service-config.json worker-once
 ```
 
 A Job is signed at enqueue time. The worker refuses to run it if the Submission, private Store, Profile, or signature no longer matches the frozen Manifest.
@@ -126,7 +156,7 @@ A Job is signed at enqueue time. The worker refuses to run it if the Submission,
 ## Leaderboard
 
 ```bash
-mib-service --config service/service-config.json leaderboard
+mib-service --config examples/service/service-config.json leaderboard
 ```
 
 The demo run included in this package produces two entries:
@@ -141,7 +171,7 @@ These are infrastructure fixtures, not published MIB baselines.
 ## Paired comparison
 
 ```bash
-mib-service --config service/service-config.json compare \
+mib-service --config examples/service/service-config.json compare \
   result_A result_B \
   --resamples 5000
 ```
@@ -153,7 +183,7 @@ Because both systems run the same hidden cycle, the service pairs the same opaqu
 Service-side verification:
 
 ```bash
-mib-service --config service/service-config.json verify-result result_xxx
+mib-service --config examples/service/service-config.json verify-result result_xxx
 ```
 
 Public verification, with no evaluator secret:
@@ -168,7 +198,7 @@ mib-service verify-attestation-file \
 ## HTTP API
 
 ```bash
-mib-service --config service/service-config.json serve \
+mib-service --config examples/service/service-config.json serve \
   --host 127.0.0.1 \
   --port 8088
 ```
@@ -206,8 +236,10 @@ Docker/Podman/Firecracker are not installed in the current reference environment
 The package includes the full regression suite:
 
 ```bash
-PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m pytest tests -q
 ```
+
+The service tests that spawn a sandboxed submission skip on non-Linux hosts.
 
 See:
 
@@ -223,4 +255,14 @@ The Result signature is a **service attestation**, not hardware attestation. It 
 
 ## Demo snapshot
 
-The package includes a completed local service snapshot under `service/state/` and `service/artifacts/` solely for inspection. It uses no embedded service root secret. To start a fresh service, remove those two directories (or point the config at new paths), set `MIB_SERVICE_ROOT_SECRET`, and run `mib-service init`.
+No service database or artifact tree is committed to this repository: `service/state/`
+and `service/artifacts/` are gitignored runtime directories, and no service root
+secret is embedded anywhere. What is committed are the JSON outputs of one completed
+demo run, under `examples/service/` — service identity, registered submissions and
+cycle, worker results, public reports, Capability Cards, attestations, and the
+leaderboard. Absolute paths inside those files use the illustrative deployment root
+`/opt/mib` and are not expected to exist on your machine.
+
+To run the service yourself, set `MIB_SERVICE_ROOT_SECRET` and run
+`mib-service --config examples/service/service-config.json init`; the runtime
+directories are created on first use. Deleting them resets the service.

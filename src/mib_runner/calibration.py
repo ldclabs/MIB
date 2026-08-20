@@ -11,10 +11,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .benchmark import build_instance_aggregate, validate_causal_pairs
-from .calibration_baselines import BASELINE_FACTORIES, baseline_descriptor_table
+from .calibration_baselines import BASELINE_FACTORIES
 from .materialize import materialize
 from .runner import run_scenario
-from .validation import load_json, validate_scenario
+from .scoring import mean as _mean
+from .validation import validate_scenario
 
 
 DEFAULT_THRESHOLDS = {
@@ -32,7 +33,8 @@ def utc_now() -> str:
 
 
 def mean(xs: list[float]) -> float:
-    return sum(xs) / len(xs) if xs else 0.0
+    """Re-exported from ``scoring`` so calibration and pack aggregation agree."""
+    return _mean(xs)
 
 
 def percentile(xs: list[float], q: float) -> float:
@@ -49,11 +51,13 @@ def percentile(xs: list[float], q: float) -> float:
 
 
 def bootstrap_ci(values: list[float], *, resamples: int, seed: str | int, level: float = 0.95) -> dict[str, Any] | None:
+    """Flat percentile bootstrap over independent observations."""
     if not values:
         return None
     rng = random.Random(str(seed))
+    n_resamples = max(1, resamples)
     samples = []
-    for _ in range(max(1, resamples)):
+    for _ in range(n_resamples):
         draw = [rng.choice(values) for _ in values]
         samples.append(mean(draw))
     alpha = 1.0 - level
@@ -62,16 +66,56 @@ def bootstrap_ci(values: list[float], *, resamples: int, seed: str | int, level:
         "lower": percentile(samples, alpha / 2),
         "upper": percentile(samples, 1 - alpha / 2),
         "method": "instance_bootstrap_percentile",
-        "resamples": resamples,
+        "resamples": n_resamples,
+        "seed": seed,
+    }
+
+
+def hierarchical_bootstrap_ci(
+    groups: list[list[float]], *, resamples: int, seed: str | int, level: float = 0.95
+) -> dict[str, Any] | None:
+    """Percentile bootstrap that resamples Instances, then Repetitions within them.
+
+    Repetitions of one Scenario Instance are not independent observations: under
+    the harness's own decoding lock (temperature 0, or a paired per-call seed)
+    they are deterministic clones.  Treating them as independent rows shrinks
+    every interval by roughly the repetition factor, so the resampling hierarchy
+    must mirror the design: Instance -> Repetition, exactly as the pack-level
+    bootstrap in ``benchmark.hierarchical_bootstrap`` does.
+    """
+    groups = [g for g in groups if g]
+    if not groups:
+        return None
+    rng = random.Random(str(seed))
+    n_resamples = max(1, resamples)
+    samples = []
+    for _ in range(n_resamples):
+        picked = [rng.choice(groups) for _ in groups]
+        draw = [mean([rng.choice(g) for _ in g]) for g in picked]
+        samples.append(mean(draw))
+    alpha = 1.0 - level
+    return {
+        "level": level,
+        "lower": percentile(samples, alpha / 2),
+        "upper": percentile(samples, 1 - alpha / 2),
+        "method": "hierarchical_bootstrap_percentile",
+        "resamples": n_resamples,
         "seed": seed,
     }
 
 
 def load_private_templates(pack_root: str | Path) -> list[dict[str, Any]]:
+    """Load a Scenario pack.
+
+    The evaluator-only pack nests Templates under ``templates/``; the public dev
+    pack stores them directly under Scenario-family directories.  Both layouts
+    load, so the same harness can run against either without a second loader.
+    """
     root = Path(pack_root)
-    files = sorted((root / "templates").rglob("MIB-*.json"))
+    search_root = root / "templates" if (root / "templates").is_dir() else root
+    files = sorted(f for f in search_root.rglob("MIB-*.json") if ".example-" not in f.name)
     if not files:
-        raise ValueError(f"no official Templates found under {root / 'templates'}")
+        raise ValueError(f"no Templates found under {search_root}")
     return [json.loads(p.read_text(encoding="utf-8")) for p in files]
 
 
@@ -149,11 +193,19 @@ def _metric(aggs: list[dict[str, Any]], name: str) -> float | None:
 
 def _baseline_stat(rows: list[dict[str, Any]], *, bootstrap_resamples: int, bootstrap_seed: str) -> dict[str, Any]:
     vals = [float(r["score"]) for r in rows]
+    # Group repetitions under their Scenario Instance seed so the interval
+    # reflects the number of independent Instances, not the row count.
+    by_instance: dict[Any, list[float]] = defaultdict(list)
+    for r in rows:
+        by_instance[r.get("seed")].append(float(r["score"]))
+    groups = [by_instance[k] for k in sorted(by_instance, key=lambda x: str(x))]
     return {
         "mean": mean(vals),
-        "stddev": stats.pstdev(vals) if len(vals) > 1 else 0.0,
+        # Sample stddev: these rows are a sample of Instances, not a population.
+        "stddev": stats.stdev(vals) if len(vals) > 1 else 0.0,
         "n": len(vals),
-        "ci": bootstrap_ci(vals, resamples=bootstrap_resamples, seed=bootstrap_seed),
+        "independent_n": len(groups),
+        "ci": hierarchical_bootstrap_ci(groups, resamples=bootstrap_resamples, seed=bootstrap_seed),
         "min": min(vals) if vals else 0.0,
         "max": max(vals) if vals else 0.0,
     }
@@ -320,12 +372,20 @@ def calibrate_pack(
         for risk in c.get("causal_risks", []):
             causal_risk_counts[risk] += 1
 
-    # Pairwise ordering diagnostics; not used as an admission gate.
+    # Pairwise ordering diagnostics; not used as an admission gate.  Only pairs
+    # whose two baselines were actually executed are reported, so a partial
+    # --baselines run stays valid instead of raising KeyError.
+    def _ordering(hi: str, lo: str) -> int | None:
+        if hi not in baseline_ids or lo not in baseline_ids:
+            return None
+        return sum(1 for c in cards if c["baseline_scores"][hi]["mean"] + 1e-12 >= c["baseline_scores"][lo]["mean"])
+
     ordering = {
-        "B1_ge_B3": sum(1 for c in cards if c["baseline_scores"]["B1"]["mean"] + 1e-12 >= c["baseline_scores"]["B3"]["mean"]),
-        "B3_ge_B2": sum(1 for c in cards if c["baseline_scores"]["B3"]["mean"] + 1e-12 >= c["baseline_scores"]["B2"]["mean"]),
-        "B2_ge_B0": sum(1 for c in cards if c["baseline_scores"]["B2"]["mean"] + 1e-12 >= c["baseline_scores"]["B0"]["mean"]),
+        "B1_ge_B3": _ordering("B1", "B3"),
+        "B3_ge_B2": _ordering("B3", "B2"),
+        "B2_ge_B0": _ordering("B2", "B0"),
         "template_count": len(cards),
+        "baselines_executed": list(baseline_ids),
     }
 
     actual_baselines = []
@@ -339,7 +399,13 @@ def calibrate_pack(
             "role": ext.get("role", bid),
             "release_calibration_eligible": bool(ext.get("release_calibration_eligible", False)),
         })
-    release_eligible = all(x.get("release_calibration_eligible") for x in actual_baselines if x["id"] in {"B0", "B1"})
+    # Release eligibility requires the B0/B1 anchors to have actually run.  An
+    # `all()` over an empty selection would otherwise mark a partial run eligible.
+    anchor_rows = [x for x in actual_baselines if x["id"] in {"B0", "B1"}]
+    release_eligible = (
+        len(anchor_rows) == 2
+        and all(x.get("release_calibration_eligible") for x in anchor_rows)
+    )
     return {
         "mib": "0.1",
         "kind": "MIBCalibrationReport",

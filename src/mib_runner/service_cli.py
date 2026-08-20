@@ -13,7 +13,7 @@ def svc(args): return EvaluationService(ServiceConfig.load(args.config))
 def emit(x): print(json.dumps(x,indent=2,ensure_ascii=False,default=str))
 
 def main(argv=None):
-    p=argparse.ArgumentParser(prog="mib-service",description="MIB Leaderboard / Evaluation Service Milestone 5")
+    p=argparse.ArgumentParser(prog="mib-service",description="MIB Leaderboard / Evaluation Service")
     p.add_argument("--config",default="service/service-config.json")
     sp=p.add_subparsers(dest="cmd",required=True)
     sp.add_parser("init")
@@ -27,19 +27,41 @@ def main(argv=None):
     sp.add_parser("jobs")
     l=sp.add_parser("leaderboard"); l.add_argument("--cycle"); l.add_argument("--profile")
     v=sp.add_parser("verify-result"); v.add_argument("result")
-    vf=sp.add_parser("verify-attestation-file"); vf.add_argument("attestation_file"); vf.add_argument("--public-report"); vf.add_argument("--expected-key-id")
+    vf=sp.add_parser("verify-attestation-file"); vf.add_argument("attestation_file"); vf.add_argument("--public-report"); vf.add_argument("--expected-key-id"); vf.add_argument("--expected-public-key"); vf.add_argument("--i-understand-this-proves-nothing",action="store_true",dest="unpinned")
     q=sp.add_parser("compare"); q.add_argument("result_a"); q.add_argument("result_b"); q.add_argument("--resamples",type=int,default=5000); q.add_argument("--seed",default="20260819")
     h=sp.add_parser("serve"); h.add_argument("--host",default="127.0.0.1"); h.add_argument("--port",type=int,default=8088)
     args=p.parse_args(argv)
     if args.cmd=="serve": return serve(args.config,args.host,args.port)
     if args.cmd=="verify-attestation-file":
         obj=json.loads(Path(args.attestation_file).read_text(encoding="utf-8")); att=obj["attestation"]; sig=obj["signature"]
-        signature_valid=verify_json_ed25519(att,sig,expected_context="mib-service-result-attestation/v1")
+        # A signature that only validates against the key carried inside the
+        # file proves nothing: anyone can sign a forged attestation with their
+        # own key.  Verification must be pinned to a key the caller trusts.
+        if not (args.expected_public_key or args.expected_key_id or args.unpinned):
+            print(json.dumps({
+                "valid":False,
+                "error":"unpinned_verification",
+                "message":"Pass --expected-public-key (preferred) or --expected-key-id from the MIB service identity. "
+                          "Without a pinned key this check only proves the file is self-consistent.",
+                "key_id":sig.get("key_id"),"public_key":sig.get("public_key"),
+            },indent=2))
+            return 5
+        signature_valid=verify_json_ed25519(
+            att,sig,
+            expected_context="mib-service-result-attestation/v1",
+            expected_public_key=args.expected_public_key,
+        )
         key_ok=(args.expected_key_id is None or sig.get("key_id")==args.expected_key_id)
+        pinned=bool(args.expected_public_key or args.expected_key_id)
         report_ok=True
         if args.public_report: report_ok=file_digest(args.public_report)==att.get("public_report_digest")
-        emit({"valid":bool(signature_valid and key_ok and report_ok),"signature_valid":signature_valid,"expected_key_id_valid":key_ok,"public_report_digest_valid":report_ok,"key_id":sig.get("key_id"),"public_key":sig.get("public_key")})
-        return 0 if signature_valid and key_ok and report_ok else 5
+        valid=bool(signature_valid and key_ok and report_ok and pinned)
+        out={"valid":valid,"signature_valid":signature_valid,"expected_key_id_valid":key_ok,
+             "public_report_digest_valid":report_ok,"key_pinned":pinned,
+             "key_id":sig.get("key_id"),"public_key":sig.get("public_key")}
+        if not pinned: out["warning"]="Unpinned verification: self-consistency only, not proof of MIB service origin."
+        emit(out)
+        return 0 if valid else 5
     s=svc(args)
     if args.cmd=="init": emit(s.init())
     elif args.cmd=="register-submission": emit(s.register_submission(args.spec,display_name=args.name,owner=args.owner,track=args.track,smoke_test=not args.no_smoke))

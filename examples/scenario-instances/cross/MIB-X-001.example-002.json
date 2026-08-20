@@ -1,0 +1,267 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-X-001",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Preference Correction to Future Action",
+  "description": "Combines retention, temporal update, epistemic correction, and causal ablation in one preference history.",
+  "suite": "cross",
+  "dimensions": [
+    "retention_retrieval",
+    "temporal_memory",
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "cross-dimension",
+    "public-dev"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 3,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "probe_indirectness": 0.5
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 20,
+    "max_tool_calls": 20,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Jun"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-old",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "For meetings, please serve me oolong tea.",
+      "tags": [
+        "relevant",
+        "historical"
+      ]
+    },
+    {
+      "id": "e-update",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 10,
+        "time": "2026-01-14T10:30:00Z"
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Update: my preference has changed. From now on, please serve me orange juice.",
+      "tags": [
+        "relevant",
+        "current",
+        "correction"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 30,
+        "time": "2026-01-14T16:00:00Z"
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Unrelated note: I moved the meeting to a larger room.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 50,
+        "time": "2026-01-15T09:00:00Z"
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-current",
+      "kind": "temporal",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What drink should you serve me at the next meeting? Answer with the drink only."
+      },
+      "oracle": {
+        "accepted": [
+          "orange juice"
+        ],
+        "forbidden": [
+          "oolong tea"
+        ]
+      },
+      "evaluators": [
+        "eval-drink"
+      ],
+      "dimensions": [
+        "retention_retrieval",
+        "temporal_memory",
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-history",
+      "kind": "historical",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What drink did I originally ask you to serve before my preference changed? Answer with the drink only."
+      },
+      "oracle": {
+        "accepted": [
+          "oolong tea"
+        ]
+      },
+      "evaluators": [
+        "eval-drink"
+      ],
+      "dimensions": [
+        "retention_retrieval",
+        "temporal_memory",
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-current",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-current"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-update"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-history",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-history"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-old"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-current",
+        "p-history"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-drink",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "retention_retrieval": 0.15,
+      "temporal_memory": 0.3,
+      "epistemic_memory": 0.3,
+      "causal_memory_impact": 0.25
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1-Dev-M3",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 3
+  },
+  "instantiation": {
+    "template_id": "MIB-X-001",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "3f9637065c183b125f124bdbb312e8d189cfd93ec09525c29cacce65cf7bb594",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
+  }
+}

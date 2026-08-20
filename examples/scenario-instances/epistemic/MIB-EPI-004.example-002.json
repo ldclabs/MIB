@@ -55,7 +55,7 @@
     {
       "id": "person",
       "kind": "person",
-      "display_name": "Iris"
+      "display_name": "Priya"
     },
     {
       "id": "calendar",
@@ -71,7 +71,7 @@
     },
     "state": {},
     "hidden_ground_truth": {
-      "authoritative_meeting_time": "12:30"
+      "authoritative_meeting_time": "10:00"
     }
   },
   "timeline": [
@@ -102,7 +102,7 @@
       },
       "visibility": "agent",
       "actor": "person",
-      "content": "I believe the Launch Check starts at 11:00.",
+      "content": "I believe the Budget Sync starts at 13:30.",
       "tags": [
         "relevant",
         "human-source"
@@ -118,8 +118,8 @@
       "visibility": "agent",
       "actor": "calendar",
       "payload": {
-        "meeting": "Launch Check",
-        "start": "12:30",
+        "meeting": "Budget Sync",
+        "start": "10:00",
         "status": "confirmed"
       },
       "tags": [
@@ -160,14 +160,14 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What start time should you use to schedule the Launch Check? Answer with the time only."
+        "content": "What start time should you use to schedule the Budget Sync? Answer with the time only."
       },
       "oracle": {
         "accepted": [
-          "12:30"
+          "10:00"
         ],
         "forbidden": [
-          "11:00"
+          "13:30"
         ],
         "expected_status": "known"
       },
@@ -187,11 +187,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What time did Iris personally claim for the Launch Check? Answer with the time only."
+        "content": "What time did Priya personally claim for the Budget Sync? Answer with the time only."
       },
       "oracle": {
         "accepted": [
-          "11:00"
+          "13:30"
         ]
       },
       "evaluators": [
@@ -289,22 +289,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "person_name": "Iris",
-      "human_time": "11:00",
-      "calendar_time": "12:30",
-      "meeting_name": "Launch Check"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-EPI-004",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "2a17cdeaa2be2c34632fb385df40fef5b01d136df024c9c8b5fd09a4c1169dfb",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "e5a866da1738ad18c4b0a14588b4a7f36311044e6cf90ed36bfd917d18787d45",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

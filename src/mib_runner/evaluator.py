@@ -9,9 +9,32 @@ from .world import WorldState
 
 
 def output_text(output: AgentOutput) -> str:
+    """Render an Agent output as the text an Evaluator compares.
+
+    A structured answer whose value is a scalar is the same answer as the
+    message form: ``{"type":"structured","value":"green tea"}`` must not be
+    JSON-quoted into ``"green tea"``, or a protocol-compliant Agent that chooses
+    the structured envelope scores zero on every set_match Probe.  Containers
+    still serialize, since there is no single obvious text form for them.
+    """
     if output.type == "structured":
-        return json.dumps(output.value, ensure_ascii=False, sort_keys=True)
+        value = output.value
+        if isinstance(value, str):
+            return value
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if value is None:
+            return ""
+        if isinstance(value, (int, float)):
+            return repr(value) if isinstance(value, float) else str(value)
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
     return output.content or ""
+
+
+# Punctuation an answer may carry without changing its meaning ("AX-91." is the
+# same answer as "AX-91").  Inner punctuation is preserved so that values like
+# "UTC+1" or "AX-91" survive normalization intact.
+_EDGE_PUNCTUATION = " \t\r\n.,;:!?\"'`()[]{}<>"
 
 
 def normalize(value: Any, mode: str | None) -> str:
@@ -27,28 +50,68 @@ def normalize(value: Any, mode: str | None) -> str:
         return text.strip()
     if mode == "casefold_trim_collapse_ws":
         return re.sub(r"\s+", " ", text.strip()).casefold()
+    if mode == "answer_normalized":
+        # Collapse whitespace, casefold, and drop edge punctuation.  Intended
+        # for short-answer Probes where format compliance must not be scored as
+        # a memory failure.
+        text = re.sub(r"\s+", " ", text.strip()).casefold()
+        return text.strip(_EDGE_PUNCTUATION)
     raise ValueError(f"unsupported normalization mode: {mode}")
 
 
+def _contains_value(haystack: str, needle: str) -> bool:
+    """Whole-token containment, so 'AX-9' does not match inside 'AX-91'."""
+    if not needle:
+        return False
+    return re.search(rf"(?<![\w-]){re.escape(needle)}(?![\w-])", haystack) is not None
+
+
 def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict[str, Any] | None) -> dict[str, Any]:
+    """Score a short answer against accepted / forbidden value sets.
+
+    ``match`` selects how the answer is compared:
+
+    ``exact``     the whole normalized output must equal an accepted value.
+    ``contains``  (default) the accepted value must appear as a whole token in
+                  the output.  A correct answer wrapped in a sentence is still
+                  a correct answer, and — critically — a forbidden (stale) value
+                  mentioned anywhere is still detectable as stale adoption,
+                  which exact matching could almost never see.
+    """
     config = config or {}
-    mode = config.get("normalization", "casefold_trim")
+    mode = config.get("normalization", "answer_normalized")
+    match = config.get("match", "contains")
+    if match not in {"exact", "contains"}:
+        raise ValueError(f"unsupported set_match mode: {match}")
     actual = normalize(output_text(output), mode)
     accepted = [normalize(x, mode) for x in oracle.get("accepted", [])]
     forbidden = [normalize(x, mode) for x in oracle.get("forbidden", [])]
-    accepted_match = actual in accepted if accepted else False
-    forbidden_match = actual in forbidden
+
+    if match == "exact":
+        accepted_match = actual in accepted if accepted else False
+        forbidden_match = actual in forbidden
+    else:
+        accepted_match = any(_contains_value(actual, a) for a in accepted) if accepted else False
+        forbidden_match = any(_contains_value(actual, f) for f in forbidden)
+
     score = 1.0 if accepted_match and not forbidden_match else 0.0
     failure_codes: list[str] = []
-    if not accepted_match:
-        failure_codes.append("retrieval_miss")
     if forbidden_match:
+        # A stale value was adopted; that is the specific failure, not a miss.
         failure_codes.append("stale_memory_adoption")
+    elif not accepted_match:
+        failure_codes.append("retrieval_miss")
     return {
         "score": score,
         "passed": score == 1.0,
         "failure_codes": failure_codes,
-        "details": {"actual_normalized": actual, "accepted_count": len(accepted), "forbidden_match": forbidden_match},
+        "details": {
+            "actual_normalized": actual,
+            "match": match,
+            "accepted_count": len(accepted),
+            "accepted_match": accepted_match,
+            "forbidden_match": forbidden_match,
+        },
     }
 
 
@@ -147,7 +210,7 @@ def _eval_one(eid: str, spec: dict[str, Any], output: AgentOutput, probe: dict[s
             score = total / total_w if total_w else 0.0
             r = {"score": score, "passed": score == 1.0, "failure_codes": sorted(failures), "details": {"components": rows}}
     else:
-        raise NotImplementedError(f"Milestone 4 evaluator not implemented: {etype!r}")
+        raise NotImplementedError(f"evaluator type not implemented by the reference Runner: {etype!r}")
     return {"evaluator_id": eid, "evaluator_type": etype, **r}
 
 

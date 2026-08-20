@@ -113,7 +113,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -128,7 +129,8 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-01-08T12:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
@@ -147,7 +149,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 31
+        "sequence": 31,
+        "time": "2026-01-08T12:05:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -162,7 +165,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 45
+        "sequence": 45,
+        "time": "2026-01-08T15:30:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -176,7 +180,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 60
+        "sequence": 60,
+        "time": "2026-01-09T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -279,7 +284,7 @@
   },
   "metadata": {
     "visibility": "hidden_eval",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Hidden-M4-Demo",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1,
     "demo_fixture": true,

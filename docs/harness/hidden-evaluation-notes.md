@@ -30,6 +30,30 @@ Public Redacted Report
 verify-score
 ```
 
+## Platform prerequisites
+
+Anything that launches an external **stdio** submission — `mib agent-smoke-test`
+with a stdio submission spec, `mib evaluate-hidden`, and the evaluation-service
+worker — runs it inside the submission sandbox described in section 6. That sandbox
+contains the process with Linux unprivileged user, mount, and network namespaces via
+`unshare`, and it is the only mechanism keeping a submission away from the private
+evaluation store. It therefore requires:
+
+```text
+Linux
+unprivileged user / mount / network namespaces
+the `unshare` binary on PATH
+```
+
+macOS and Windows provide none of it: no namespace is created, the address-space
+limit is not enforced, and evaluator paths cannot be masked. Do not evaluate stdio
+submissions there.
+
+`http` submissions are not sandboxed by the Runner at all — the participant's
+endpoint is a remote process, and isolating it is the operator's responsibility.
+Commands that never launch a submission (`mib validate`, `run`, `run-pack`,
+`benchmark`, `capability-card`, `verify-score`, `public-eval-manifest`) are
+cross-platform.
 
 ## 1. Private Evaluation Store
 
@@ -38,7 +62,7 @@ Evaluator-only content lives outside participant-visible scenario directories.
 Reference demo layout:
 
 ```text
-private-eval-store-demo/
+fixtures/private-eval-store-demo/
 ├── manifest.private.json
 └── templates/
     ├── hidden/
@@ -271,7 +295,7 @@ The evaluator's private Scenario files are never staged.
 export MIB_EVAL_KEY='replace-with-evaluator-secret'
 
 PYTHONPATH=src python -m mib_runner.cli evaluate-hidden \
-  private-eval-store-demo \
+  fixtures/private-eval-store-demo \
   --profile profiles/MIB-Core-0.1-Hidden-M4-Demo.json \
   --submission examples/submissions/reference-stdio.json \
   --schema schemas/mib-scenario.schema.json \

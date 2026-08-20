@@ -206,10 +206,22 @@ Memory Benefit
 Headroom-Normalized Memory Benefit
 Irrelevant Memory Stability
 Memory Harm
+Harm Resistance
 Net Memory Gain
+```
+
+Two further causal metrics are **specified but not yet implemented in v0.1**:
+
+```text
 Negative Transfer
 Error Recurrence
 ```
+
+`docs/MIB-Scoring.md` defines both, and the Scenario schema already accepts their
+metric names, but the v0.1 reference Runner emits neither. A generic counterexample
+ablation demonstrates applicability sensitivity and is deliberately *not* reported as
+Negative Transfer, because it is not the standardized control the scoring model
+defines. Do not expect either value in a v0.1 report.
 
 The main **MIB Score** measures absolute memory-enabled capability.
 Causal metrics are reported alongside it rather than being mixed into an opaque score.
@@ -585,7 +597,8 @@ MIB/
 │   ├── MIB-Scoring.md
 │   ├── MIB-Leaderboard-Evaluation-Service.md
 │   ├── MIB-v0.1-Test-Plan.md
-│   └── harness/                           calibration + same-model harness notes
+│   └── harness/                           calibration, same-model, hidden-eval,
+│                                          and evaluation-service harness notes
 │
 ├── schemas/                               JSON Schemas (scenario, report,
 │                                          submission, job manifest, attestation,
@@ -674,8 +687,27 @@ python -m pip install -e ".[test]"
 PYTHONPATH=src python -m pytest tests -q
 ```
 
-Tests covering the submission sandbox are skipped on non-Linux hosts, which report
-`36 passed, 3 skipped`.
+Two groups of tests skip rather than fail on a fresh public clone:
+
+- Submission-sandbox tests skip off Linux, because containment needs Linux
+  user/mount/network namespaces (see below).
+- Calibration tests in `tests/test_calibration.py` skip unless `MIB_OFFICIAL_PACK`
+  points at the evaluator-only pack, whose Scenario bodies are not published here.
+
+Everything else runs anywhere Python 3.10+ does.
+
+### Running external submissions requires Linux
+
+The commands that execute a participant-supplied **stdio** agent —
+`mib agent-smoke-test` on a stdio submission, `mib evaluate-hidden`, and
+`mib-service register-submission` / `worker-once` — run it inside the reference
+submission sandbox, which relies on Linux unprivileged user, mount, and network
+namespaces via `unshare`. They are supported on Linux only; on macOS and Windows no
+isolation is enforced and hidden evaluator paths cannot be masked.
+
+The rest of the CLI — `mib validate`, `run`, `run-pack`, `benchmark`,
+`capability-card`, `verify-score`, `public-eval-manifest`, and the non-executing
+`mib-service` subcommands — is cross-platform.
 
 External agents can participate through:
 
@@ -783,19 +815,27 @@ When proposing a new Scenario, a useful question is:
 
 > **What part of the past should matter now, what part should not, and how can we prove the difference?**
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup, the repository
+layout, coding conventions, and the rule that Hidden Eval / Private Holdout Scenario
+bodies must never be committed here. Report security issues through the process in
+[SECURITY.md](SECURITY.md) rather than in a public issue.
+
 ---
 
 ## License
 
-See the repository license for details.
+MIB is released under the **GNU General Public License v3.0**. The full text is in
+[LICENSE](LICENSE).
 
 ---
 
 ## Citation
 
-A formal paper and citation entry will be added when the v0.1 benchmark pack is frozen.
+A formal paper will be added when the v0.1 benchmark pack is frozen. Until then,
+[CITATION.cff](CITATION.cff) carries the machine-readable software citation and
+GitHub's "Cite this repository" entry resolves to it.
 
-For now, please refer to the project as:
+In prose, please refer to the project as:
 
 > **MIB — Memory Intelligence Benchmark**
 >

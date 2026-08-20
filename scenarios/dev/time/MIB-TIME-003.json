@@ -113,7 +113,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -127,7 +128,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 10
+        "sequence": 10,
+        "time": "2026-01-02T14:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -142,7 +144,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 15
+        "sequence": 15,
+        "time": "2026-01-03T09:00:00Z"
       },
       "visibility": "harness"
     },
@@ -151,7 +154,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 20
+        "sequence": 20,
+        "time": "2026-01-10T11:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -165,7 +169,8 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-02-05T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
@@ -181,7 +186,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 31
+        "sequence": 31,
+        "time": "2026-02-05T19:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -196,7 +202,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-02-06T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -307,7 +314,7 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1
   }

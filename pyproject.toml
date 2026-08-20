@@ -7,6 +7,8 @@ name = "mib-reference-runner"
 version = "0.7.0"
 description = "MIB v0.1 reference Runner, evaluators, calibration and evaluation service"
 requires-python = ">=3.10"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 dependencies = ["jsonschema>=4.18", "cryptography>=46"]
 
 [project.optional-dependencies]

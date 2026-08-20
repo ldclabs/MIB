@@ -267,7 +267,7 @@
   },
   "metadata": {
     "visibility": "hidden_eval",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Hidden-M4-Demo",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1,
     "demo_fixture": true,

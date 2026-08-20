@@ -64,7 +64,7 @@ Do not publish that private pack.
 ## Run the reference calibration
 
 ```bash
-./run-reference-calibration.sh /path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE
+tools/run-reference-calibration.sh /path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE
 ```
 
 or:
@@ -114,10 +114,15 @@ Current fixture result:
 
 ```text
 B1 solvability                         36 / 36
-FC / NM / MDI provisional pass        29 / 36
-Full gate incl. causal sensitivity    27 / 36
-Irrelevant stability                  36 / 36
+FC / NM / MDI provisional pass         36 / 36
+Full gate incl. causal sensitivity     36 / 36
+Irrelevant stability                   36 / 36
 ```
+
+These counts are copied from `examples/calibration/MIB-v0.1-reference-calibration.json`
+(`summary.gate_pass_counts`, `summary.provisional_gate_pass_all_three`,
+`summary.provisional_full_gate_including_causal`). That artifact is authoritative; if
+it and this document ever disagree, the artifact is right.
 
 See:
 
@@ -130,11 +135,13 @@ MIB-v0.1-Calibration-Findings.md
 ## Tests
 
 ```bash
-PYTHONPATH=src pytest -q
+PYTHONPATH=src python -m pytest tests -q
 ```
 
-Expected for this snapshot:
+The calibration tests in `tests/test_calibration.py` execute the official Templates
+and therefore skip unless `MIB_OFFICIAL_PACK` points at the private pack:
 
-```text
-32 passed
+```bash
+MIB_OFFICIAL_PACK=/path/to/MIB-v0.1-Official-Canonical-Pack-PRIVATE \
+  PYTHONPATH=src python -m pytest tests/test_calibration.py -q
 ```

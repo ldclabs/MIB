@@ -50,12 +50,12 @@
     {
       "id": "alice",
       "kind": "person",
-      "display_name": "Rhea"
+      "display_name": "Mina"
     },
     {
       "id": "bob",
       "kind": "person",
-      "display_name": "Bob"
+      "display_name": "Theo"
     }
   ],
   "world": {
@@ -76,7 +76,7 @@
       },
       "visibility": "agent",
       "actor": "alice",
-      "content": "The review meeting is at 14:15.",
+      "content": "The review meeting is at 15:00.",
       "tags": [
         "relevant",
         "source-a"
@@ -91,7 +91,7 @@
       },
       "visibility": "agent",
       "actor": "bob",
-      "content": "I think the review meeting is at 11:30.",
+      "content": "I think the review meeting is at 15:15.",
       "tags": [
         "relevant",
         "source-b",
@@ -131,11 +131,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What time did Rhea state for the review meeting? Answer with the time only."
+        "content": "What time did Mina state for the review meeting? Answer with the time only."
       },
       "oracle": {
         "accepted": [
-          "14:15"
+          "15:00"
         ]
       },
       "evaluators": [
@@ -154,11 +154,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What time did Bob state for the review meeting? Answer with the time only."
+        "content": "What time did Theo state for the review meeting? Answer with the time only."
       },
       "oracle": {
         "accepted": [
-          "11:30"
+          "15:15"
         ]
       },
       "evaluators": [
@@ -274,22 +274,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "alice_name": "Rhea",
-      "bob_name": "Bob",
-      "time_a": "14:15",
-      "time_b": "11:30"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-EPI-003",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "534fb55f0d3680fcb16b5f4d2a23cdf484176175123e3f04b7bd8275f6d6be98",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "799ce3f0a2c0de677341137c70af14f04c085c0d139690348f60fa00cbafcb0d",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

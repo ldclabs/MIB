@@ -50,7 +50,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Milo"
+      "display_name": "Noel"
     }
   ],
   "world": {
@@ -61,7 +61,7 @@
     },
     "state": {},
     "hidden_ground_truth": {
-      "current_birthday": "June 24"
+      "current_birthday": "April 18"
     }
   },
   "timeline": [
@@ -74,7 +74,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "My birthday is April 8.",
+      "content": "My birthday is June 14.",
       "tags": [
         "relevant",
         "original"
@@ -89,7 +89,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Sorry, I misspoke. My birthday is June 24.",
+      "content": "Sorry, I misspoke. My birthday is April 18.",
       "tags": [
         "relevant",
         "correction"
@@ -132,10 +132,10 @@
       },
       "oracle": {
         "accepted": [
-          "June 24"
+          "April 18"
         ],
         "forbidden": [
-          "April 8"
+          "June 14"
         ],
         "expected_status": "known"
       },
@@ -159,7 +159,7 @@
       },
       "oracle": {
         "accepted": [
-          "April 8"
+          "June 14"
         ],
         "expected_status": "historical"
       },
@@ -244,21 +244,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Milo",
-      "old_date": "April 8",
-      "new_date": "June 24"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-EPI-002",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "a0609f6796707f5eee36e874306767e9e263853a8893ae37bc0af3f26a926623",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "5ebb699cc1efd76ce0c972c0283ff50f1d3cd6970a94745e9cd78ac25276111a",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

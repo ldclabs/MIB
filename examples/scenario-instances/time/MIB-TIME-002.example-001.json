@@ -52,7 +52,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Elara"
+      "display_name": "Seth"
     }
   ],
   "world": {
@@ -65,7 +65,7 @@
       "current_timezone": "UTC-5"
     },
     "hidden_ground_truth": {
-      "current_timezone": "UTC-2"
+      "current_timezone": "UTC+9"
     }
   },
   "timeline": [
@@ -74,7 +74,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -89,14 +90,15 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 25
+        "sequence": 25,
+        "time": "2026-01-06T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
         {
           "op": "set",
           "path": "/current_timezone",
-          "value": "UTC-2"
+          "value": "UTC+9"
         }
       ]
     },
@@ -105,11 +107,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 26
+        "sequence": 26,
+        "time": "2026-01-06T18:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "The move is complete. My timezone is now UTC-2.",
+      "content": "The move is complete. My timezone is now UTC+9.",
       "tags": [
         "relevant",
         "current"
@@ -120,7 +123,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-01-07T10:15:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -134,7 +138,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 55
+        "sequence": 55,
+        "time": "2026-01-08T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -177,7 +182,7 @@
       },
       "oracle": {
         "accepted": [
-          "UTC-2"
+          "UTC+9"
         ],
         "expected_status": "known"
       },
@@ -263,21 +268,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Elara",
-      "old_zone": "UTC-5",
-      "new_zone": "UTC-2"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-TIME-002",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "2b8200c540385f5e45801192a5252cf4c2842765b348d64c7051bab340fd2f11",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "b24f9ad807dbab55029394aa61da1ea486b75108a9c8bc3f2d600a9a66f113ae",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

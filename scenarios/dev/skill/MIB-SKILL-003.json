@@ -8,7 +8,8 @@
   "description": "Tests whether a previously useful procedural memory is withheld when the current environment explicitly makes it inapplicable.",
   "suite": "skill",
   "dimensions": [
-    "skill_learning_transfer"
+    "skill_learning_transfer",
+    "causal_memory_impact"
   ],
   "tags": [
     "negative-transfer",
@@ -284,19 +285,17 @@
       "max": 100
     },
     "dimension_weights": {
-      "skill_learning_transfer": 1.0
+      "skill_learning_transfer": 0.8,
+      "causal_memory_impact": 0.2
     },
     "causal_metrics": [
       "causal_memory_impact",
-      "memory_benefit",
-      "irrelevant_memory_stability",
-      "negative_transfer",
-      "error_recurrence"
+      "irrelevant_memory_stability"
     ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "milestone": "Reference Runner M2"
   }
 }

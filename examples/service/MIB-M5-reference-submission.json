@@ -3,7 +3,7 @@
   "display_name": "Reference Fixture",
   "owner": "MIB",
   "track": "integrated_agent",
-  "spec_path": "/mnt/data/MIB-Reference-Runner-M5/examples/submissions/reference-stdio.json",
+  "spec_path": "/opt/mib/examples/submissions/reference-stdio.json",
   "spec_digest": "sha256:98ef5e16bce43e1db68213f0b05ca6b29a267d47bffd357effe3dc5bee8ceabf",
   "status": "accepted",
   "descriptor_json": "{\"protocol\":\"mib-agent/0.1\",\"implementation\":{\"name\":\"MIB Reference Fixture Agent\",\"version\":\"0.4.0\",\"vendor\":\"MIB\"},\"track_support\":[\"integrated_agent\"],\"capabilities\":{\"observe\":true,\"respond\":true,\"act\":true,\"spontaneous_emissions\":false,\"maintenance\":false,\"runner_managed_tools\":true,\"structured_output\":false,\"virtual_time\":true,\"seedable\":true},\"state\":{\"run_isolation\":\"hard\",\"observe_visibility\":\"read_after_write\",\"request_idempotency\":true},\"extensions\":{\"mib.sandbox\":{\"transport\":\"stdio\",\"network_isolated\":true,\"filesystem_isolated\":false,\"warnings\":[]}}}",

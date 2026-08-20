@@ -47,7 +47,7 @@ class ActStep:
 
 
 class AgentAdapter(Protocol):
-    """In-process semantics for MIB Agent Adapter v0.1 / Runner Milestone 4."""
+    """In-process semantics for MIB Agent Adapter v0.1."""
 
     def describe(self) -> dict[str, Any]: ...
 

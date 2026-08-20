@@ -64,6 +64,17 @@
         ]
       },
       {
+        "name": "human_claimed_time",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "09:45",
+          "11:00",
+          "13:30"
+        ]
+      },
+      {
         "name": "new_time",
         "type": "string",
         "source": "choice",
@@ -122,7 +133,8 @@
       "stage": "past",
       "type": "observation",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "content": "For scheduling decisions in this workspace, confirmed Calendar Tool results are authoritative.",
@@ -136,11 +148,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 2
+        "sequence": 2,
+        "time": "2026-01-01T09:20:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "${human_name} told me the review starts at ${old_time}.",
+      "content": "${human_name} told me the review starts at ${human_claimed_time}.",
       "tags": [
         "relevant",
         "human-source"
@@ -151,7 +164,8 @@
       "stage": "past",
       "type": "tool_result",
       "at": {
-        "sequence": 3
+        "sequence": 3,
+        "time": "2026-01-01T09:25:00Z"
       },
       "visibility": "agent",
       "payload": {
@@ -170,11 +184,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 20
+        "sequence": 20,
+        "time": "2026-01-09T11:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "${human_name} says the review may have moved to ${new_time}.",
+      "content": "${human_name} says the review may have been moved, but has not confirmed the new slot.",
       "tags": [
         "relevant",
         "human-source",
@@ -186,7 +201,8 @@
       "stage": "past",
       "type": "tool_result",
       "at": {
-        "sequence": 21
+        "sequence": 21,
+        "time": "2026-01-09T11:05:00Z"
       },
       "visibility": "agent",
       "payload": {
@@ -205,7 +221,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-01-09T15:45:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -219,7 +236,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 60
+        "sequence": 60,
+        "time": "2026-01-10T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -265,6 +283,9 @@
       "oracle": {
         "accepted": [
           "${old_time}"
+        ],
+        "forbidden": [
+          "${human_claimed_time}"
         ]
       },
       "evaluators": [
@@ -347,14 +368,12 @@
     "causal_metrics": [
       "causal_memory_impact",
       "memory_benefit",
-      "irrelevant_memory_stability",
-      "negative_transfer",
-      "error_recurrence"
+      "irrelevant_memory_stability"
     ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 3
   }

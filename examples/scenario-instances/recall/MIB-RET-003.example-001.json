@@ -55,7 +55,7 @@
     {
       "id": "person",
       "kind": "person",
-      "display_name": "Marin"
+      "display_name": "Ravi"
     }
   ],
   "world": {
@@ -76,7 +76,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Marin is assigned to Project Kestrel.",
+      "content": "Ravi is assigned to Project Kestrel.",
       "tags": [
         "relevant"
       ]
@@ -104,7 +104,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Project Kestrel schedules all member calls using Zone Argo.",
+      "content": "Project Kestrel schedules all member calls using Zone Vela.",
       "tags": [
         "relevant"
       ]
@@ -132,7 +132,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Zone Argo corresponds to UTC-3.",
+      "content": "Zone Vela corresponds to UTC+6.",
       "tags": [
         "relevant"
       ]
@@ -156,11 +156,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "Which UTC offset should I use when scheduling a Project Kestrel call with Marin? Answer with the UTC offset only."
+        "content": "Which UTC offset should I use when scheduling a Project Kestrel call with Ravi? Answer with the UTC offset only."
       },
       "oracle": {
         "accepted": [
-          "UTC-3"
+          "UTC+6"
         ]
       },
       "evaluators": [
@@ -250,22 +250,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "person_name": "Marin",
-      "project_name": "Project Kestrel",
-      "team_zone": "Zone Argo",
-      "utc_offset": "UTC-3"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-RET-003",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "483188ee09e2a7a5b71fc5797cc02111d0c899a5a209596b06f998c509e84fd0",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "8f23beb9efac0525ec78b61dc1d3d54c8984ab3da26a3b2c50e71642e3571083",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

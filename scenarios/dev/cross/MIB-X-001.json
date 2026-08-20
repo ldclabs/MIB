@@ -110,7 +110,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -125,11 +126,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 10
+        "sequence": 10,
+        "time": "2026-01-14T10:30:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Update: my preference has changed. Please serve me ${new_drink} now, not ${old_drink}.",
+      "content": "Update: my preference has changed. From now on, please serve me ${new_drink}.",
       "tags": [
         "relevant",
         "current",
@@ -141,7 +143,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-01-14T16:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -155,7 +158,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 50
+        "sequence": 50,
+        "time": "2026-01-15T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -284,14 +288,12 @@
     "causal_metrics": [
       "causal_memory_impact",
       "memory_benefit",
-      "irrelevant_memory_stability",
-      "negative_transfer",
-      "error_recurrence"
+      "irrelevant_memory_stability"
     ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 3
   }

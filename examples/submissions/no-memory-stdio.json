@@ -2,10 +2,19 @@
   "id": "mib-no-memory-fixture-stdio",
   "display_name": "No-Memory Fixture",
   "transport": "stdio",
-  "command": ["python", "examples/stdio_no_memory_agent.py"],
+  "command": [
+    "python3",
+    "examples/stdio_no_memory_agent.py"
+  ],
   "stage": [
-    {"source": "../agents/stdio_no_memory_agent.py", "dest": "examples/stdio_no_memory_agent.py"},
-    {"source": "../../src", "dest": "src"}
+    {
+      "source": "../agents/stdio_no_memory_agent.py",
+      "dest": "examples/stdio_no_memory_agent.py"
+    },
+    {
+      "source": "../../src",
+      "dest": "src"
+    }
   ],
   "timeout_seconds": 15,
   "sandbox": {

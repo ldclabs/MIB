@@ -204,10 +204,20 @@ MIB 同时测试相反的情形：
 净空间归一化记忆收益（Headroom-Normalized Memory Benefit, HMB）
 无关记忆稳定性（Irrelevant Memory Stability, IMS）
 记忆损害（Memory Harm）
+损害抵抗力（Harm Resistance）
 净记忆增益（Net Memory Gain）
+```
+
+另有两项因果指标**已在规范中定义，但 v0.1 尚未实现**：
+
+```text
 负迁移（Negative Transfer）
 错误重现率（Error Recurrence）
 ```
+
+`docs/MIB-Scoring.md` 对二者均有定义，Scenario schema 也已接受这两个指标名，但 v0.1 参考 Runner
+并不产出它们。通用的反例（counterexample）消融只能体现适用边界敏感性，因此**刻意不**被report
+为负迁移——它不是评分模型所定义的标准化对照。请不要在 v0.1 报告中期待这两个值。
 
 榜单主分数 **MIB Score** 衡量系统在记忆赋能下的绝对能力。因果指标会作为独立诊断维度并列输出，而不是混杂在单一分数中失去解释性。
 
@@ -577,7 +587,7 @@ MIB/
 │   ├── MIB-Scoring.md
 │   ├── MIB-Leaderboard-Evaluation-Service.md
 │   ├── MIB-v0.1-Test-Plan.md
-│   └── harness/                           校准与测试工具工程笔记
+│   └── harness/                           校准、同模型、隐藏评测与评测服务工程笔记
 │
 ├── docs/cn/                               规范文档（中文版）
 │
@@ -657,7 +667,12 @@ python -m pip install -e ".[test]"
 PYTHONPATH=src python -m pytest tests -q
 ```
 
-测试套件中涉及沙箱隔离的用例在非 Linux 宿主机上会自动跳过，输出 `36 passed, 3 skipped`。
+在全新的公开克隆中，有两组用例会跳过而非失败：
+
+- 提交沙箱相关用例在非 Linux 宿主机上跳过，因为容器化隔离依赖 Linux
+  user/mount/network namespace（详见下文）。
+- `tests/test_calibration.py` 中的校准用例，除非 `MIB_OFFICIAL_PACK` 指向仅评测方持有的
+  官方包，否则跳过——该包的 Scenario 正文不在本仓库发布。
 
 外部智能体可通过以下通信协议接入 MIB Agent Adapter：
 
@@ -762,7 +777,7 @@ MIB 目前处于快速演进中。
 
 ## 开源协议
 
-详见仓库内的开源许可证（LICENSE）。
+MIB 以 **GNU General Public License v3.0** 发布，完整条款见 [LICENSE](LICENSE)。
 
 ---
 
@@ -770,7 +785,7 @@ MIB 目前处于快速演进中。
 
 待 v0.1 官方评测包冻结后，将补充正式学术论文与 BibTeX 引用信息。
 
-现阶段引用本项目请使用如下格式：
+机器可读的引用元数据见 [CITATION.cff](CITATION.cff)。现阶段引用本项目请使用如下格式：
 
 > **MIB — Memory Intelligence Benchmark**
 >

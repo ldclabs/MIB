@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use MIB, please cite it as below."
+title: "MIB — Memory Intelligence Benchmark"
+abstract: >-
+  A benchmark for measuring how effectively an intelligent system uses the past to
+  improve future cognition and behavior. MIB does not measure how much an agent
+  remembers; it measures whether the right part of the past changed the future in the
+  right way, using paired causal interventions over memory.
+type: software
+authors:
+  - name: "LDC Labs"
+    website: "https://github.com/ldclabs"
+repository-code: "https://github.com/ldclabs/MIB"
+url: "https://github.com/ldclabs/MIB"
+license: GPL-3.0
+version: "0.1.0"
+keywords:
+  - benchmark
+  - memory
+  - agents
+  - evaluation
+  - memory-intelligence
+  - artificial-intelligence

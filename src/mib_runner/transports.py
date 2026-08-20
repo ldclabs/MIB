@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import collections
 import json
 import select
 import subprocess
-import time
+import threading
 import urllib.error
 import urllib.request
 from dataclasses import asdict
@@ -12,9 +13,23 @@ from typing import Any
 from .sandbox import SandboxPolicy, SandboxProcess, spawn_sandboxed_stdio
 from .types import ActStep, AgentOutput, Observation
 
+# A submission is untrusted: it must not be able to exhaust evaluator memory by
+# emitting one unbounded line, and its stderr must be drained continuously or a
+# full pipe buffer deadlocks the Runner.
+MAX_RESPONSE_CHARS = 8 * 1024 * 1024
+MAX_STDERR_TAIL_CHARS = 64 * 1024
+MAX_HTTP_RESPONSE_BYTES = 8 * 1024 * 1024
+
 
 class AgentTransportError(RuntimeError):
     pass
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects so request headers (credentials) reach one host only."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D102
+        raise AgentTransportError(f"Agent endpoint attempted a redirect to {newurl!r}; refusing to follow")
 
 
 def _check_response(resp: dict[str, Any]) -> dict[str, Any]:
@@ -43,11 +58,42 @@ class StdioAgentAdapter:
         self.proc = self.sandbox.process
         self.persistent = bool(persistent)
         self._reset_request_ids: dict[str, str] = {}
+        # Continuously drain stderr into a bounded tail.  Without this a chatty
+        # submission fills the pipe buffer and blocks while the Runner blocks on
+        # stdout, deadlocking the whole evaluation.
+        self._stderr_tail: collections.deque[str] = collections.deque()
+        self._stderr_len = 0
+        self._stderr_lock = threading.Lock()
+        self._stderr_thread: threading.Thread | None = None
+        if self.proc.stderr is not None:
+            self._stderr_thread = threading.Thread(target=self._drain_stderr, daemon=True)
+            self._stderr_thread.start()
+
+    def _drain_stderr(self) -> None:
+        stream = self.proc.stderr
+        if stream is None:
+            return
+        try:
+            for chunk in iter(lambda: stream.read(4096), ""):
+                if not chunk:
+                    break
+                with self._stderr_lock:
+                    self._stderr_tail.append(chunk)
+                    self._stderr_len += len(chunk)
+                    while self._stderr_len > MAX_STDERR_TAIL_CHARS and self._stderr_tail:
+                        self._stderr_len -= len(self._stderr_tail.popleft())
+        except Exception:
+            return
+
+    def _stderr_snapshot(self) -> str:
+        with self._stderr_lock:
+            return "".join(self._stderr_tail)[-2000:]
 
     def _rpc(self, request: dict[str, Any]) -> dict[str, Any]:
         if self.proc.poll() is not None:
-            stderr = self.proc.stderr.read() if self.proc.stderr else ""
-            raise AgentTransportError(f"stdio Agent exited with code {self.proc.returncode}: {stderr[-2000:]}")
+            raise AgentTransportError(
+                f"stdio Agent exited with code {self.proc.returncode}: {self._stderr_snapshot()}"
+            )
         line = json.dumps(request, separators=(",", ":"), ensure_ascii=False)
         assert self.proc.stdin is not None and self.proc.stdout is not None
         self.proc.stdin.write(line + "\n")
@@ -57,10 +103,15 @@ class StdioAgentAdapter:
             ready, _, _ = select.select([self.proc.stdout], [], [], self.timeout_seconds)
             if not ready:
                 raise TimeoutError(f"stdio Agent timed out after {self.timeout_seconds}s")
-        response_line = self.proc.stdout.readline()
+        # Bounded read: an untrusted Agent must not be able to OOM the Runner
+        # with a single unterminated line.
+        response_line = self.proc.stdout.readline(MAX_RESPONSE_CHARS)
         if not response_line:
-            stderr = self.proc.stderr.read() if self.proc.stderr else ""
-            raise AgentTransportError(f"stdio Agent closed output: {stderr[-2000:]}")
+            raise AgentTransportError(f"stdio Agent closed output: {self._stderr_snapshot()}")
+        if not response_line.endswith("\n") and len(response_line) >= MAX_RESPONSE_CHARS:
+            raise AgentTransportError(
+                f"stdio Agent response exceeded {MAX_RESPONSE_CHARS} characters"
+            )
         return json.loads(response_line)
 
     def describe(self) -> dict[str, Any]:
@@ -117,16 +168,20 @@ class HttpAgentAdapter:
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = float(timeout_seconds)
         self.headers = {"Content-Type": "application/json", **(headers or {})}
+        self._opener = urllib.request.build_opener(_NoRedirectHandler)
 
     def _request(self, operation: str, payload: dict[str, Any] | None = None, *, method: str = "POST") -> dict[str, Any]:
         url = f"{self.base_url}/mib-agent/v0.1/{operation}"
         data = None if method == "GET" else json.dumps(payload or {}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         req = urllib.request.Request(url, data=data, headers=self.headers, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+            with self._opener.open(req, timeout=self.timeout_seconds) as resp:
+                raw = resp.read(MAX_HTTP_RESPONSE_BYTES + 1)
+            if len(raw) > MAX_HTTP_RESPONSE_BYTES:
+                raise AgentTransportError(f"Agent response exceeded {MAX_HTTP_RESPONSE_BYTES} bytes")
+            return json.loads(raw.decode("utf-8"))
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", "replace")
+            body = exc.read(65536).decode("utf-8", "replace")
             raise AgentTransportError(f"HTTP {exc.code}: {body}") from exc
 
     def describe(self) -> dict[str, Any]:

@@ -50,7 +50,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Sora"
+      "display_name": "Nia"
     }
   ],
   "world": {
@@ -71,7 +71,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "My Transit Pack has an opening that is 26 cm wide.",
+      "content": "My Studio Case has an opening that is 25 cm wide.",
       "tags": [
         "relevant"
       ]
@@ -123,7 +123,7 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "A rigid case is 30 cm wide. Will it fit through my Transit Pack opening? Answer exactly: fits or does_not_fit."
+        "content": "A rigid case is 31 cm wide. Will it fit through my Studio Case opening? Answer exactly: fits or does_not_fit."
       },
       "oracle": {
         "accepted": [
@@ -213,22 +213,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Sora",
-      "opening_width": "26",
-      "item_width": "30",
-      "bag_name": "Transit Pack"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-RET-002",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "b1dbbafdfd5ea44027aa1bfc1cb7efd4d7aa5464bada7708841ccb04d8a08b69",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "7de8f73581008355129b5374db470f37927afb765098a31b01ab6146154236b0",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
+import os
 from pathlib import Path
 
 from .agents import ReferenceMemoryAgent
@@ -191,7 +192,11 @@ def cmd_public_eval_manifest(args) -> int:
 
 def cmd_agent_smoke_test(args) -> int:
     spec = load_submission_spec(args.submission)
-    runtime = build_submission_runtime(spec)
+    runtime = build_submission_runtime(
+        spec,
+        network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
+        allow_remote_http=args.allow_remote_http,
+    )
     agent = runtime.factory()
     try:
         descriptor = agent.describe()
@@ -239,7 +244,7 @@ def cmd_evaluate_hidden(args) -> int:
     report_schema = load_json(args.report_schema) if args.report_schema else None
     profile = load_json(args.profile)
     store = HiddenEvalStore(args.store)
-    eval_key = args.eval_key or __import__("os").environ.get("MIB_EVAL_KEY")
+    eval_key = args.eval_key or os.environ.get("MIB_EVAL_KEY")
     if not eval_key:
         raise SystemExit("--eval-key or MIB_EVAL_KEY is required")
     templates, instances, aliases = store.materialize_instances(
@@ -248,17 +253,14 @@ def cmd_evaluate_hidden(args) -> int:
         cycle_id=args.cycle,
     )
     spec = load_submission_spec(args.submission)
-    # The evaluator-only store path is automatically hidden from local stdio
-    # submissions when namespace isolation is available.  Submission specs do
-    # not need to know where private evaluator data lives.
-    if spec.get("transport") == "stdio":
-        sandbox = spec.setdefault("sandbox", {})
-        hides = list(sandbox.get("hide_paths") or [])
-        store_path = str(Path(args.store).resolve())
-        if store_path not in hides:
-            hides.append(store_path)
-        sandbox["hide_paths"] = hides
-    runtime = build_submission_runtime(spec)
+    # The evaluator-only store path is masked by the Runner, not by the
+    # submission: a spec must not be able to choose what it can see.
+    runtime = build_submission_runtime(
+        spec,
+        network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
+        hide_paths=[str(Path(args.store).resolve())],
+        allow_remote_http=args.allow_remote_http,
+    )
     repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 1))
     boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
     report, summary = run_materialized_pack(
@@ -304,7 +306,7 @@ def cmd_evaluate_hidden(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="mib", description="MIB Reference Runner Milestone 4")
+    p = argparse.ArgumentParser(prog="mib", description="MIB Reference Runner")
     sub = p.add_subparsers(dest="command", required=True)
 
     v = sub.add_parser("validate", help="Validate one MIB Scenario")
@@ -367,6 +369,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sm = sub.add_parser("agent-smoke-test", help="Test an external HTTP/stdio Agent submission")
     sm.add_argument("--submission", required=True)
+    sm.add_argument("--allow-degraded-sandbox", action="store_true",
+                    help="Permit running without Linux namespace isolation (development only)")
+    sm.add_argument("--allow-remote-http", action="store_true",
+                    help="Permit an HTTP submission served from a non-local host (https required)")
     sm.set_defaults(func=cmd_agent_smoke_test)
 
     he = sub.add_parser("evaluate-hidden", help="Execute evaluator-only Hidden/Private Scenarios against an external submission")
@@ -381,6 +387,10 @@ def build_parser() -> argparse.ArgumentParser:
     he.add_argument("--bootstrap-resamples", type=int)
     he.add_argument("--bootstrap-seed", default="20260819")
     he.add_argument("--full-only", action="store_true")
+    he.add_argument("--allow-degraded-sandbox", action="store_true",
+                    help="Permit running without Linux namespace isolation; hidden content is NOT masked (development only)")
+    he.add_argument("--allow-remote-http", action="store_true",
+                    help="Permit an HTTP submission served from a non-local host (https required)")
     he.add_argument("--output-internal")
     he.add_argument("--output-public")
     he.add_argument("--card")

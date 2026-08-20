@@ -1,0 +1,52 @@
+{
+  "mib": "0.1",
+  "kind": "MIBSameModelExperiment",
+  "id": "MIB-Core-0.1-Dev-same-model-engineering-smoke",
+  "pack": "../../scenarios/dev",
+  "scenario_schema": "../../schemas/mib-scenario.schema.json",
+  "profile": "../../profiles/MIB-Core-0.1-Dev-M3.json",
+  "model": {
+    "client": "deterministic_stub",
+    "model_id": "mib-deterministic-stub/0.1",
+    "parameters": {
+      "temperature": 0,
+      "max_tokens": 512
+    },
+    "seed_policy": "paired_per_call"
+  },
+  "agent": {
+    "system_prompt": "../../prompts/same-model-agent-v0.1.txt",
+    "reasoning_policy": "../../prompts/reasoning-policy-v0.1.txt",
+    "retrieval_top_k": 4,
+    "structured_top_k": 10,
+    "structured_salient_k": 6,
+    "parse_retries": 1,
+    "memory_char_limits": {
+      "B0": null,
+      "B1": null,
+      "B2": null,
+      "B3": null
+    }
+  },
+  "calibration": {
+    "instance_seeds": [
+      101
+    ],
+    "repetitions": 1,
+    "bootstrap_resamples": 100,
+    "bootstrap_seed": "mib-same-model-smoke",
+    "causal_baseline": "B3",
+    "causal_instance_seeds": [
+      101
+    ],
+    "causal_repetitions": 1,
+    "thresholds": {
+      "full_context_min": 0.8,
+      "no_memory_max": 0.6,
+      "mdi_min": 0.25,
+      "baseline_span_min": 0.2,
+      "irrelevant_stability_min": 0.9,
+      "causal_memory_benefit_min": 0.2
+    }
+  }
+}

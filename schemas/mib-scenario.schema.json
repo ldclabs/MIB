@@ -1058,6 +1058,7 @@
       "required": [
         "id",
         "kind",
+        "trigger",
         "delivery",
         "input",
         "oracle",

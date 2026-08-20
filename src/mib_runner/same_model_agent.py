@@ -9,7 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from .model_clients import ModelClient, ModelCompletion
+from .model_clients import ModelClient
 from .types import ActStep, AgentOutput, Observation
 
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+.-]*")
@@ -85,6 +85,16 @@ class InvocationRecorder:
             "memory_records_selected_total": sum(int(x.get("selected", 0)) for x in sels),
             "memory_chars_selected_total": sum(int(x.get("selected_chars", 0)) for x in sels),
             "memory_truncations": sum(1 for x in sels if x.get("truncated")),
+            "transport_errors": sum(1 for r in rows if r.get("error_kind") == "transport"),
+            "parse_errors": sum(1 for r in rows if r.get("error_kind") == "parse"),
+            # Distinct fingerprints observed; the fairness audit requires exactly
+            # one of each across every condition.
+            "model_identities": sorted({json.dumps(r.get("model_identity"), sort_keys=True) for r in rows if r.get("model_identity")}),
+            "system_prompt_shas": sorted({r["system_prompt_sha"] for r in rows if r.get("system_prompt_sha")}),
+            "reasoning_policy_shas": sorted({r["reasoning_policy_sha"] for r in rows if r.get("reasoning_policy_sha")}),
+            "decoding_fingerprints": sorted({r["decoding_fingerprint"] for r in rows if r.get("decoding_fingerprint")}),
+            "memory_policy_ids": sorted({r["memory_policy_id"] for r in rows if r.get("memory_policy_id")}),
+            "condition_label_visible_calls": sum(1 for r in rows if r.get("condition_label_visible")),
         }
 
 
@@ -214,6 +224,14 @@ class SameModelAgent:
         self.empirical_eligible = empirical_eligible
         self.seed_policy = seed_policy
         self.seed_base = seed_base
+        # Fingerprints let the fairness audit *verify* that only the memory
+        # policy differs between conditions, instead of asserting it.
+        self.system_prompt_sha = _sha(system_prompt)
+        self.reasoning_policy_sha = _sha(reasoning_policy)
+        self.decoding_fingerprint = _sha(
+            json.dumps({k: v for k, v in sorted(self.model_parameters.items()) if k != "seed"},
+                       sort_keys=True, ensure_ascii=False)
+        )
         if condition == "B2":
             self.policy = LexicalRetrievalPolicy(top_k=int(self.memory_config.get("retrieval_top_k", 4)))
         elif condition == "B3":
@@ -315,40 +333,69 @@ class SameModelAgent:
             {"role": "user", "content": user},
         ]
         req_base = f"{self.run_id}:{self.call_counter}:{mode}"
-        last_text = ""
+        # The prompt actually sent this attempt.  A parse-repair attempt extends
+        # it; a transport retry must resend the ORIGINAL prompt unchanged, or the
+        # retried call answers a different question than its paired counterpart
+        # in the other memory conditions and silently contaminates the pairing.
+        attempt_messages = list(messages)
         for attempt in range(self.parse_retries + 1):
             req_id = _sha(req_base + f":{attempt}")[:24]
+            last_text = ""
             try:
                 parameters = dict(self.model_parameters)
                 if self.seed_policy == "paired_per_call":
                     seed_material = f"{self.seed_base}:{self.seed}:{seed_key}:{mode}"
                     parameters["seed"] = int(_sha(seed_material)[:8], 16) & 0x7FFFFFFF
-                completion = self.model.complete(messages=messages, parameters=parameters, request_id=req_id)
+                completion = self.model.complete(messages=attempt_messages, parameters=parameters, request_id=req_id)
                 last_text = completion.text.strip()
                 parsed = _parse_json_object(last_text)
                 self.recorder.record_call({
                     "condition": self.condition, "mode": mode, "request_id": req_id,
-                    "input_chars": sum(len(m["content"]) for m in messages),
+                    "input_chars": sum(len(m["content"]) for m in attempt_messages),
                     "output_chars": len(completion.text), "usage": completion.usage,
                     "model_identity": self.model.identity(), "memory_selected": selected_n,
                     "memory_truncated": truncated, "attempt": attempt,
+                    **self._audit_fields(attempt_messages),
                 })
                 return parsed
             except Exception as exc:
+                # A parse failure means the model answered but the answer was not
+                # a JSON object; anything else (connection reset, timeout, HTTP
+                # error) is a transport failure and says nothing about the answer.
+                is_parse_failure = last_text != "" and isinstance(exc, (ValueError, KeyError))
                 self.recorder.record_call({
                     "condition": self.condition, "mode": mode, "request_id": req_id,
-                    "input_chars": sum(len(m["content"]) for m in messages),
+                    "input_chars": sum(len(m["content"]) for m in attempt_messages),
                     "output_chars": len(last_text), "usage": {}, "error": repr(exc),
+                    "error_kind": "parse" if is_parse_failure else "transport",
                     "model_identity": self.model.identity(), "memory_selected": selected_n,
                     "memory_truncated": truncated, "attempt": attempt,
+                    **self._audit_fields(attempt_messages),
                 })
                 if attempt >= self.parse_retries:
                     raise
-                messages = messages + [
-                    {"role": "assistant", "content": last_text or "<invalid output>"},
-                    {"role": "user", "content": "Return only one valid JSON object matching the required output contract."},
-                ]
+                if is_parse_failure:
+                    attempt_messages = attempt_messages + [
+                        {"role": "assistant", "content": last_text},
+                        {"role": "user", "content": "Return only one valid JSON object matching the required output contract."},
+                    ]
+                else:
+                    # Idempotent resend of the identical prompt.
+                    attempt_messages = list(messages)
         raise RuntimeError("unreachable")
+
+    def _audit_fields(self, messages: list[dict[str, str]]) -> dict[str, Any]:
+        """Evidence for the fairness audit, captured from the call as sent."""
+        rendered = "\n".join(m.get("content", "") for m in messages)
+        return {
+            "system_prompt_sha": self.system_prompt_sha,
+            "reasoning_policy_sha": self.reasoning_policy_sha,
+            "decoding_fingerprint": self.decoding_fingerprint,
+            "memory_policy_id": getattr(self.policy, "id", self.condition),
+            "seed_policy": self.seed_policy,
+            # The model must not be able to tell which memory condition it is in.
+            "condition_label_visible": self.condition in rendered,
+        }
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str,
                 input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
@@ -387,11 +434,18 @@ class SameModelAgent:
             "virtual_time": virtual_time,
         }
         turn_index = int(getattr(self, "_active_turn", 0))
-        obj = self._call(mode="ACTION", body=body, memory_query=query, seed_key=f"act:{task_id}:{turn_index}")
+        try:
+            obj = self._call(mode="ACTION", body=body, memory_query=query, seed_key=f"act:{task_id}:{turn_index}")
+        except Exception:
+            # The Runner records an execution_failure and moves on.  Leaving
+            # active_task set would route later timeline tool results into
+            # transient state, dropping them from long-term memory for good.
+            self.active_task = None
+            self.transient = []
+            raise
         self._active_turn = turn_index + 1
         typ = obj.get("type")
         if typ == "tool_call":
-            self.call_counter += 0
             out = ActStep(
                 type="tool_call",
                 tool_call_id=f"sm_{_sha(self.run_id + request_id)[:12]}",

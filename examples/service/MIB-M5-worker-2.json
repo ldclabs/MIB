@@ -3,6 +3,6 @@
   "job_id": "job_566b3d2a0a5c45eab987",
   "result_id": "result_65324f9f2c5241c9a258",
   "score": 13.32752613240418,
-  "public_report": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts/job_566b3d2a0a5c45eab987/public.report.json",
-  "capability_card": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts/job_566b3d2a0a5c45eab987/capability-card.md"
+  "public_report": "/opt/mib/service/artifacts/job_566b3d2a0a5c45eab987/public.report.json",
+  "capability_card": "/opt/mib/service/artifacts/job_566b3d2a0a5c45eab987/capability-card.md"
 }

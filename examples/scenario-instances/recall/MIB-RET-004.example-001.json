@@ -55,12 +55,12 @@
     {
       "id": "person-a",
       "kind": "person",
-      "display_name": "Sam Chen"
+      "display_name": "Alex Kim"
     },
     {
       "id": "person-b",
       "kind": "person",
-      "display_name": "Sam Chen"
+      "display_name": "Alex Kim"
     }
   ],
   "world": {
@@ -81,7 +81,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Sam Chen from Northstar is actor person-a.",
+      "content": "Alex Kim from Morrow is actor person-a.",
       "tags": [
         "relevant"
       ]
@@ -95,7 +95,7 @@
       },
       "visibility": "agent",
       "actor": "person-a",
-      "content": "For meetings, I prefer sparkling water.",
+      "content": "For meetings, I prefer black coffee.",
       "tags": [
         "relevant"
       ]
@@ -109,7 +109,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Sam Chen from Cobalt is actor person-b.",
+      "content": "Alex Kim from Rivermark is actor person-b.",
       "tags": [
         "relevant"
       ]
@@ -123,7 +123,7 @@
       },
       "visibility": "agent",
       "actor": "person-b",
-      "content": "For meetings, I prefer green tea.",
+      "content": "For meetings, I prefer still water.",
       "tags": [
         "relevant"
       ]
@@ -161,11 +161,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What drink should I order for Sam Chen from Northstar? Answer with the drink only."
+        "content": "What drink should I order for Alex Kim from Morrow? Answer with the drink only."
       },
       "oracle": {
         "accepted": [
-          "sparkling water"
+          "black coffee"
         ]
       },
       "evaluators": [
@@ -184,11 +184,11 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "What drink should I order for Sam Chen from Cobalt? Answer with the drink only."
+        "content": "What drink should I order for Alex Kim from Rivermark? Answer with the drink only."
       },
       "oracle": {
         "accepted": [
-          "green tea"
+          "still water"
         ]
       },
       "evaluators": [
@@ -274,23 +274,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "shared_name": "Sam Chen",
-      "org_a": "Northstar",
-      "org_b": "Cobalt",
-      "drink_a": "sparkling water",
-      "drink_b": "green tea"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-RET-004",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "b7f535b6cebf8c0a6285cc71f9c84cfa60c254d8ec4e41171e1460e6e3afb607",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "5df3dedee53fccf2ec2084fa69551f10362044d3cd9a70952007f064170ee179",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

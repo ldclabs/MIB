@@ -7,6 +7,8 @@ import random
 import re
 from typing import Any
 
+from . import __version__
+
 _PLACEHOLDER = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_.-]*)\}")
 
 
@@ -29,7 +31,7 @@ def _sample_parameter(spec: dict[str, Any], rng: random.Random) -> Any:
         lo, hi = float(spec["minimum"]), float(spec["maximum"])
         return rng.uniform(lo, hi)
     raise MaterializationError(
-        f"Milestone 4 materializer does not support source={source!r}; "
+        f"reference materializer does not support source={source!r}; "
         "use a materialized instance or extend the generator registry"
     )
 
@@ -78,6 +80,6 @@ def materialize(scenario: dict[str, Any], seed: int | str = 0) -> dict[str, Any]
         "template_version": scenario["version"],
         "seed": seed,
         "parameter_digest": digest,
-        "generator_version": "mib-reference-runner-materializer/0.4.0",
+        "generator_version": f"mib-reference-runner-materializer/{__version__}",
     }
     return instance

@@ -1,7 +1,7 @@
 {
   "id": "MIB-Core-0.1-Hidden-M4-Demo",
   "version": "0.1.0",
-  "official": true,
+  "official": false,
   "track": "integrated_agent",
   "scale": "MIB-S",
   "required_coverage": 1.0,

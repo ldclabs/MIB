@@ -51,7 +51,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Evan"
+      "display_name": "Miro"
     }
   ],
   "world": {
@@ -61,10 +61,10 @@
       "timezone": "UTC"
     },
     "state": {
-      "current_city": "Cedar Point"
+      "current_city": "Lumen Port"
     },
     "hidden_ground_truth": {
-      "current_city": "Orchid Harbor"
+      "current_city": "Northbridge"
     }
   },
   "timeline": [
@@ -73,11 +73,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "I currently live in Cedar Point.",
+      "content": "I currently live in Lumen Port.",
       "tags": [
         "relevant"
       ]
@@ -87,11 +88,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 10
+        "sequence": 10,
+        "time": "2026-01-02T14:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "I plan to move to Orchid Harbor next month.",
+      "content": "I plan to move to Northbridge next month.",
       "tags": [
         "relevant",
         "planned"
@@ -102,7 +104,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 15
+        "sequence": 15,
+        "time": "2026-01-03T09:00:00Z"
       },
       "visibility": "harness"
     },
@@ -111,7 +114,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 20
+        "sequence": 20,
+        "time": "2026-01-10T11:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -125,14 +129,15 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-02-05T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
         {
           "op": "set",
           "path": "/current_city",
-          "value": "Orchid Harbor"
+          "value": "Northbridge"
         }
       ]
     },
@@ -141,11 +146,12 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 31
+        "sequence": 31,
+        "time": "2026-02-05T19:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "The move is complete. I now live in Orchid Harbor.",
+      "content": "The move is complete. I now live in Northbridge.",
       "tags": [
         "relevant",
         "completed"
@@ -156,7 +162,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-02-06T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -174,7 +181,7 @@
       },
       "oracle": {
         "accepted": [
-          "Cedar Point"
+          "Lumen Port"
         ]
       },
       "evaluators": [
@@ -197,7 +204,7 @@
       },
       "oracle": {
         "accepted": [
-          "Orchid Harbor"
+          "Northbridge"
         ]
       },
       "evaluators": [
@@ -267,21 +274,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Evan",
-      "old_city": "Cedar Point",
-      "new_city": "Orchid Harbor"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-TIME-003",
     "template_version": "0.1.0",
     "seed": 202,
-    "parameter_digest": "30c7e54785d94bc62fddcd7657fdc91c59ed08bc2e279c386f15c346576b15be",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "b30870a1b21ca4bc2e7ed6110b5d58768635f7278a12dc6295ef44ae0995f84b",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

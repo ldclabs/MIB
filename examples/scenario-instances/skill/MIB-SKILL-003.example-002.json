@@ -1,0 +1,303 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-SKILL-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Non-Matching Negative Transfer",
+  "description": "Tests whether a previously useful procedural memory is withheld when the current environment explicitly makes it inapplicable.",
+  "suite": "skill",
+  "dimensions": [
+    "skill_learning_transfer",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "negative-transfer",
+    "applicability",
+    "counterexample"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 2,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "experience_steps": 4,
+    "probe_indirectness": 0.6
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "observe",
+      "act",
+      "tools"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 12,
+    "max_tool_calls": 10,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "contextual_save": {
+        "context_required": false,
+        "expected_context": null,
+        "active_context": null,
+        "edited": false,
+        "committed": false,
+        "policy_violation": false
+      }
+    },
+    "tools": [
+      {
+        "id": "canvas",
+        "version": "0.1.0",
+        "simulator_binding": "mib.contextual_save.v1",
+        "operations": [
+          {
+            "name": "activate_context",
+            "description": "Activate the context for the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "context": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "edit_item",
+            "description": "Edit the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "commit",
+            "description": "Commit the edited item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "inspect_status",
+            "description": "Inspect current item state.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e-old-skill",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "content": "Earlier workspace tasks taught us that workspace_required errors are avoided by selecting the workspace before saving.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-current",
+      "stage": "past",
+      "type": "observation",
+      "at": {
+        "sequence": 60
+      },
+      "visibility": "agent",
+      "content": "This new system uses a global record. No workspace is required and no context is required before commit.",
+      "tags": [
+        "relevant",
+        "counterexample"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 70
+      },
+      "visibility": "agent",
+      "content": "Unrelated note: the item has a blue label.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 100
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-action",
+      "kind": "action",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Edit the global item and commit it correctly.",
+        "available_tools": [
+          "canvas.activate_context",
+          "canvas.edit_item",
+          "canvas.commit"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/contextual_save/committed",
+            "operator": "eq",
+            "value": true
+          },
+          {
+            "path": "/contextual_save/policy_violation",
+            "operator": "eq",
+            "value": false
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "forbidden_action",
+            "action": "canvas.activate_context"
+          },
+          {
+            "type": "required_action",
+            "action": "canvas.commit"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "skill_learning_transfer"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-remove-counterexample",
+      "kind": "counterexample",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-current"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "skill_learning_transfer": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1-Dev-M3",
+    "milestone": "Reference Runner M2"
+  },
+  "instantiation": {
+    "template_id": "MIB-SKILL-003",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
+  }
+}

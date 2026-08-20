@@ -23,6 +23,12 @@ __pycache__/
 .DS_Store
 *.egg-info/
 .eggs/
+
+# MIB — local Python environments and lockfiles
+# The published package pins only the ranges in pyproject.toml; a resolver
+# lockfile is a local artifact and is not part of the release contract.
+.venv/
+venv/
 uv.lock
 
 # Diagnostic reports (https://nodejs.org/api/report.html)

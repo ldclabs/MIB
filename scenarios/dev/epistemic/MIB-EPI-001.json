@@ -8,7 +8,8 @@
   "description": "Tests whether absence of evidence remains unknown rather than becoming a fabricated negative claim.",
   "suite": "epistemic",
   "dimensions": [
-    "epistemic_memory"
+    "epistemic_memory",
+    "causal_memory_impact"
   ],
   "tags": [
     "unknown",
@@ -193,13 +194,17 @@
       "max": 100
     },
     "dimension_weights": {
-      "epistemic_memory": 1.0
+      "epistemic_memory": 0.8,
+      "causal_memory_impact": 0.2
     },
-    "causal_metrics": []
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1
   }

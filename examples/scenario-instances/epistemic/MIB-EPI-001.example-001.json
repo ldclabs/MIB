@@ -8,7 +8,8 @@
   "description": "Tests whether absence of evidence remains unknown rather than becoming a fabricated negative claim.",
   "suite": "epistemic",
   "dimensions": [
-    "epistemic_memory"
+    "epistemic_memory",
+    "causal_memory_impact"
   ],
   "tags": [
     "unknown",
@@ -54,7 +55,7 @@
     {
       "id": "person",
       "kind": "person",
-      "display_name": "Tessa"
+      "display_name": "Dale"
     }
   ],
   "world": {
@@ -89,7 +90,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Tessa joined the afternoon meeting.",
+      "content": "Dale joined the afternoon meeting.",
       "tags": [
         "irrelevant"
       ]
@@ -113,7 +114,7 @@
       },
       "delivery": "respond",
       "input": {
-        "content": "Is Tessa allergic to shellfish? Answer exactly one of: yes, no, unknown."
+        "content": "Is Dale allergic to shellfish? Answer exactly one of: yes, no, unknown."
       },
       "oracle": {
         "accepted": [
@@ -164,26 +165,25 @@
       "max": 100
     },
     "dimension_weights": {
-      "epistemic_memory": 1.0
+      "epistemic_memory": 0.8,
+      "causal_memory_impact": 0.2
     },
-    "causal_metrics": []
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "person_name": "Tessa",
-      "known_food": "soup"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-EPI-001",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "b19978241a985af03374e19a16d118a4fde452b70fc6d82277b4eb9d2f0b1727",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "8a1b03975de6850eb411aa7aa35db25b7e42923795c8d2847c5c72158f85d200",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

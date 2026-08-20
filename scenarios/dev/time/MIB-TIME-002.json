@@ -114,7 +114,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -129,7 +130,8 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 25
+        "sequence": 25,
+        "time": "2026-01-06T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
@@ -145,7 +147,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 26
+        "sequence": 26,
+        "time": "2026-01-06T18:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -160,7 +163,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-01-07T10:15:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -174,7 +178,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 55
+        "sequence": 55,
+        "time": "2026-01-08T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -303,7 +308,7 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 1
   }

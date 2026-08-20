@@ -32,6 +32,28 @@ HMAC 隐藏实例确定性生成器（HMAC Hidden Instance Generator）
 
 ---
 
+## 平台前置条件
+
+所有会拉起外部 **stdio** 提交进程的操作——使用 stdio 提交描述文件的
+`mib agent-smoke-test`、`mib evaluate-hidden`，以及评测服务 Worker——都会在第 7 节
+所述的提交沙箱内执行该进程。该沙箱通过 `unshare` 建立 Linux 非特权用户 / 挂载 /
+网络命名空间，是阻止提交进程接触私有评测存储库的唯一机制。因此要求：
+
+```text
+Linux
+可用的非特权 user / mount / network 命名空间
+PATH 中存在 `unshare`
+```
+
+macOS 与 Windows 不具备上述任何能力：不会创建命名空间，地址空间限额不生效，
+评测端路径也无法被遮蔽。禁止在这些平台上评测 stdio 提交。
+
+`http` 提交不经过 Runner 沙箱——参赛方的服务端点属于远程进程，其隔离由运营方自行负责。
+不拉起提交进程的命令（`mib validate`、`run`、`run-pack`、`benchmark`、
+`capability-card`、`verify-score`、`public-eval-manifest`）跨平台可用。
+
+---
+
 ## 2. 私有评测存储库（Private Evaluation Store）
 
 评测端专属的隐藏题库独立存放于公开代码库之外。
@@ -39,7 +61,7 @@ HMAC 隐藏实例确定性生成器（HMAC Hidden Instance Generator）
 参考结构目录：
 
 ```text
-private-eval-store-demo/
+fixtures/private-eval-store-demo/
 ├── manifest.private.json
 └── templates/
     ├── hidden/
@@ -185,7 +207,7 @@ PYTHONPATH=src python -m mib_runner.cli agent-smoke-test \
 export MIB_EVAL_KEY='replace-with-evaluator-secret'
 
 PYTHONPATH=src python -m mib_runner.cli evaluate-hidden \
-  private-eval-store-demo \
+  fixtures/private-eval-store-demo \
   --profile profiles/MIB-Core-0.1-Hidden-M4-Demo.json \
   --submission examples/submissions/reference-stdio.json \
   --schema schemas/mib-scenario.schema.json \

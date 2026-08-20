@@ -50,7 +50,7 @@
     {
       "id": "user",
       "kind": "person",
-      "display_name": "Noel"
+      "display_name": "Milo"
     }
   ],
   "world": {
@@ -61,7 +61,7 @@
     },
     "state": {},
     "hidden_ground_truth": {
-      "current_birthday": "June 24"
+      "current_birthday": "May 21"
     }
   },
   "timeline": [
@@ -89,7 +89,7 @@
       },
       "visibility": "agent",
       "actor": "user",
-      "content": "Sorry, I misspoke. My birthday is June 24.",
+      "content": "Sorry, I misspoke. My birthday is May 21.",
       "tags": [
         "relevant",
         "correction"
@@ -132,7 +132,7 @@
       },
       "oracle": {
         "accepted": [
-          "June 24"
+          "May 21"
         ],
         "forbidden": [
           "April 8"
@@ -244,21 +244,15 @@
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
-    "canonical_dev_slice": 1,
-    "materialized_example": true,
-    "parameter_values": {
-      "user_name": "Noel",
-      "old_date": "April 8",
-      "new_date": "June 24"
-    }
+    "canonical_dev_slice": 1
   },
   "instantiation": {
     "template_id": "MIB-EPI-002",
     "template_version": "0.1.0",
     "seed": 101,
-    "parameter_digest": "3f2275644b39629fed993375fb92fc017264819f8c66d350fd51090d44cf38d8",
-    "generator_version": "mib-public-dev-materializer/0.1.0"
+    "parameter_digest": "540dde7136b9ecdadd507fe597d08be5f07143ea58b5e6f208225fa30038860e",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
   }
 }

@@ -12,6 +12,7 @@ from typing import Any
 
 import jsonschema
 
+from . import __version__
 from .benchmark import run_materialized_pack
 from .capability import render_capability_card
 from .hidden import HiddenEvalStore, redact_report_for_public
@@ -24,6 +25,10 @@ from .validation import load_json
 
 
 class ServiceConfigError(ValueError): pass
+
+
+# Upper bound for client-supplied bootstrap work on the comparison endpoint.
+MAX_COMPARE_RESAMPLES = 50_000
 
 
 def file_digest(path: str | Path) -> str:
@@ -49,6 +54,16 @@ class ServiceConfig:
     result_attestation_schema: Path
     service_root_secret_env: str = "MIB_SERVICE_ROOT_SECRET"
     backend: str = "local_namespace"
+    # Submission specs may only be loaded from inside this directory.  Without
+    # it, an API client could name any path on the evaluator host.
+    submission_root: Path | None = None
+    # Environment variable holding the bearer token required by mutating HTTP
+    # endpoints.  The HTTP API refuses to start when it is unset.
+    api_token_env: str = "MIB_SERVICE_API_TOKEN"
+    # Untrusted submissions require real namespace isolation.  Evaluators may
+    # relax this only for local development against trusted agents.
+    sandbox_network: str = "disabled_strict"
+    allow_remote_http_submissions: bool = False
 
     @classmethod
     def load(cls, path: str | Path) -> "ServiceConfig":
@@ -62,6 +77,10 @@ class ServiceConfig:
             result_attestation_schema=rp(raw["result_attestation_schema"]),
             service_root_secret_env=raw.get("service_root_secret_env","MIB_SERVICE_ROOT_SECRET"),
             backend=raw.get("backend","local_namespace"),
+            submission_root=rp(raw["submission_root"]) if raw.get("submission_root") else None,
+            api_token_env=raw.get("api_token_env","MIB_SERVICE_API_TOKEN"),
+            sandbox_network=raw.get("sandbox_network","disabled_strict"),
+            allow_remote_http_submissions=bool(raw.get("allow_remote_http_submissions",False)),
         )
 
 
@@ -71,24 +90,47 @@ class EvaluationService:
         config.artifact_root.mkdir(parents=True,exist_ok=True)
         self.root_secret=root_secret or os.environ.get(config.service_root_secret_env)
         if not self.root_secret: raise ServiceConfigError(f"missing service root secret: env {config.service_root_secret_env}")
+        # Every signing key in the service derives from this secret.  Remove it
+        # from the process environment so it cannot reach a submission process
+        # through environment inheritance, however the sandbox is configured.
+        os.environ.pop(config.service_root_secret_env, None)
         self.eval_key=derive_key(self.root_secret,"evaluation")
         self.job_key=derive_ed25519_private_key(self.root_secret,"job-manifest")
         self.result_key=derive_ed25519_private_key(self.root_secret,"result-attestation")
         self.redaction_key=derive_key(self.root_secret,"public-redaction")
 
+    def api_token(self) -> str | None:
+        """Bearer token required by mutating HTTP endpoints, if configured."""
+        return os.environ.get(self.config.api_token_env) or None
+
+    def _resolve_spec_path(self, spec_path: str | Path) -> Path:
+        p=Path(spec_path).resolve()
+        root=self.config.submission_root
+        if root is not None:
+            root=Path(root).resolve()
+            if p != root and root not in p.parents:
+                raise ValueError(f"submission spec must live under {root}")
+        return p
+
     def init(self) -> dict[str,Any]:
         job_pub=public_key_b64(self.job_key); result_pub=public_key_b64(self.result_key)
-        return {"mib":"0.1","kind":"MIBEvaluationServiceIdentity","version":"0.5.0","db":str(self.config.db_path),"artifact_root":str(self.config.artifact_root),"backend":self.config.backend,
+        return {"mib":"0.1","kind":"MIBEvaluationServiceIdentity","version":__version__,"db":str(self.config.db_path),"artifact_root":str(self.config.artifact_root),"backend":self.config.backend,
                 "job_signing":{"scheme":"ed25519","public_key":job_pub,"key_id":key_id_from_public_b64(job_pub)},
                 "result_signing":{"scheme":"ed25519","public_key":result_pub,"key_id":key_id_from_public_b64(result_pub)}}
 
     def register_submission(self, spec_path: str | Path, *, display_name: str | None=None, owner: str|None=None, track: str="integrated_agent", smoke_test: bool=True) -> dict[str,Any]:
-        p=Path(spec_path).resolve(); spec=load_submission_spec(p)
+        p=self._resolve_spec_path(spec_path); spec=load_submission_spec(p)
         schema=load_json(self.config.submission_schema); clean={k:v for k,v in spec.items() if not k.startswith("_")}
         jsonschema.Draft202012Validator(schema).validate(clean)
         desc=None
         if smoke_test:
-            runtime=build_submission_runtime(spec); agent=runtime.factory()
+            runtime=build_submission_runtime(
+                spec,
+                network=self.config.sandbox_network,
+                allow_remote_http=self.config.allow_remote_http_submissions,
+                confine_stage_to_spec_dir=True,
+            )
+            agent=runtime.factory()
             try: desc=agent.describe()
             finally:
                 close=getattr(agent,"close",None)
@@ -113,7 +155,7 @@ class EvaluationService:
         return {"mib":"0.1","kind":"MIBEvaluationJobManifest","version":"0.1.0","job_id":job_id,"submission_id":submission["id"],
                 "submission_spec_digest":submission["spec_digest"],"cycle_id":cycle["id"],"profile_id":cycle["profile_id"],
                 "private_store_digest":cycle["store_digest"],"profile_digest":cycle["profile_digest"],"scenario_schema_digest":file_digest(self.config.scenario_schema),
-                "report_schema_digest":file_digest(self.config.report_schema),"backend":backend,"runner_version":"0.5.0","created_at":utc_now(),
+                "report_schema_digest":file_digest(self.config.report_schema),"backend":backend,"runner_version":__version__,"created_at":utc_now(),
                 "nonce":secrets.token_hex(16)}
 
     def enqueue(self, submission_id:str, *, cycle_id:str|None=None, backend:str|None=None)->dict[str,Any]:
@@ -147,27 +189,34 @@ class EvaluationService:
         schema=load_json(self.config.scenario_schema); report_schema=load_json(self.config.report_schema); profile=load_json(cycle["profile_path"]); store=HiddenEvalStore(cycle["store_path"])
         templates,instances,aliases=store.materialize_instances(schema=schema,evaluation_key=self.eval_key,cycle_id=cycle["id"])
         spec=load_submission_spec(sub["spec_path"])
-        if spec.get("transport")=="stdio":
-            sb=spec.setdefault("sandbox",{}); hides=list(sb.get("hide_paths") or []); sp=str(Path(cycle["store_path"]).resolve())
-            if sp not in hides:hides.append(sp)
-            sb["hide_paths"]=hides
-        runtime=build_submission_runtime(spec, persistent_stdio=True)
-        shared_agent=runtime.factory()
+        # Hidden-store masking is an evaluator decision, never a submission one.
+        runtime=build_submission_runtime(
+            spec,
+            persistent_stdio=False,
+            network=self.config.sandbox_network,
+            hide_paths=[str(Path(cycle["store_path"]).resolve())],
+            allow_remote_http=self.config.allow_remote_http_submissions,
+            confine_stage_to_spec_dir=True,
+        )
+        # Each causal condition gets its own Agent process.  Sharing one process
+        # across Full and its Ablations would let a submission diff conditions
+        # and infer which events were removed.
+        probe_agent=runtime.factory()
         try:
-            descriptor=shared_agent.describe()
-            report,summary=run_materialized_pack(templates=templates,instances=instances,schema=schema,profile=profile,agent_factory=lambda: shared_agent,
-                repetitions=int(profile.get("repetitions",1)),include_ablations=True,
-                bootstrap_resamples=int((profile.get("statistics") or {}).get("bootstrap_resamples",0)),bootstrap_seed=f"{cycle['id']}|{sub['id']}")
+            descriptor=probe_agent.describe()
         finally:
-            shutdown=getattr(shared_agent,"shutdown",None)
+            shutdown=getattr(probe_agent,"shutdown",None)
             if callable(shutdown): shutdown()
+        report,summary=run_materialized_pack(templates=templates,instances=instances,schema=schema,profile=profile,agent_factory=runtime.factory,
+            repetitions=int(profile.get("repetitions",1)),include_ablations=True,
+            bootstrap_resamples=int((profile.get("statistics") or {}).get("bootstrap_resamples",0)),bootstrap_seed=f"{cycle['id']}|{sub['id']}")
         report.setdefault("provenance",{})["notes"]=f"MIB Evaluation Service job={job['id']}; cycle={cycle['id']}; submission={sub['id']}; backend=local_namespace."
         validate_report(report,report_schema)
         public=redact_report_for_public(report,aliases=aliases,redaction_key=self.redaction_key)
         validate_report(public,report_schema)
         checked=verify_score(public)
         if not checked["valid"]: raise RuntimeError("public report score verification failed")
-        return {"internal_report":report,"public_report":public,"summary":summary,"backend_evidence":{"kind":"local_namespace","submission_transport":runtime.transport,"agent_descriptor":descriptor,"persistent_stdio_process":runtime.transport=="stdio"}}
+        return {"internal_report":report,"public_report":public,"summary":summary,"backend_evidence":{"kind":"local_namespace","submission_transport":runtime.transport,"agent_descriptor":descriptor,"persistent_stdio_process":False,"process_per_condition":runtime.transport=="stdio"}}
 
     def execute_claimed_job(self, job:dict[str,Any])->dict[str,Any]:
         if job["backend"] != "local_namespace":
@@ -214,4 +263,7 @@ class EvaluationService:
         return {"valid":bool(sig_ok and pub_ok and int_ok and job_ok),"signature_valid":sig_ok,"public_report_digest_valid":pub_ok,"internal_report_digest_valid":int_ok,"job_manifest_valid":job_ok,"result_id":result_id}
 
     def leaderboard(self,*,cycle_id:str|None=None,profile_id:str|None=None)->dict[str,Any]: return build_leaderboard(self.db,cycle_id=cycle_id,profile_id=profile_id)
-    def compare(self,result_a:str,result_b:str,*,resamples:int=5000,seed:int|str=20260819)->dict[str,Any]: return compare_results(self.db,result_a,result_b,resamples=resamples,seed=seed)
+    def compare(self,result_a:str,result_b:str,*,resamples:int=5000,seed:int|str=20260819)->dict[str,Any]:
+        # Bounded: resamples is client-supplied over HTTP and drives a loop.
+        resamples=max(1,min(int(resamples),MAX_COMPARE_RESAMPLES))
+        return compare_results(self.db,result_a,result_b,resamples=resamples,seed=seed)

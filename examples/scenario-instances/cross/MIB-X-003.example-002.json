@@ -1,0 +1,456 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-X-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Experience → Skill → Non-Applicability",
+  "description": "One lived history tests Experience formation, positive Skill transfer, and resistance to negative transfer after an applicability counterexample.",
+  "suite": "cross",
+  "dimensions": [
+    "experience_memory",
+    "skill_learning_transfer",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "cross-dimension",
+    "public-dev"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 4,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "probe_indirectness": 0.5
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond",
+      "act",
+      "tools",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 20,
+    "max_tool_calls": 20,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Sana"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "contextual_save": {
+        "context_required": true,
+        "expected_context": "primary",
+        "active_context": null,
+        "edited": false,
+        "committed": false,
+        "policy_violation": false,
+        "last_error": null
+      }
+    },
+    "tools": [
+      {
+        "id": "canvas",
+        "version": "0.1.0",
+        "simulator_binding": "mib.contextual_save.v1",
+        "operations": [
+          {
+            "name": "activate_context",
+            "description": "Activate the context for the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "context": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "edit_item",
+            "description": "Edit the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "commit",
+            "description": "Commit the edited item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "inspect_status",
+            "description": "Inspect current item state.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e-failure",
+      "stage": "past",
+      "type": "tool_result",
+      "at": {
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
+      },
+      "visibility": "agent",
+      "payload": {
+        "operation": "save",
+        "success": false,
+        "error": "workspace_required"
+      },
+      "tags": [
+        "relevant",
+        "experience"
+      ]
+    },
+    {
+      "id": "e-learning",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 2,
+        "time": "2026-01-01T09:10:00Z"
+      },
+      "visibility": "agent",
+      "content": "We learned from the failure: establish the active workspace/context before saving or committing.",
+      "tags": [
+        "relevant",
+        "experience",
+        "skill"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20,
+        "time": "2026-01-03T13:00:00Z"
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Unrelated note: the item title uses a new font.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp-match",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 30,
+        "time": "2026-01-05T09:00:00Z"
+      },
+      "visibility": "harness"
+    },
+    {
+      "id": "w-reset",
+      "stage": "past",
+      "type": "world_update",
+      "at": {
+        "sequence": 40,
+        "time": "2026-01-07T08:00:00Z"
+      },
+      "visibility": "harness",
+      "world_updates": [
+        {
+          "op": "set",
+          "path": "/contextual_save/context_required",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/active_context",
+          "value": null
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/edited",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/committed",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/policy_violation",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/last_error",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "e-counterexample",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 41,
+        "time": "2026-01-07T08:05:00Z"
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "This next item is a global record. No workspace is required and no context is required before committing.",
+      "tags": [
+        "relevant",
+        "counterexample",
+        "applicability"
+      ]
+    },
+    {
+      "id": "cp-nonmatch",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 50,
+        "time": "2026-01-07T09:00:00Z"
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-match",
+      "kind": "skill",
+      "trigger": {
+        "after_event": "cp-match"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Update and commit this contextual item using the learned procedure.",
+        "available_tools": [
+          "canvas.activate_context",
+          "canvas.edit_item",
+          "canvas.commit"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/contextual_save/committed",
+            "operator": "eq",
+            "value": true
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "required_action",
+            "action": "canvas.activate_context"
+          },
+          {
+            "type": "before",
+            "first": "canvas.activate_context",
+            "second": "canvas.commit"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "experience_memory",
+        "skill_learning_transfer",
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-nonmatch",
+      "kind": "skill",
+      "trigger": {
+        "after_event": "cp-nonmatch"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Update and commit this global item.",
+        "available_tools": [
+          "canvas.activate_context",
+          "canvas.edit_item",
+          "canvas.commit"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/contextual_save/committed",
+            "operator": "eq",
+            "value": true
+          },
+          {
+            "path": "/contextual_save/policy_violation",
+            "operator": "eq",
+            "value": false
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "forbidden_action",
+            "action": "canvas.activate_context"
+          },
+          {
+            "type": "required_action",
+            "action": "canvas.commit"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "skill_learning_transfer",
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-learned",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-match"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-failure",
+          "e-learning"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-counterexample",
+      "kind": "counterexample",
+      "probes": [
+        "p-nonmatch"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-counterexample"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-match",
+        "p-nonmatch"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "experience_memory": 0.25,
+      "skill_learning_transfer": 0.45,
+      "causal_memory_impact": 0.3
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1-Dev-M3",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 3
+  },
+  "instantiation": {
+    "template_id": "MIB-X-003",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "249dfccc0808ee65db10e1bfd52eb5bbb556226ecdb5796e01175158d9cdde64",
+    "generator_version": "mib-reference-runner-materializer/0.7.0"
+  }
+}

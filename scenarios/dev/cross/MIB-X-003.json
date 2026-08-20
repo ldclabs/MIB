@@ -149,7 +149,8 @@
       "stage": "past",
       "type": "tool_result",
       "at": {
-        "sequence": 1
+        "sequence": 1,
+        "time": "2026-01-01T09:00:00Z"
       },
       "visibility": "agent",
       "payload": {
@@ -167,7 +168,8 @@
       "stage": "past",
       "type": "feedback",
       "at": {
-        "sequence": 2
+        "sequence": 2,
+        "time": "2026-01-01T09:10:00Z"
       },
       "visibility": "agent",
       "content": "We learned from the failure: establish the active workspace/context before saving or committing.",
@@ -182,7 +184,8 @@
       "stage": "interference",
       "type": "distractor",
       "at": {
-        "sequence": 20
+        "sequence": 20,
+        "time": "2026-01-03T13:00:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -196,7 +199,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 30
+        "sequence": 30,
+        "time": "2026-01-05T09:00:00Z"
       },
       "visibility": "harness"
     },
@@ -205,7 +209,8 @@
       "stage": "past",
       "type": "world_update",
       "at": {
-        "sequence": 40
+        "sequence": 40,
+        "time": "2026-01-07T08:00:00Z"
       },
       "visibility": "harness",
       "world_updates": [
@@ -246,7 +251,8 @@
       "stage": "past",
       "type": "interaction",
       "at": {
-        "sequence": 41
+        "sequence": 41,
+        "time": "2026-01-07T08:05:00Z"
       },
       "visibility": "agent",
       "actor": "user",
@@ -262,7 +268,8 @@
       "stage": "pre_probe",
       "type": "checkpoint",
       "at": {
-        "sequence": 50
+        "sequence": 50,
+        "time": "2026-01-07T09:00:00Z"
       },
       "visibility": "harness"
     }
@@ -448,14 +455,12 @@
     "causal_metrics": [
       "causal_memory_impact",
       "memory_benefit",
-      "irrelevant_memory_stability",
-      "negative_transfer",
-      "error_recurrence"
+      "irrelevant_memory_stability"
     ]
   },
   "metadata": {
     "visibility": "public_dev",
-    "profile": "MIB-Core-0.1",
+    "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 3
   }

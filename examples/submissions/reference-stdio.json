@@ -2,7 +2,7 @@
   "id": "mib-reference-fixture-stdio",
   "transport": "stdio",
   "command": [
-    "python",
+    "python3",
     "examples/stdio_reference_agent.py"
   ],
   "stage": [
