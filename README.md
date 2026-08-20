@@ -1,5 +1,7 @@
 # MIB — Memory Intelligence Benchmark
 
+[ English | [简体中文](README_cn.md) ]
+
 > **MIB does not benchmark how much an agent remembers. It benchmarks how intelligently an agent uses memory.**
 
 **Memory Intelligence Benchmark (MIB)** is an open benchmark for measuring how effectively an intelligent system uses the past to improve future cognition and behavior.

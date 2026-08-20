@@ -11,6 +11,7 @@ lerna-debug.log*
 # participant-visible repository.
 private/
 debug/
+REVIEW.md
 
 # MIB — regenerable run artifacts
 service/state/
@@ -22,6 +23,7 @@ __pycache__/
 .DS_Store
 *.egg-info/
 .eggs/
+uv.lock
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
