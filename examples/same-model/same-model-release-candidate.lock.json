@@ -1,0 +1,59 @@
+{
+  "kind": "MIBSameModelExperimentLock",
+  "version": "0.1.0",
+  "experiment_id": "MIB-Core-0.1-same-model-release-candidate-001",
+  "model": {
+    "client": "http_json",
+    "model_id": "REPLACE_WITH_FIXED_MODEL_ID",
+    "endpoint": "http://127.0.0.1:9000/complete",
+    "command": null,
+    "parameters": {
+      "temperature": 0,
+      "max_tokens": 768
+    },
+    "seed_policy": "paired_per_call",
+    "seed_derivation": "agent_seed + semantic_probe_or_task_turn_key; condition label excluded",
+    "seed_base": "mib-same-model-0.1",
+    "api_key_env": "MIB_MODEL_API_KEY",
+    "header_value_fingerprints": {},
+    "stateless_contract": true
+  },
+  "system_prompt_sha256": "db13cd69c44ffeda68115a15f8358d492c2575cef6df271f099e2c60310f368b",
+  "reasoning_policy_sha256": "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6",
+  "scenario_schema_sha256": "44c88e8323c9c7a8ade74952de697fc2d11ae080d05702cbee1a3a13a918a921",
+  "profile_sha256": "ddd4aafbcc32ce1c7cac482d7a1dab7df8bd2939e83784e0016b7a0048009c1b",
+  "scenario_pack_sha256": "5c4f0584a65716456487ab52e8bbe70108dd35a48600c68235c2b05c70044a34",
+  "condition_order_policy": "counterbalanced_latin_rotation_v1",
+  "conditions": {
+    "B0": {
+      "memory_policy": "no_memory"
+    },
+    "B1": {
+      "memory_policy": "full_visible_history"
+    },
+    "B2": {
+      "memory_policy": "lexical_top_k",
+      "top_k": 4
+    },
+    "B3": {
+      "memory_policy": "structured_deterministic",
+      "top_k": 10,
+      "salient_k": 6
+    }
+  },
+  "memory_runtime": {
+    "memory_char_limits": {
+      "B0": null,
+      "B1": null,
+      "B2": null,
+      "B3": null
+    },
+    "parse_retries": 1
+  },
+  "allowed_condition_differences": [
+    "memory_policy",
+    "memory_selection",
+    "memory_context_content"
+  ],
+  "digest": "sha256:f1a631197a3fdb40d16917b9c6eb7c0af249af58db5db90b68e85d899553851d"
+}

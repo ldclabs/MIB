@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:same-model-experiment",
+  "title": "MIB Same-Model Empirical Experiment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mib", "kind", "id", "pack", "scenario_schema", "profile", "model", "agent", "calibration"],
+  "properties": {
+    "mib": {"const": "0.1"},
+    "kind": {"const": "MIBSameModelExperiment"},
+    "id": {"type": "string", "minLength": 1},
+    "pack": {"type": "string", "minLength": 1},
+    "scenario_schema": {"type": "string", "minLength": 1},
+    "profile": {"type": "string", "minLength": 1},
+    "model": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["client", "model_id", "parameters"],
+      "properties": {
+        "client": {"enum": ["http_json", "openai_compatible_chat", "subprocess_jsonl", "deterministic_stub"]},
+        "model_id": {"type": "string", "minLength": 1},
+        "endpoint": {"type": "string"},
+        "command": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "parameters": {"type": "object"},
+        "timeout_s": {"type": "number", "exclusiveMinimum": 0},
+        "api_key_env": {"type": "string"},
+        "seed_policy": {"enum": ["fixed", "paired_per_call"]}
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system_prompt", "reasoning_policy"],
+      "properties": {
+        "system_prompt": {"type": "string"},
+        "reasoning_policy": {"type": "string"},
+        "retrieval_top_k": {"type": "integer", "minimum": 1},
+        "structured_top_k": {"type": "integer", "minimum": 1},
+        "structured_salient_k": {"type": "integer", "minimum": 0},
+        "parse_retries": {"type": "integer", "minimum": 0, "maximum": 3},
+        "memory_char_limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "B0": {"type": ["integer", "null"], "minimum": 1},
+            "B1": {"type": ["integer", "null"], "minimum": 1},
+            "B2": {"type": ["integer", "null"], "minimum": 1},
+            "B3": {"type": ["integer", "null"], "minimum": 1}
+          }
+        }
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["instance_seeds", "repetitions", "bootstrap_resamples"],
+      "properties": {
+        "instance_seeds": {"type": "array", "items": {"type": ["integer", "string"]}, "minItems": 1},
+        "repetitions": {"type": "integer", "minimum": 1},
+        "bootstrap_resamples": {"type": "integer", "minimum": 1},
+        "bootstrap_seed": {"type": ["integer", "string"]},
+        "causal_baseline": {"const": "B3"},
+        "causal_instance_seeds": {"type": "array", "items": {"type": ["integer", "string"]}, "minItems": 1},
+        "causal_repetitions": {"type": "integer", "minimum": 1},
+        "thresholds": {"type": "object", "additionalProperties": {"type": "number"}}
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"model": {"properties": {"client": {"enum": ["http_json", "openai_compatible_chat"]}}}}}, "then": {"properties": {"model": {"required": ["endpoint"]}}}},
+    {"if": {"properties": {"model": {"properties": {"client": {"const": "subprocess_jsonl"}}}}}, "then": {"properties": {"model": {"required": ["command"]}}}}
+  ]
+}

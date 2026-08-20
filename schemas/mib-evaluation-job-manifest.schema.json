@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:evaluation-job-manifest",
+  "title": "MIB Evaluation Job Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "version",
+    "job_id",
+    "submission_id",
+    "submission_spec_digest",
+    "cycle_id",
+    "profile_id",
+    "private_store_digest",
+    "profile_digest",
+    "scenario_schema_digest",
+    "report_schema_digest",
+    "backend",
+    "runner_version",
+    "created_at",
+    "nonce"
+  ],
+  "properties": {
+    "mib": {
+      "const": "0.1"
+    },
+    "kind": {
+      "const": "MIBEvaluationJobManifest"
+    },
+    "version": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "submission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "submission_spec_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "private_store_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "profile_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "scenario_schema_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "report_schema_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "backend": {
+      "enum": [
+        "local_namespace",
+        "oci_command",
+        "microvm_command"
+      ]
+    },
+    "runner_version": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 16
+    }
+  }
+}

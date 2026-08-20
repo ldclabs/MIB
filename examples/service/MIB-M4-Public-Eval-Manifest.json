@@ -1,0 +1,59 @@
+{
+  "mib": "0.1",
+  "kind": "MIBPublicEvaluationManifest",
+  "id": "MIB-M4-Demo-Private-Eval-Store",
+  "version": "0.1.0",
+  "profile": "MIB-Core-0.1-Hidden-M4-Demo",
+  "hidden_eval": [
+    {
+      "public_id": "hidden-recall-A",
+      "visibility": "hidden_eval",
+      "suite": "recall",
+      "dimensions": [
+        "retention_retrieval",
+        "causal_memory_impact"
+      ],
+      "title": "Delayed benchmark-local fact"
+    },
+    {
+      "public_id": "hidden-time-A",
+      "visibility": "hidden_eval",
+      "suite": "time",
+      "dimensions": [
+        "temporal_memory",
+        "causal_memory_impact"
+      ],
+      "title": "Current state after revision"
+    },
+    {
+      "public_id": "hidden-belief-A",
+      "visibility": "hidden_eval",
+      "suite": "epistemic",
+      "dimensions": [
+        "epistemic_memory",
+        "causal_memory_impact"
+      ],
+      "title": "Correction and historical attribution"
+    },
+    {
+      "public_id": "hidden-experience-A",
+      "visibility": "hidden_eval",
+      "suite": "experience",
+      "dimensions": [
+        "experience_memory",
+        "causal_memory_impact"
+      ],
+      "title": "Failure-recovery transfer"
+    }
+  ],
+  "private_holdout": {
+    "count": 2,
+    "statement": "Exact Private Holdout Template composition, generators, Oracle data, and Probe variants are evaluator-only."
+  },
+  "suite_counts": {
+    "recall": 1,
+    "time": 1,
+    "epistemic": 1,
+    "experience": 1
+  }
+}

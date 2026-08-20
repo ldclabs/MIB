@@ -1,0 +1,1171 @@
+{
+  "mib": "0.1",
+  "kind": "MIBReport",
+  "report_version": "0.1.0",
+  "report_id": "report_787bfb0f674946fe",
+  "generated_at": "2026-08-19T05:36:52.971798Z",
+  "scope": "public",
+  "benchmark": {
+    "mib_version": "0.1",
+    "profile": {
+      "id": "MIB-Core-0.1-Hidden-M4-Demo",
+      "version": "0.1.0"
+    },
+    "track": "integrated_agent",
+    "scale": "MIB-S",
+    "scenario_pack": {
+      "id": "MIB-M4-Demo-Private-Eval-Store",
+      "version": "0.1.0"
+    },
+    "scoring_spec_version": "0.1-draft",
+    "scenario_schema_version": "0.1",
+    "agent_adapter_protocol": "mib-agent/0.1"
+  },
+  "system": {
+    "agent": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.4.0",
+      "vendor": "MIB"
+    }
+  },
+  "adapter": {
+    "protocol": "mib-agent/0.1",
+    "implementation": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.4.0"
+    }
+  },
+  "environment": {
+    "runner": {
+      "name": "MIB Reference Runner",
+      "version": "0.4.0"
+    },
+    "world_simulator": {
+      "name": "MIB Milestone 4 World",
+      "version": "0.4.0"
+    },
+    "evaluator_bundle": {
+      "name": "MIB M4 Evaluator Bundle",
+      "version": "0.4.0"
+    },
+    "platform": {
+      "submission_sandbox": {
+        "transport": "stdio",
+        "network_isolated": true,
+        "filesystem_isolated": true,
+        "warnings": []
+      }
+    }
+  },
+  "execution": {
+    "started_at": "2026-08-19T05:36:29.989239Z",
+    "completed_at": "2026-08-19T05:36:52.317644Z",
+    "scheduled_runs": 40,
+    "completed_runs": 40,
+    "scheduled_probe_attempts": 44,
+    "execution_failed_probe_attempts": 0,
+    "execution_failure_rate": 0.0,
+    "unsupported_required_weight": 0.0,
+    "total_required_weight": 1.0,
+    "unsupported_rate": 0.0,
+    "repetitions_policy": {
+      "per_instance": 1
+    },
+    "condition_order_policy": "full_then_declared_ablations"
+  },
+  "results": {
+    "runs": [],
+    "redacted": true,
+    "raw_output_policy": "digest_only"
+  },
+  "aggregates": {
+    "scenario_instances": [
+      {
+        "scenario_instance_id": "inst_ebfb0c15d277ae15",
+        "template_id": "holdout-B",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_052245608d09d80c",
+          "pair_f754f7f30924e388"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_f6522525a0c60de0",
+        "template_id": "holdout-B",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_eca509482d7f50ef",
+          "pair_d6dbd6ef6df06e8c"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_9bfec49f0ae1c81b",
+        "template_id": "hidden-belief-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "epistemic_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_42722f2cd57d343b",
+          "pair_351045986c6a4a4a",
+          "pair_11a794d8fd40da51"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_b04b9f604fd5b845",
+        "template_id": "hidden-belief-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "epistemic_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_abc00d9d1417e16b",
+          "pair_d57d0b626a5cdc54",
+          "pair_e0b880e01a4b3ae1"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_77ecdd231bbe8ae7",
+        "template_id": "hidden-experience-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "experience_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.13333333333333333,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_84ba5bde3dbe09c2",
+          "pair_4aea1ac909fef689"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 0.8666666666666667,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_84f3a15ba9a40bf5",
+        "template_id": "hidden-experience-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "experience_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.13333333333333333,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_bb8c1b1deccaf49a",
+          "pair_b820c95651bc9b30"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 0.8666666666666667,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_b8d72f90b4b4962e",
+        "template_id": "hidden-recall-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "retention_retrieval": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0,
+          "no_memory": 0.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_2ce89ce2616eb5af",
+          "pair_2e061850179a19a2",
+          "pair_fd1afdb3095f2345"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "custom",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_fa7e12955c7b547d",
+        "template_id": "hidden-recall-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "retention_retrieval": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0,
+          "no_memory": 0.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_2251b61540a034a9",
+          "pair_3fe2c010f1749eb0",
+          "pair_fe2b3b869593fede"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "custom",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 2,
+            "total_n": 2,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_04d932ff677ef9b1",
+        "template_id": "holdout-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "skill_learning_transfer": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "counterexample": 0.5,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_4a0e9b941d1e743b",
+          "pair_fd7bf74f237522a3"
+        ],
+        "causal_metrics": [
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_b9e50754293b18d2",
+        "template_id": "holdout-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "skill_learning_transfer": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "counterexample": 0.5,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_802ca6c15f6eccf0",
+          "pair_07d221701d1dee8a"
+        ],
+        "causal_metrics": [
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_026a5bb2c369df6d",
+        "template_id": "hidden-time-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "temporal_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_4cd9518a075adb5f",
+          "pair_dc02bdff2501db47"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      },
+      {
+        "scenario_instance_id": "inst_17ca0f3379109609",
+        "template_id": "hidden-time-A",
+        "full_score": 1.0,
+        "dimension_scores": {
+          "temporal_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_pair_ids": [
+          "pair_ee89af29a3ded72f",
+          "pair_3dc8deb3706ba0b7"
+        ],
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      }
+    ],
+    "templates": [
+      {
+        "template_id": "holdout-B",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "causal_memory_impact": 100.0
+        },
+        "dimension_weights": {
+          "causal_memory_impact": 1.0
+        },
+        "coverage_weight": 1.0,
+        "causal_components": {
+          "causal_score": 100.0,
+          "headroom_normalized_memory_benefit": 1.0,
+          "irrelevant_memory_stability": 1.0,
+          "relevant_benefit_coverage": 1.0,
+          "irrelevant_stability_coverage": 1.0,
+          "harm_resistance_coverage": 0.0
+        }
+      },
+      {
+        "template_id": "hidden-belief-A",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "causal_memory_impact": 100.0,
+          "epistemic_memory": 100.0
+        },
+        "dimension_weights": {
+          "epistemic_memory": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0,
+        "causal_components": {
+          "causal_score": 100.0,
+          "headroom_normalized_memory_benefit": 1.0,
+          "irrelevant_memory_stability": 1.0,
+          "relevant_benefit_coverage": 1.0,
+          "irrelevant_stability_coverage": 1.0,
+          "harm_resistance_coverage": 0.0
+        }
+      },
+      {
+        "template_id": "hidden-experience-A",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "causal_memory_impact": 100.0,
+          "experience_memory": 100.0
+        },
+        "dimension_weights": {
+          "experience_memory": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0,
+        "causal_components": {
+          "causal_score": 100.0,
+          "headroom_normalized_memory_benefit": 1.0,
+          "irrelevant_memory_stability": 1.0,
+          "relevant_benefit_coverage": 1.0,
+          "irrelevant_stability_coverage": 1.0,
+          "harm_resistance_coverage": 0.0
+        }
+      },
+      {
+        "template_id": "hidden-recall-A",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "causal_memory_impact": 100.0,
+          "retention_retrieval": 100.0
+        },
+        "dimension_weights": {
+          "retention_retrieval": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0,
+        "causal_components": {
+          "causal_score": 100.0,
+          "headroom_normalized_memory_benefit": 1.0,
+          "irrelevant_memory_stability": 1.0,
+          "relevant_benefit_coverage": 1.0,
+          "irrelevant_stability_coverage": 1.0,
+          "harm_resistance_coverage": 0.0
+        }
+      },
+      {
+        "template_id": "holdout-A",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "skill_learning_transfer": 100.0
+        },
+        "dimension_weights": {
+          "skill_learning_transfer": 1.0
+        },
+        "coverage_weight": 1.0
+      },
+      {
+        "template_id": "hidden-time-A",
+        "template_version": "0.1.0",
+        "instance_count": 2,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "causal_memory_impact": 100.0,
+          "temporal_memory": 100.0
+        },
+        "dimension_weights": {
+          "temporal_memory": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0,
+        "causal_components": {
+          "causal_score": 100.0,
+          "headroom_normalized_memory_benefit": 1.0,
+          "irrelevant_memory_stability": 1.0,
+          "relevant_benefit_coverage": 1.0,
+          "irrelevant_stability_coverage": 1.0,
+          "harm_resistance_coverage": 0.0
+        }
+      }
+    ],
+    "dimensions": [
+      {
+        "dimension": "retention_retrieval",
+        "score": 100.0,
+        "weight": 0.14634146341463414,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1,
+        "required_template_weight": 0.8,
+        "evaluated_template_weight": 0.8,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "temporal_memory",
+        "score": 100.0,
+        "weight": 0.15853658536585366,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1,
+        "required_template_weight": 0.8,
+        "evaluated_template_weight": 0.8,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "epistemic_memory",
+        "score": 100.0,
+        "weight": 0.18292682926829268,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1,
+        "required_template_weight": 0.8,
+        "evaluated_template_weight": 0.8,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "experience_memory",
+        "score": 100.0,
+        "weight": 0.18292682926829268,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1,
+        "required_template_weight": 0.8,
+        "evaluated_template_weight": 0.8,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "skill_learning_transfer",
+        "score": 100.0,
+        "weight": 0.18292682926829268,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1,
+        "required_template_weight": 1.0,
+        "evaluated_template_weight": 1.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "causal_memory_impact",
+        "score": 100.0,
+        "weight": 0.14634146341463414,
+        "coverage": 1.0,
+        "template_count": 5,
+        "eligible_template_count": 5,
+        "required_template_weight": 1.7999999999999998,
+        "evaluated_template_weight": 1.7999999999999998,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      }
+    ],
+    "mib_score": {
+      "base_score": 100.0,
+      "global_guardrail_penalty": 0.0,
+      "final_score": 100.0,
+      "official": true,
+      "partial": false,
+      "profile_eligible": true,
+      "formula": "weighted_dimension_sum",
+      "ci": {
+        "level": 0.95,
+        "lower": 100.0,
+        "upper": 100.0,
+        "method": "hierarchical_bootstrap_percentile",
+        "resamples": 200,
+        "seed": "20260819"
+      }
+    },
+    "dimension_weight_sum": 1.0
+  },
+  "causal_metrics": [
+    {
+      "name": "headroom_normalized_memory_benefit",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "eligible_n": 5,
+      "total_n": 5,
+      "coverage": 1.0,
+      "ci": {
+        "level": 0.95,
+        "lower": 1.0,
+        "upper": 1.0,
+        "method": "paired_hierarchical_bootstrap_percentile",
+        "resamples": 200,
+        "seed": "20260819"
+      }
+    },
+    {
+      "name": "irrelevant_memory_stability",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "eligible_n": 5,
+      "total_n": 5,
+      "coverage": 1.0,
+      "ci": {
+        "level": 0.95,
+        "lower": 1.0,
+        "upper": 1.0,
+        "method": "paired_hierarchical_bootstrap_percentile",
+        "resamples": 200,
+        "seed": "20260819"
+      }
+    },
+    {
+      "name": "memory_benefit",
+      "value": 0.9851851851851852,
+      "unit": "percentage_points",
+      "scope": "benchmark",
+      "eligible_n": 5,
+      "total_n": 5,
+      "coverage": 1.0,
+      "ci": {
+        "level": 0.95,
+        "lower": 0.92,
+        "upper": 1.0,
+        "method": "paired_hierarchical_bootstrap_percentile",
+        "resamples": 200,
+        "seed": "20260819"
+      }
+    }
+  ],
+  "coverage": {
+    "overall": 1.0,
+    "profile_required": 1.0,
+    "by_dimension": {
+      "retention_retrieval": 1.0,
+      "temporal_memory": 1.0,
+      "epistemic_memory": 1.0,
+      "experience_memory": 1.0,
+      "skill_learning_transfer": 1.0,
+      "causal_memory_impact": 1.0
+    },
+    "missing_required_templates": [],
+    "unsupported_required_templates": []
+  },
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap": {
+      "method": "hierarchical_bootstrap_percentile",
+      "resamples": 200,
+      "seed": "20260819",
+      "template_resampling": true,
+      "instance_resampling": true,
+      "repetition_resampling": true,
+      "preserve_causal_pairs": true
+    },
+    "mib_score": {
+      "value": 100.0,
+      "ci": {
+        "level": 0.95,
+        "lower": 100.0,
+        "upper": 100.0,
+        "method": "hierarchical_bootstrap_percentile",
+        "resamples": 200,
+        "seed": "20260819"
+      },
+      "n": 200
+    },
+    "dimensions": [
+      {
+        "dimension": "causal_memory_impact",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "epistemic_memory",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "experience_memory",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "retention_retrieval",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "skill_learning_transfer",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "dimension": "temporal_memory",
+        "value": 100.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 100.0,
+          "upper": 100.0,
+          "method": "hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      }
+    ],
+    "causal_metrics": [
+      {
+        "name": "headroom_normalized_memory_benefit",
+        "value": 1.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 1.0,
+          "upper": 1.0,
+          "method": "paired_hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "name": "irrelevant_memory_stability",
+        "value": 1.0,
+        "ci": {
+          "level": 0.95,
+          "lower": 1.0,
+          "upper": 1.0,
+          "method": "paired_hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      },
+      {
+        "name": "memory_benefit",
+        "value": 0.9823614450908569,
+        "ci": {
+          "level": 0.95,
+          "lower": 0.92,
+          "upper": 1.0,
+          "method": "paired_hierarchical_bootstrap_percentile",
+          "resamples": 200,
+          "seed": "20260819"
+        }
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "evaluation.hidden_profile",
+      "severity": "info",
+      "message": "This score was produced from an evaluator-only Hidden/Private pack. Public disclosure may redact Scenario identifiers and seeds.",
+      "scope": "report"
+    }
+  ],
+  "provenance": {
+    "generated_by": "MIB Reference Runner",
+    "generator_version": "0.3.0",
+    "score_recomputed": true,
+    "verification_status": "verified",
+    "notes": "Evaluator-only Scenario identifiers and seeds were redacted; aggregate score evidence remains recomputable."
+  }
+}

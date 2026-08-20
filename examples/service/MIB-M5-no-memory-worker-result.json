@@ -1,0 +1,8 @@
+{
+  "status": "succeeded",
+  "job_id": "job_c26ec19766c04496b7b9",
+  "result_id": "result_4d7064fe125d47dbb02f",
+  "score": 13.32752613240418,
+  "public_report": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts/job_c26ec19766c04496b7b9/public.report.json",
+  "capability_card": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts/job_c26ec19766c04496b7b9/capability-card.md"
+}

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mib-reference-runner"
+version = "0.7.0"
+description = "MIB v0.1 reference Runner, evaluators, calibration and evaluation service"
+requires-python = ">=3.10"
+dependencies = ["jsonschema>=4.18", "cryptography>=46"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+mib = "mib_runner.cli:main"
+mib-service = "mib_runner.service_cli:main"
+mib-calibrate = "mib_runner.calibration_cli:main"
+mib-same-model-calibrate = "mib_runner.same_model_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

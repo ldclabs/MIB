@@ -1,0 +1,331 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-EPI-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Source Disagreement",
+  "description": "Tests preservation of conflicting source-attributed statements without collapsing them into one asserted fact.",
+  "suite": "epistemic",
+  "dimensions": [
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "source-attribution",
+    "conflict",
+    "contested"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 2,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "alice_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Alice",
+          "Mina",
+          "Rhea"
+        ]
+      },
+      {
+        "name": "bob_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Bob",
+          "Omar",
+          "Theo"
+        ]
+      },
+      {
+        "name": "time_a",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "15:00",
+          "10:30",
+          "14:15"
+        ]
+      },
+      {
+        "name": "time_b",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "16:00",
+          "11:30",
+          "15:15"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "alice",
+      "kind": "person",
+      "display_name": "${alice_name}"
+    },
+    {
+      "id": "bob",
+      "kind": "person",
+      "display_name": "${bob_name}"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-a",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "alice",
+      "content": "The review meeting is at ${time_a}.",
+      "tags": [
+        "relevant",
+        "source-a"
+      ]
+    },
+    {
+      "id": "e-b",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "actor": "bob",
+      "content": "I think the review meeting is at ${time_b}.",
+      "tags": [
+        "relevant",
+        "source-b",
+        "tentative"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 15
+      },
+      "visibility": "agent",
+      "actor": "alice",
+      "content": "Please bring the quarterly notes.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-a",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What time did ${alice_name} state for the review meeting? Answer with the time only."
+      },
+      "oracle": {
+        "accepted": [
+          "${time_a}"
+        ]
+      },
+      "evaluators": [
+        "eval-time"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-b",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What time did ${bob_name} state for the review meeting? Answer with the time only."
+      },
+      "oracle": {
+        "accepted": [
+          "${time_b}"
+        ]
+      },
+      "evaluators": [
+        "eval-time"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-status",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Based only on what has been stated so far, is the meeting time resolved? Answer exactly: resolved or contested."
+      },
+      "oracle": {
+        "accepted": [
+          "contested"
+        ],
+        "expected_status": "contested"
+      },
+      "evaluators": [
+        "eval-status"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-source-a",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-a"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-a"
+        ]
+      }
+    },
+    {
+      "id": "a-source-b",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-b"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-b"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-a",
+        "p-b",
+        "p-status"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-time",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    },
+    {
+      "id": "eval-status",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "epistemic_memory": 0.85,
+      "causal_memory_impact": 0.15
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1
+  }
+}

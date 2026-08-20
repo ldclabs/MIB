@@ -1,0 +1,54 @@
+{
+  "mib": "0.1",
+  "kind": "MIBLeaderboard",
+  "cycle_id": "cycle-m5-demo-001",
+  "profile_id": "MIB-Core-0.1-Hidden-M4-Demo",
+  "entries": [
+    {
+      "rank": 1,
+      "submission_id": "mib-reference-fixture-stdio",
+      "display_name": "Reference Fixture",
+      "owner": "MIB",
+      "track": "integrated_agent",
+      "score": 100.0,
+      "ci": {
+        "lower": 100.0,
+        "upper": 100.0
+      },
+      "result_id": "result_4f6e0bcb276541d0b092",
+      "public_report_ref": "/results/result_4f6e0bcb276541d0b092/report",
+      "attestation_ref": "/results/result_4f6e0bcb276541d0b092/attestation",
+      "attestation": {
+        "scheme": "ed25519",
+        "context": "mib-service-result-attestation/v1",
+        "payload_digest": "sha256:59d27fc4ecf5644b97c4a8ff8840d8dd9177734ba6c99aa237efa9649e069d10",
+        "signature": "XqYyuhf4st65KbVNTwzW2BUP7xOXdOrUlkKiBS8O3GVnZ3Ei6yrgfX6ktJ9K7+zi+cLox6YG0BK5HIAzxdx2AQ==",
+        "public_key": "8imRXoMxUUkBqB15mo0zcJOyKF7rAYq9FxFdQ0Zoqmc=",
+        "key_id": "ed25519:f3c4cebe3a6a60cdcab68c03"
+      }
+    },
+    {
+      "rank": 2,
+      "submission_id": "mib-no-memory-fixture-stdio",
+      "display_name": "No-Memory Fixture",
+      "owner": "MIB",
+      "track": "integrated_agent",
+      "score": 13.32752613240418,
+      "ci": {
+        "lower": 13.32752613240418,
+        "upper": 13.327526132404182
+      },
+      "result_id": "result_4d7064fe125d47dbb02f",
+      "public_report_ref": "/results/result_4d7064fe125d47dbb02f/report",
+      "attestation_ref": "/results/result_4d7064fe125d47dbb02f/attestation",
+      "attestation": {
+        "scheme": "ed25519",
+        "context": "mib-service-result-attestation/v1",
+        "payload_digest": "sha256:ba62bfdb15462e9082060badf2c994580705053674a4e51b6c618397f51fc763",
+        "signature": "kMm1BOO1RCjFgADd7XHIafR1O8U5DIZLVKB8gKCVViW2IPM5ykzIS2XspKkDc1ZVhPpKUdeA9TDGI40QiPsMDA==",
+        "public_key": "8imRXoMxUUkBqB15mo0zcJOyKF7rAYq9FxFdQ0Zoqmc=",
+        "key_id": "ed25519:f3c4cebe3a6a60cdcab68c03"
+      }
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "submission": "mib-reference-fixture-stdio",
+  "profile": "MIB-Core-0.1-Hidden-M4-Demo",
+  "cycle": "demo-cycle-2026-08",
+  "templates": 6,
+  "instances": 12,
+  "summary": {
+    "profile": "MIB-Core-0.1-Hidden-M4-Demo",
+    "template_count": 6,
+    "instance_count": 12,
+    "run_count": 40,
+    "repetitions": 1,
+    "mib_score": 100.0,
+    "coverage": 1.0,
+    "dimensions": {
+      "retention_retrieval": 100.0,
+      "temporal_memory": 100.0,
+      "epistemic_memory": 100.0,
+      "experience_memory": 100.0,
+      "skill_learning_transfer": 100.0,
+      "causal_memory_impact": 100.0
+    },
+    "causal_metrics": {
+      "headroom_normalized_memory_benefit": 1.0,
+      "irrelevant_memory_stability": 1.0,
+      "memory_benefit": 0.9851851851851852
+    }
+  },
+  "public_report_verified": true,
+  "internal_report": "examples/MIB-M4-Hidden-Demo.internal.report.json",
+  "public_report": "examples/MIB-M4-Hidden-Demo.public.report.json",
+  "capability_card": "examples/MIB-M4-Hidden-Demo-Capability-Card.md"
+}

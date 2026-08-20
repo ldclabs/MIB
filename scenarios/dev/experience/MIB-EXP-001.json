@@ -1,0 +1,366 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-EXP-001",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Failure and Recovery",
+  "description": "Tests whether a remembered failure/recovery trajectory changes a later deployment action sequence.",
+  "suite": "experience",
+  "dimensions": [
+    "experience_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "failure-recovery",
+    "trajectory",
+    "action"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 4,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "experience_steps": 4,
+    "probe_indirectness": 0.6
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "actual_target",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "db-amber",
+          "db-cobalt",
+          "db-lumen"
+        ]
+      },
+      {
+        "name": "wrong_target",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "db-slate",
+          "db-old",
+          "db-shadow"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "observe",
+      "act",
+      "tools"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 12,
+    "max_tool_calls": 10,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "deployment": {
+        "actual_target": "${actual_target}",
+        "selected_target": "${wrong_target}",
+        "migration_applied": false,
+        "service_running": false,
+        "last_error": null
+      }
+    },
+    "tools": [
+      {
+        "id": "deployment",
+        "version": "0.1.0",
+        "simulator_binding": "mib.deployment.v1",
+        "operations": [
+          {
+            "name": "inspect_target",
+            "description": "Inspect the actual deployment target and the currently selected target.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "select_target",
+            "description": "Select the database target for subsequent migration operations.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "target": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "target"
+              ]
+            }
+          },
+          {
+            "name": "run_migration",
+            "description": "Apply the pending migration to the currently selected target.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "restart_service",
+            "description": "Restart the service and report whether startup succeeds.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "read_error",
+            "description": "Read the most recent deployment error.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e-goal",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "content": "Previous deployment goal: get the service running after a schema change.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-failure",
+      "stage": "past",
+      "type": "tool_result",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "payload": {
+        "operation": "restart_service",
+        "success": false,
+        "error": "missing_column"
+      },
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-diagnosis",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 3
+      },
+      "visibility": "agent",
+      "content": "We learned that a missing_column startup failure can come from migrating the wrong target. Inspect the actual target before retrying.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-recovery",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 4
+      },
+      "visibility": "agent",
+      "content": "After checking the target, selecting the actual target, rerunning migration, and restarting, the service succeeded.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "agent",
+      "content": "Unrelated release note: the dashboard icon changed.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 100
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-action",
+      "kind": "action",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Repair the deployment and get the service running.",
+        "available_tools": [
+          "deployment.inspect_target",
+          "deployment.select_target",
+          "deployment.run_migration",
+          "deployment.restart_service"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/deployment/service_running",
+            "operator": "eq",
+            "value": true
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "required_action",
+            "action": "deployment.inspect_target"
+          },
+          {
+            "type": "before",
+            "first": "deployment.inspect_target",
+            "second": "deployment.run_migration"
+          },
+          {
+            "type": "required_action",
+            "action": "deployment.restart_service"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "experience_memory",
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-failure",
+          "e-diagnosis",
+          "e-recovery"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "experience_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability",
+      "negative_transfer",
+      "error_recurrence"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "milestone": "Reference Runner M2"
+  }
+}

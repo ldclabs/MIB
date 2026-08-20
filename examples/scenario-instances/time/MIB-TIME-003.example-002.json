@@ -1,0 +1,287 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-TIME-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Planned vs Completed Change",
+  "description": "Tests that a future plan does not become current state until a completion event occurs.",
+  "suite": "time",
+  "dimensions": [
+    "temporal_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "planned-change",
+    "completed-change",
+    "future-intention"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 3,
+    "distractor_events": 1,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Evan"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "current_city": "Cedar Point"
+    },
+    "hidden_ground_truth": {
+      "current_city": "Orchid Harbor"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-current",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I currently live in Cedar Point.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-plan",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 10
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I plan to move to Orchid Harbor next month.",
+      "tags": [
+        "relevant",
+        "planned"
+      ]
+    },
+    {
+      "id": "cp-plan",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 15
+      },
+      "visibility": "harness"
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I ordered new headphones.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "w-move",
+      "stage": "past",
+      "type": "world_update",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "harness",
+      "world_updates": [
+        {
+          "op": "set",
+          "path": "/current_city",
+          "value": "Orchid Harbor"
+        }
+      ]
+    },
+    {
+      "id": "e-complete",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 31
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The move is complete. I now live in Orchid Harbor.",
+      "tags": [
+        "relevant",
+        "completed"
+      ]
+    },
+    {
+      "id": "cp-complete",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-before",
+      "kind": "temporal",
+      "trigger": {
+        "after_event": "cp-plan"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Where do I live right now? Answer with the city only."
+      },
+      "oracle": {
+        "accepted": [
+          "Cedar Point"
+        ]
+      },
+      "evaluators": [
+        "eval-city"
+      ],
+      "dimensions": [
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-after",
+      "kind": "temporal",
+      "trigger": {
+        "after_event": "cp-complete"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Where do I live now? Answer with the city only."
+      },
+      "oracle": {
+        "accepted": [
+          "Orchid Harbor"
+        ]
+      },
+      "evaluators": [
+        "eval-city"
+      ],
+      "dimensions": [
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-completion",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-after"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-complete"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-before",
+        "p-after"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-city",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "temporal_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "user_name": "Evan",
+      "old_city": "Cedar Point",
+      "new_city": "Orchid Harbor"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-TIME-003",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "30c7e54785d94bc62fddcd7657fdc91c59ed08bc2e279c386f15c346576b15be",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

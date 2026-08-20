@@ -1,0 +1,8 @@
+{
+  "id": "B3",
+  "name": "Structured / Agentic Memory",
+  "role": "structured_agentic",
+  "implementation": "mib_runner.calibration_baselines:StructuredMemoryBaselineAgent",
+  "memory": {"retrieval": "lexical-plus-salience", "top_k": 8, "salient_memory_cap": 24, "source_cues": true, "temporal_cues": true, "experience_cues": true, "skill_applicability_cues": true},
+  "release_calibration_eligible": false
+}

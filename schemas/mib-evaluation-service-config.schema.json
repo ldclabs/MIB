@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:evaluation-service-config",
+  "title": "MIB Evaluation Service Config",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "db_path",
+    "artifact_root",
+    "scenario_schema",
+    "report_schema",
+    "submission_schema",
+    "job_manifest_schema",
+    "result_attestation_schema"
+  ],
+  "properties": {
+    "db_path": {
+      "type": "string"
+    },
+    "artifact_root": {
+      "type": "string"
+    },
+    "scenario_schema": {
+      "type": "string"
+    },
+    "report_schema": {
+      "type": "string"
+    },
+    "submission_schema": {
+      "type": "string"
+    },
+    "job_manifest_schema": {
+      "type": "string"
+    },
+    "result_attestation_schema": {
+      "type": "string"
+    },
+    "service_root_secret_env": {
+      "type": "string",
+      "default": "MIB_SERVICE_ROOT_SECRET"
+    },
+    "backend": {
+      "enum": [
+        "local_namespace",
+        "oci_command",
+        "microvm_command"
+      ],
+      "default": "local_namespace"
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "valid": true,
+  "stored_base_score": 100.0,
+  "recomputed_base_score": 100.0,
+  "stored_final_score": 100.0,
+  "recomputed_final_score": 100.0,
+  "difference": 0.0,
+  "template_checks": [
+    {
+      "template_id": "holdout-B",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-belief-A",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-belief-A",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-experience-A",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-experience-A",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-recall-A",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-recall-A",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "holdout-A",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-time-A",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "hidden-time-A",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "dimension_checks": [
+    {
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "errors": []
+}

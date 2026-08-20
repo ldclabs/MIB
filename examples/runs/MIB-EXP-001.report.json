@@ -1,0 +1,434 @@
+{
+  "mib": "0.1",
+  "kind": "MIBReport",
+  "report_version": "0.1.0",
+  "report_id": "report_156b2003281946ef",
+  "generated_at": "2026-08-19T04:49:03.170268Z",
+  "scope": "internal",
+  "benchmark": {
+    "mib_version": "0.1",
+    "profile": {
+      "id": "MIB-Core-0.1-Dev-M2",
+      "version": "0.1.0"
+    },
+    "track": "integrated_agent",
+    "scale": "MIB-S",
+    "scenario_pack": {
+      "id": "single-scenario-dev",
+      "version": "0.1.0"
+    },
+    "scoring_spec_version": "0.1-draft",
+    "scenario_schema_version": "0.1",
+    "agent_adapter_protocol": "mib-agent/0.1"
+  },
+  "system": {
+    "agent": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.2.0"
+    }
+  },
+  "adapter": {
+    "protocol": "mib-agent/0.1",
+    "implementation": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.2.0"
+    }
+  },
+  "environment": {
+    "runner": {
+      "name": "MIB Reference Runner",
+      "version": "0.2.0"
+    },
+    "world_simulator": {
+      "name": "MIB Milestone 2 World",
+      "version": "0.2.0"
+    },
+    "evaluator_bundle": {
+      "name": "MIB M2 Evaluator Bundle",
+      "version": "0.2.0"
+    }
+  },
+  "execution": {
+    "started_at": "2026-08-19T04:49:03.169432Z",
+    "completed_at": "2026-08-19T04:49:03.170207Z",
+    "scheduled_runs": 3,
+    "completed_runs": 3,
+    "scheduled_probe_attempts": 3,
+    "execution_failed_probe_attempts": 0,
+    "execution_failure_rate": 0.0,
+    "unsupported_required_weight": 0.0,
+    "total_required_weight": 1.0,
+    "unsupported_rate": 0.0
+  },
+  "results": {
+    "runs": [
+      {
+        "run_id": "run_665c3ab8e22843bb",
+        "scenario_instance_id": "MIB-EXP-001:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-EXP-001",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "full",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:49:03.169432Z",
+        "completed_at": "2026-08-19T04:49:03.169708Z",
+        "scenario_score": 1.0,
+        "probe_results": [
+          {
+            "probe_id": "p-action",
+            "probe_kind": "action",
+            "condition": "full",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "experience_memory",
+              "causal_memory_impact"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-composite",
+                "evaluator_type": "composite",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "components": [
+                    {
+                      "evaluator": "eval-world",
+                      "weight": 0.6,
+                      "score": 1.0,
+                      "passed": true
+                    },
+                    {
+                      "evaluator": "eval-trajectory",
+                      "weight": 0.4,
+                      "score": 1.0,
+                      "passed": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.15958,
+            "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      },
+      {
+        "run_id": "run_85ba0df41509446e",
+        "scenario_instance_id": "MIB-EXP-001:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-EXP-001",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "relevant_ablation",
+        "ablation_id": "a-relevant",
+        "ablation_method": "replay_excluding_events",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:49:03.169743Z",
+        "completed_at": "2026-08-19T04:49:03.169963Z",
+        "scenario_score": 0.13333333333333333,
+        "probe_results": [
+          {
+            "probe_id": "p-action",
+            "probe_kind": "action",
+            "condition": "relevant_ablation",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 0.13333333333333333,
+            "weight": 1.0,
+            "dimensions": [
+              "experience_memory",
+              "causal_memory_impact"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-composite",
+                "evaluator_type": "composite",
+                "score": 0.13333333333333333,
+                "passed": false,
+                "failure_codes": [
+                  "trajectory_collapse"
+                ],
+                "details": {
+                  "components": [
+                    {
+                      "evaluator": "eval-world",
+                      "weight": 0.6,
+                      "score": 0.0,
+                      "passed": false
+                    },
+                    {
+                      "evaluator": "eval-trajectory",
+                      "weight": 0.4,
+                      "score": 0.3333333333333333,
+                      "passed": false
+                    }
+                  ]
+                }
+              }
+            ],
+            "failure_codes": [
+              "trajectory_collapse"
+            ],
+            "latency_ms": 0.14004,
+            "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      },
+      {
+        "run_id": "run_225b856ec7bb4dd8",
+        "scenario_instance_id": "MIB-EXP-001:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-EXP-001",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "irrelevant_ablation",
+        "ablation_id": "a-irrelevant",
+        "ablation_method": "replay_excluding_events",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:49:03.169994Z",
+        "completed_at": "2026-08-19T04:49:03.170207Z",
+        "scenario_score": 1.0,
+        "probe_results": [
+          {
+            "probe_id": "p-action",
+            "probe_kind": "action",
+            "condition": "irrelevant_ablation",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "experience_memory",
+              "causal_memory_impact"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-composite",
+                "evaluator_type": "composite",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "components": [
+                    {
+                      "evaluator": "eval-world",
+                      "weight": 0.6,
+                      "score": 1.0,
+                      "passed": true
+                    },
+                    {
+                      "evaluator": "eval-trajectory",
+                      "weight": 0.4,
+                      "score": 1.0,
+                      "passed": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.132664,
+            "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      }
+    ],
+    "redacted": false,
+    "raw_output_policy": "digest_only"
+  },
+  "aggregates": {
+    "scenario_instances": [
+      {
+        "scenario_instance_id": "MIB-EXP-001:101",
+        "template_id": "MIB-EXP-001",
+        "instance_seed": 101,
+        "full_score": 1.0,
+        "dimension_scores": {
+          "experience_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.13333333333333333,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 0.8666666666666667,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      }
+    ],
+    "templates": [
+      {
+        "template_id": "MIB-EXP-001",
+        "template_version": "0.1.0",
+        "instance_count": 1,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "experience_memory": 100.0,
+          "causal_memory_impact": 100.0
+        },
+        "dimension_weights": {
+          "experience_memory": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0
+      }
+    ],
+    "dimensions": [
+      {
+        "dimension": "experience_memory",
+        "score": 100.0,
+        "weight": 0.8,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1
+      },
+      {
+        "dimension": "causal_memory_impact",
+        "score": 100.0,
+        "weight": 0.2,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1
+      }
+    ],
+    "mib_score": {
+      "base_score": 100.0,
+      "global_guardrail_penalty": 0.0,
+      "final_score": 100.0,
+      "official": false,
+      "partial": true,
+      "profile_eligible": false,
+      "formula": "weighted_dimension_sum"
+    },
+    "dimension_weight_sum": 1.0
+  },
+  "causal_metrics": [
+    {
+      "name": "memory_benefit",
+      "value": 0.8666666666666667,
+      "unit": "percentage_points",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
+      "name": "headroom_normalized_memory_benefit",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
+      "name": "irrelevant_memory_stability",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "irrelevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    }
+  ],
+  "coverage": {
+    "overall": 1.0,
+    "profile_required": 0.0,
+    "by_dimension": {
+      "experience_memory": 1.0,
+      "causal_memory_impact": 1.0
+    },
+    "missing_required_templates": [],
+    "unsupported_required_templates": [],
+    "partial_score_reason": "Milestone 2 single-scenario development report; not an official profile score."
+  },
+  "statistics": {
+    "confidence_level": 0.95,
+    "mib_score": {
+      "value": 100.0,
+      "n": 1
+    }
+  },
+  "warnings": [
+    {
+      "code": "development.milestone2_partial_score",
+      "severity": "info",
+      "message": "This is a Milestone 2 development report, not an official MIB-Core-0.1 score.",
+      "scope": "report"
+    }
+  ],
+  "provenance": {
+    "generated_by": "MIB Reference Runner",
+    "generator_version": "0.2.0",
+    "score_recomputed": true,
+    "verification_status": "partially_verified"
+  }
+}

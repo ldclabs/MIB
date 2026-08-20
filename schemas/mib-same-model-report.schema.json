@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:same-model-calibration-report",
+  "title": "MIB Same-Model Calibration Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "report_version",
+    "generated_at",
+    "experiment",
+    "model_identity",
+    "statelessness_preflight",
+    "condition_order_audit",
+    "pairing_audit",
+    "fairness_audit",
+    "telemetry",
+    "empirical_release_gate",
+    "calibration"
+  ],
+  "properties": {
+    "mib": {
+      "const": "0.1"
+    },
+    "kind": {
+      "const": "MIBSameModelCalibrationReport"
+    },
+    "report_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "experiment": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "experiment_lock"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "engineering_stub_completed",
+            "pending_external_model_run"
+          ]
+        },
+        "experiment_lock": {
+          "type": "object",
+          "required": [
+            "kind",
+            "version",
+            "experiment_id",
+            "digest",
+            "model",
+            "system_prompt_sha256",
+            "reasoning_policy_sha256",
+            "scenario_schema_sha256",
+            "profile_sha256",
+            "scenario_pack_sha256",
+            "conditions",
+            "allowed_condition_differences"
+          ],
+          "properties": {
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "model_identity": {
+      "type": "object"
+    },
+    "fairness_audit": {
+      "type": "object",
+      "required": [
+        "valid",
+        "checks"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "telemetry": {
+      "type": "object",
+      "required": [
+        "B0",
+        "B1",
+        "B2",
+        "B3"
+      ],
+      "properties": {
+        "B0": {
+          "$ref": "#/$defs/telemetry"
+        },
+        "B1": {
+          "$ref": "#/$defs/telemetry"
+        },
+        "B2": {
+          "$ref": "#/$defs/telemetry"
+        },
+        "B3": {
+          "$ref": "#/$defs/telemetry"
+        }
+      },
+      "additionalProperties": false
+    },
+    "empirical_release_gate": {
+      "type": "object",
+      "required": [
+        "eligible",
+        "non_stub_model",
+        "template_full_gate",
+        "fairness_valid",
+        "requirements"
+      ],
+      "properties": {
+        "eligible": {
+          "type": "boolean"
+        },
+        "non_stub_model": {
+          "type": "boolean"
+        },
+        "fairness_valid": {
+          "type": "boolean"
+        },
+        "template_full_gate": {
+          "type": "object",
+          "required": [
+            "passed",
+            "total",
+            "all_pass"
+          ],
+          "properties": {
+            "passed": {
+              "type": "integer"
+            },
+            "total": {
+              "type": "integer"
+            },
+            "all_pass": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "calibration": {
+      "type": "object"
+    },
+    "statelessness_preflight": {
+      "type": "object",
+      "required": [
+        "passed",
+        "comparison"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "comparison": {
+          "type": "string"
+        },
+        "first_a_digest": {
+          "type": "string"
+        },
+        "second_a_digest": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "condition_order_audit": {
+      "type": "object",
+      "required": [
+        "policy",
+        "paired_units",
+        "position_counts",
+        "max_position_count_difference",
+        "balanced",
+        "schedule_digest"
+      ],
+      "properties": {
+        "policy": {
+          "type": "string"
+        },
+        "paired_units": {
+          "type": "integer"
+        },
+        "position_counts": {
+          "type": "object"
+        },
+        "max_position_count_difference": {
+          "type": "integer"
+        },
+        "balanced": {
+          "type": "boolean"
+        },
+        "schedule_digest": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "pairing_audit": {
+      "type": "object",
+      "required": [
+        "valid",
+        "paired_units",
+        "mismatch_count",
+        "mismatches"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "paired_units": {
+          "type": "integer"
+        },
+        "mismatch_count": {
+          "type": "integer"
+        },
+        "mismatches": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "telemetry": {
+      "type": "object",
+      "required": [
+        "model_calls",
+        "model_errors",
+        "input_chars_total",
+        "output_chars_total",
+        "usage_totals",
+        "memory_selections",
+        "memory_records_available_total",
+        "memory_records_selected_total",
+        "memory_chars_selected_total",
+        "memory_truncations"
+      ],
+      "properties": {
+        "model_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "model_errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_chars_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_chars_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "usage_totals": {
+          "type": "object"
+        },
+        "memory_selections": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_records_available_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_records_selected_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_chars_selected_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_truncations": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

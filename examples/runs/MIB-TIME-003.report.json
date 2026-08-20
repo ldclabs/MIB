@@ -1,0 +1,456 @@
+{
+  "mib": "0.1",
+  "kind": "MIBReport",
+  "report_version": "0.1.0",
+  "report_id": "report_62844fa019294882",
+  "generated_at": "2026-08-19T04:38:11.489873Z",
+  "scope": "internal",
+  "benchmark": {
+    "mib_version": "0.1",
+    "profile": {
+      "id": "MIB-Core-0.1-Dev-M1",
+      "version": "0.1.0"
+    },
+    "track": "integrated_agent",
+    "scale": "MIB-S",
+    "scenario_pack": {
+      "id": "single-scenario-dev",
+      "version": "0.1.0"
+    },
+    "scoring_spec_version": "0.1-draft",
+    "scenario_schema_version": "0.1",
+    "agent_adapter_protocol": "mib-agent/0.1"
+  },
+  "system": {
+    "agent": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.1.0"
+    }
+  },
+  "adapter": {
+    "protocol": "mib-agent/0.1",
+    "implementation": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.1.0"
+    }
+  },
+  "environment": {
+    "runner": {
+      "name": "MIB Reference Runner",
+      "version": "0.1.0"
+    },
+    "world_simulator": {
+      "name": "MIB Milestone 1 World",
+      "version": "0.1.0"
+    },
+    "evaluator_bundle": {
+      "name": "MIB set_match Evaluator",
+      "version": "0.1.0"
+    }
+  },
+  "execution": {
+    "started_at": "2026-08-19T04:38:11.489108Z",
+    "completed_at": "2026-08-19T04:38:11.489799Z",
+    "scheduled_runs": 3,
+    "completed_runs": 3,
+    "scheduled_probe_attempts": 5,
+    "execution_failed_probe_attempts": 0,
+    "execution_failure_rate": 0.0,
+    "unsupported_required_weight": 0.0,
+    "total_required_weight": 1.0,
+    "unsupported_rate": 0.0
+  },
+  "results": {
+    "runs": [
+      {
+        "run_id": "run_0fcb095893c044b3",
+        "scenario_instance_id": "MIB-TIME-003:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-TIME-003",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "full",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:38:11.489108Z",
+        "completed_at": "2026-08-19T04:38:11.489419Z",
+        "scenario_score": 1.0,
+        "probe_results": [
+          {
+            "probe_id": "p-before",
+            "probe_kind": "temporal",
+            "condition": "full",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "temporal_memory"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-city",
+                "evaluator_type": "set_match",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "actual_normalized": "cedar point",
+                  "accepted_count": 1,
+                  "forbidden_match": false
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.138997,
+            "output_digest": "252ef35f35e485a6531a2a87530ee22e88eba399e866b563a687b1c578b7113c"
+          },
+          {
+            "probe_id": "p-after",
+            "probe_kind": "temporal",
+            "condition": "full",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "temporal_memory"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-city",
+                "evaluator_type": "set_match",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "actual_normalized": "vale city",
+                  "accepted_count": 1,
+                  "forbidden_match": false
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.023267,
+            "output_digest": "359c1ad4e991ce96f378668b444c19ed9576ee76513316a511e97ac2772f2743"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      },
+      {
+        "run_id": "run_b796856a9f284c65",
+        "scenario_instance_id": "MIB-TIME-003:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-TIME-003",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "relevant_ablation",
+        "ablation_id": "a-completion",
+        "ablation_method": "replay_excluding_events",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:38:11.489455Z",
+        "completed_at": "2026-08-19T04:38:11.489521Z",
+        "scenario_score": 0.0,
+        "probe_results": [
+          {
+            "probe_id": "p-after",
+            "probe_kind": "temporal",
+            "condition": "relevant_ablation",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 0.0,
+            "weight": 1.0,
+            "dimensions": [
+              "temporal_memory"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-city",
+                "evaluator_type": "set_match",
+                "score": 0.0,
+                "passed": false,
+                "failure_codes": [
+                  "retrieval_miss"
+                ],
+                "details": {
+                  "actual_normalized": "cedar point",
+                  "accepted_count": 1,
+                  "forbidden_match": false
+                }
+              }
+            ],
+            "failure_codes": [
+              "retrieval_miss"
+            ],
+            "latency_ms": 0.016689,
+            "output_digest": "252ef35f35e485a6531a2a87530ee22e88eba399e866b563a687b1c578b7113c"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      },
+      {
+        "run_id": "run_fe8fd3074b134069",
+        "scenario_instance_id": "MIB-TIME-003:101",
+        "scenario_instance_version": "0.1.0",
+        "template_id": "MIB-TIME-003",
+        "template_version": "0.1.0",
+        "instance_seed": 101,
+        "condition": "irrelevant_ablation",
+        "ablation_id": "a-irrelevant",
+        "ablation_method": "replay_excluding_events",
+        "repetition": 0,
+        "agent_seed": 101,
+        "status": "succeeded",
+        "started_at": "2026-08-19T04:38:11.489547Z",
+        "completed_at": "2026-08-19T04:38:11.489799Z",
+        "scenario_score": 1.0,
+        "probe_results": [
+          {
+            "probe_id": "p-before",
+            "probe_kind": "temporal",
+            "condition": "irrelevant_ablation",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "temporal_memory"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-city",
+                "evaluator_type": "set_match",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "actual_normalized": "cedar point",
+                  "accepted_count": 1,
+                  "forbidden_match": false
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.013034,
+            "output_digest": "252ef35f35e485a6531a2a87530ee22e88eba399e866b563a687b1c578b7113c"
+          },
+          {
+            "probe_id": "p-after",
+            "probe_kind": "temporal",
+            "condition": "irrelevant_ablation",
+            "repetition": 0,
+            "outcome": "scored",
+            "score": 1.0,
+            "weight": 1.0,
+            "dimensions": [
+              "temporal_memory"
+            ],
+            "evaluator_results": [
+              {
+                "evaluator_id": "eval-city",
+                "evaluator_type": "set_match",
+                "score": 1.0,
+                "passed": true,
+                "failure_codes": [],
+                "details": {
+                  "actual_normalized": "vale city",
+                  "accepted_count": 1,
+                  "forbidden_match": false
+                }
+              }
+            ],
+            "failure_codes": [],
+            "latency_ms": 0.020777,
+            "output_digest": "359c1ad4e991ce96f378668b444c19ed9576ee76513316a511e97ac2772f2743"
+          }
+        ],
+        "validity": {
+          "causal_pair_valid": true,
+          "runner_valid": true,
+          "notes": []
+        }
+      }
+    ],
+    "redacted": false,
+    "raw_output_policy": "digest_only"
+  },
+  "aggregates": {
+    "scenario_instances": [
+      {
+        "scenario_instance_id": "MIB-TIME-003:101",
+        "template_id": "MIB-TIME-003",
+        "instance_seed": 101,
+        "full_score": 1.0,
+        "dimension_scores": {
+          "temporal_memory": 1.0,
+          "causal_memory_impact": 1.0
+        },
+        "condition_scores": {
+          "full": 1.0,
+          "relevant_ablation": 0.0,
+          "irrelevant_ablation": 1.0
+        },
+        "repetitions": 1,
+        "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 1.0,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "irrelevant_memory_stability",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "irrelevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          }
+        ]
+      }
+    ],
+    "templates": [
+      {
+        "template_id": "MIB-TIME-003",
+        "template_version": "0.1.0",
+        "instance_count": 1,
+        "template_weight": 1.0,
+        "full_score": 100.0,
+        "dimension_scores": {
+          "temporal_memory": 100.0,
+          "causal_memory_impact": 100.0
+        },
+        "dimension_weights": {
+          "temporal_memory": 0.8,
+          "causal_memory_impact": 0.2
+        },
+        "coverage_weight": 1.0
+      }
+    ],
+    "dimensions": [
+      {
+        "dimension": "temporal_memory",
+        "score": 100.0,
+        "weight": 0.8,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1
+      },
+      {
+        "dimension": "causal_memory_impact",
+        "score": 100.0,
+        "weight": 0.2,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1
+      }
+    ],
+    "mib_score": {
+      "base_score": 100.0,
+      "global_guardrail_penalty": 0.0,
+      "final_score": 100.0,
+      "official": false,
+      "partial": true,
+      "profile_eligible": false,
+      "formula": "weighted_dimension_sum"
+    },
+    "dimension_weight_sum": 1.0
+  },
+  "causal_metrics": [
+    {
+      "name": "memory_benefit",
+      "value": 1.0,
+      "unit": "percentage_points",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
+      "name": "headroom_normalized_memory_benefit",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
+      "name": "irrelevant_memory_stability",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "irrelevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    }
+  ],
+  "coverage": {
+    "overall": 1.0,
+    "profile_required": 0.0,
+    "by_dimension": {
+      "temporal_memory": 1.0,
+      "causal_memory_impact": 1.0
+    },
+    "missing_required_templates": [],
+    "unsupported_required_templates": [],
+    "partial_score_reason": "Milestone 1 single-scenario development report; not an official profile score."
+  },
+  "statistics": {
+    "confidence_level": 0.95,
+    "mib_score": {
+      "value": 100.0,
+      "n": 1
+    }
+  },
+  "warnings": [
+    {
+      "code": "development.milestone1_partial_score",
+      "severity": "info",
+      "message": "This is a Milestone 1 development report, not an official MIB-Core-0.1 score.",
+      "scope": "report"
+    }
+  ],
+  "provenance": {
+    "generated_by": "MIB Reference Runner",
+    "generator_version": "0.1.0",
+    "score_recomputed": true,
+    "verification_status": "partially_verified"
+  }
+}

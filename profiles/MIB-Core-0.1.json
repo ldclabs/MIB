@@ -1,0 +1,78 @@
+{
+  "id": "MIB-Core-0.1",
+  "version": "0.1.0",
+  "description": "Official v0.1 six-dimension profile. Hidden Eval + Private Holdout only.",
+  "track": "integrated_agent",
+  "scale": "MIB-M",
+  "scenario_pack": {
+    "id": "MIB-v0.1-Official-Canonical-Eval-Store",
+    "version": "0.1.0"
+  },
+  "dimensions": {
+    "retention_retrieval": {
+      "weight": 0.14634146341463414
+    },
+    "temporal_memory": {
+      "weight": 0.15853658536585366
+    },
+    "epistemic_memory": {
+      "weight": 0.18292682926829268
+    },
+    "experience_memory": {
+      "weight": 0.18292682926829268
+    },
+    "skill_learning_transfer": {
+      "weight": 0.18292682926829268
+    },
+    "causal_memory_impact": {
+      "weight": 0.14634146341463414
+    }
+  },
+  "required_templates": [
+    "MIB-CAUSAL-004",
+    "MIB-CAUSAL-005",
+    "MIB-CAUSAL-006",
+    "MIB-CAUSAL-007",
+    "MIB-CAUSAL-008",
+    "MIB-EPI-005",
+    "MIB-EPI-006",
+    "MIB-EPI-007",
+    "MIB-EPI-008",
+    "MIB-EPI-009",
+    "MIB-EPI-010",
+    "MIB-EXP-004",
+    "MIB-EXP-005",
+    "MIB-EXP-006",
+    "MIB-EXP-007",
+    "MIB-EXP-008",
+    "MIB-RET-005",
+    "MIB-RET-006",
+    "MIB-RET-007",
+    "MIB-RET-008",
+    "MIB-RET-009",
+    "MIB-RET-010",
+    "MIB-SKILL-004",
+    "MIB-SKILL-005",
+    "MIB-SKILL-006",
+    "MIB-SKILL-007",
+    "MIB-SKILL-008",
+    "MIB-TIME-005",
+    "MIB-TIME-006",
+    "MIB-TIME-007",
+    "MIB-TIME-008",
+    "MIB-TIME-009",
+    "MIB-TIME-010",
+    "MIB-X-004",
+    "MIB-X-005",
+    "MIB-X-006"
+  ],
+  "required_coverage": 1.0,
+  "hidden_instances_per_template": 4,
+  "repetitions": 2,
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_method": "hierarchical_bootstrap_percentile",
+    "bootstrap_resamples": 10000,
+    "preserve_causal_pairs": true
+  }
+}

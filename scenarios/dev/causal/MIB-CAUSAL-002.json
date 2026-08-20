@@ -1,0 +1,309 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-CAUSAL-002",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Irrelevant-Memory Stability",
+  "description": "Tests whether removing semantically plausible but causally irrelevant history leaves future behavior unchanged.",
+  "suite": "causal",
+  "dimensions": [
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "irrelevant-ablation",
+    "stability",
+    "interference"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 1,
+    "distractor_events": 3,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "experience_steps": 4,
+    "probe_indirectness": 0.6
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "observe",
+      "act",
+      "tools"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 12,
+    "max_tool_calls": 10,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "workspace": {
+        "workspace_required": true,
+        "selected_workspace": null,
+        "edited": false,
+        "saved": false
+      }
+    },
+    "tools": [
+      {
+        "id": "workspace",
+        "version": "0.1.0",
+        "simulator_binding": "mib.workspace.v1",
+        "operations": [
+          {
+            "name": "select_workspace",
+            "description": "Select the workspace in which the record will be saved.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "workspace": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "workspace"
+              ]
+            }
+          },
+          {
+            "name": "edit_record",
+            "description": "Edit the current record.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "save",
+            "description": "Save the edited record.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "inspect_status",
+            "description": "Inspect current workspace save state.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e1",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "content": "The learned rule is workspace before saving: select the workspace, then edit and Save.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "content": "Near-match note: another team discussed a workspace color but not save behavior.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "d2",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "agent",
+      "content": "Routine status: storage quota remains unchanged.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "d3",
+      "stage": "past",
+      "type": "distractor",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "agent",
+      "content": "A different record was exported as PDF.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 100
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-action",
+      "kind": "action",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Update and save the current record.",
+        "available_tools": [
+          "workspace.select_workspace",
+          "workspace.edit_record",
+          "workspace.save"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/workspace/saved",
+            "operator": "eq",
+            "value": true
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "before",
+            "first": "workspace.select_workspace",
+            "second": "workspace.save"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1",
+          "d2",
+          "d3"
+        ]
+      },
+      "expected_effect": "neutral"
+    },
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-action"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e1"
+        ]
+      },
+      "expected_effect": "degrade"
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "causal_memory_impact": 1.0
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability",
+      "negative_transfer",
+      "error_recurrence"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "milestone": "Reference Runner M2"
+  }
+}

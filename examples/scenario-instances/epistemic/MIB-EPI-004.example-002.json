@@ -1,0 +1,310 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-EPI-004",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Tool Evidence vs Human Statement",
+  "description": "Tests preservation of source type and task-visible authority: a human statement remains attributable while confirmed Calendar Tool evidence controls scheduling.",
+  "suite": "epistemic",
+  "dimensions": [
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "tool-evidence",
+    "human-statement",
+    "source-preference"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 3,
+    "distractor_events": 1,
+    "entity_count": 3,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Benchmark User"
+    },
+    {
+      "id": "person",
+      "kind": "person",
+      "display_name": "Iris"
+    },
+    {
+      "id": "calendar",
+      "kind": "tool",
+      "display_name": "Calendar Tool"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {},
+    "hidden_ground_truth": {
+      "authoritative_meeting_time": "12:30"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-policy",
+      "stage": "past",
+      "type": "observation",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "content": "For scheduling decisions in this benchmark workspace, the Calendar Tool is the authoritative source.",
+      "tags": [
+        "relevant",
+        "policy"
+      ],
+      "payload": {
+        "kind": "workspace_policy",
+        "authority": "calendar_tool_for_scheduling"
+      }
+    },
+    {
+      "id": "e-human",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "actor": "person",
+      "content": "I believe the Launch Check starts at 11:00.",
+      "tags": [
+        "relevant",
+        "human-source"
+      ]
+    },
+    {
+      "id": "e-tool",
+      "stage": "past",
+      "type": "tool_result",
+      "at": {
+        "sequence": 3
+      },
+      "visibility": "agent",
+      "actor": "calendar",
+      "payload": {
+        "meeting": "Launch Check",
+        "start": "12:30",
+        "status": "confirmed"
+      },
+      "tags": [
+        "relevant",
+        "tool-source"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The meeting room has a new projector.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-use",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What start time should you use to schedule the Launch Check? Answer with the time only."
+      },
+      "oracle": {
+        "accepted": [
+          "12:30"
+        ],
+        "forbidden": [
+          "11:00"
+        ],
+        "expected_status": "known"
+      },
+      "evaluators": [
+        "eval-time"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-human",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What time did Iris personally claim for the Launch Check? Answer with the time only."
+      },
+      "oracle": {
+        "accepted": [
+          "11:00"
+        ]
+      },
+      "evaluators": [
+        "eval-time"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-tool",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-use"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-tool"
+        ]
+      }
+    },
+    {
+      "id": "a-policy",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-use"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-policy"
+        ]
+      }
+    },
+    {
+      "id": "a-human",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-human"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-human"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-use",
+        "p-human"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-time",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "epistemic_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "person_name": "Iris",
+      "human_time": "11:00",
+      "calendar_time": "12:30",
+      "meeting_name": "Launch Check"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-EPI-004",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "2a17cdeaa2be2c34632fb385df40fef5b01d136df024c9c8b5fd09a4c1169dfb",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

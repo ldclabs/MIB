@@ -1,0 +1,1464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:scenario",
+  "title": "MIB Scenario",
+  "description": "Machine-readable Memory Episode Program for the Memory Intelligence Benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "id",
+    "version",
+    "title",
+    "suite",
+    "dimensions",
+    "world",
+    "timeline",
+    "probes",
+    "evaluators",
+    "scoring"
+  ],
+  "properties": {
+    "mib": {
+      "type": "string",
+      "const": "0.1",
+      "description": "MIB Scenario format family."
+    },
+    "kind": {
+      "type": "string",
+      "const": "MemoryEpisodeProgram"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^MIB-(RET|TIME|EPI|EXP|SKILL|FORGET|PROS|SELF|CAUSAL|ADV|X)-[A-Z0-9][A-Z0-9-]{0,63}$"
+    },
+    "version": {
+      "$ref": "#/$defs/SemVer"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "candidate",
+        "stable",
+        "deprecated"
+      ],
+      "default": "draft"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "suite": {
+      "type": "string",
+      "enum": [
+        "recall",
+        "time",
+        "epistemic",
+        "experience",
+        "skill",
+        "forgetting",
+        "prospective",
+        "self",
+        "causal",
+        "adversarial",
+        "cross"
+      ]
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "retention_retrieval",
+          "temporal_memory",
+          "epistemic_memory",
+          "experience_memory",
+          "skill_learning_transfer",
+          "selective_forgetting",
+          "prospective_self_memory",
+          "causal_memory_impact"
+        ]
+      }
+    },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+      }
+    },
+    "difficulty": {
+      "$ref": "#/$defs/Difficulty"
+    },
+    "template": {
+      "$ref": "#/$defs/TemplateSpec"
+    },
+    "instantiation": {
+      "$ref": "#/$defs/Instantiation"
+    },
+    "requirements": {
+      "$ref": "#/$defs/Requirements"
+    },
+    "execution": {
+      "$ref": "#/$defs/ExecutionPolicy"
+    },
+    "leakage": {
+      "$ref": "#/$defs/LeakagePolicy"
+    },
+    "actors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Actor"
+      }
+    },
+    "world": {
+      "$ref": "#/$defs/World"
+    },
+    "timeline": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TimelineEvent"
+      }
+    },
+    "probes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Probe"
+      }
+    },
+    "ablations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Ablation"
+      }
+    },
+    "evaluators": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Evaluator"
+      }
+    },
+    "scoring": {
+      "$ref": "#/$defs/Scoring"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "integrity": {
+      "$ref": "#/$defs/Integrity"
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "JsonValue": {
+      "description": "Any JSON value.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      ]
+    },
+    "Difficulty": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": [
+            "trivial",
+            "easy",
+            "medium",
+            "hard",
+            "extreme"
+          ]
+        },
+        "temporal_horizon": {
+          "type": [
+            "string",
+            "number"
+          ],
+          "description": "Descriptive or calibrated horizon."
+        },
+        "meaningful_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distractor_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "entity_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_hops": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_ambiguity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "conflict_complexity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "experience_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skill_abstraction_distance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "probe_indirectness": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "ParameterSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_.-]{0,63}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "integer",
+            "number",
+            "boolean",
+            "datetime",
+            "json"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "choice",
+            "integer_range",
+            "number_range",
+            "datetime_range",
+            "generator",
+            "derived"
+          ]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "public",
+            "hidden",
+            "derived"
+          ],
+          "default": "public"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "choices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "minimum": {
+          "type": "number"
+        },
+        "maximum": {
+          "type": "number"
+        },
+        "generator": {
+          "$ref": "#/$defs/Generator"
+        },
+        "expression": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "TemplateSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "is_template": {
+          "type": "boolean",
+          "default": false
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ParameterSpec"
+          }
+        },
+        "interpolation": {
+          "type": "string",
+          "enum": [
+            "none",
+            "dollar_brace"
+          ],
+          "default": "dollar_brace"
+        }
+      }
+    },
+    "Instantiation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "template_id": {
+          "type": "string"
+        },
+        "template_version": {
+          "$ref": "#/$defs/SemVer"
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "parameter_digest": {
+          "type": "string",
+          "pattern": "^(sha256:)?[0-9a-fA-F]{64}$"
+        },
+        "generator_version": {
+          "type": "string"
+        }
+      }
+    },
+    "Requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "black_box_compatible": {
+          "type": "boolean",
+          "default": true
+        },
+        "memory_adapter_preferred": {
+          "type": "boolean",
+          "default": false
+        },
+        "memory_adapter_required": {
+          "type": "boolean",
+          "default": false
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "observe",
+              "respond",
+              "act",
+              "tools",
+              "virtual_time",
+              "maintenance",
+              "snapshot",
+              "memory_inspect",
+              "memory_delete",
+              "memory_restore"
+            ]
+          }
+        },
+        "required_extensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ExecutionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "random_seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "reset_between_repetitions": {
+          "type": "boolean",
+          "default": true
+        },
+        "max_wall_time_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_agent_turns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "on_agent_error": {
+          "type": "string",
+          "enum": [
+            "fail_probe",
+            "skip_probe",
+            "abort_scenario"
+          ],
+          "default": "fail_probe"
+        },
+        "on_timeout": {
+          "type": "string",
+          "enum": [
+            "fail_probe",
+            "skip_probe",
+            "abort_scenario"
+          ],
+          "default": "fail_probe"
+        }
+      }
+    },
+    "LeakagePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "probe_sampling": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "late",
+            "hidden_late"
+          ],
+          "default": "late"
+        },
+        "future_probe_visible_during_formation": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "oracle_visible_to_agent": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "ablation_labels_visible_to_agent": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "hidden_world_state_visible_to_agent": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        }
+      }
+    },
+    "Actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "person",
+            "agent",
+            "organization",
+            "service",
+            "tool",
+            "environment",
+            "system",
+            "custom"
+          ]
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "Clock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "virtual",
+            "wall"
+          ]
+        },
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timezone": {
+          "type": "string",
+          "default": "UTC"
+        }
+      }
+    },
+    "ToolOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "input_schema": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "output_schema": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "ToolSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "version": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "harness",
+            "both"
+          ],
+          "default": "agent"
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolOperation"
+          }
+        },
+        "simulator_binding": {
+          "type": "string"
+        }
+      }
+    },
+    "WorldEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "World": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clock",
+        "state"
+      ],
+      "properties": {
+        "clock": {
+          "$ref": "#/$defs/Clock"
+        },
+        "state": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "entities": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorldEntity"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolSpec"
+          }
+        },
+        "hidden_ground_truth": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "TimePoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "after_event": {
+          "type": "string"
+        }
+      }
+    },
+    "WorldUpdate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "path"
+      ],
+      "properties": {
+        "op": {
+          "type": "string",
+          "enum": [
+            "set",
+            "unset",
+            "increment",
+            "append",
+            "remove"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^(/([^/~]|~[01])*)*$",
+          "description": "JSON Pointer relative to world.state."
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      }
+    },
+    "Generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "TimelineEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "stage",
+        "type",
+        "at",
+        "visibility"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "seed",
+            "past",
+            "interference",
+            "consolidation",
+            "pre_probe"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "interaction",
+            "observation",
+            "tool_result",
+            "world_update",
+            "time_advance",
+            "distractor",
+            "distractor_batch",
+            "maintenance_window",
+            "checkpoint",
+            "feedback",
+            "document",
+            "custom"
+          ]
+        },
+        "at": {
+          "$ref": "#/$defs/TimePoint"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "agent",
+            "harness",
+            "both"
+          ]
+        },
+        "actor": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "world_updates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorldUpdate"
+          }
+        },
+        "generator": {
+          "$ref": "#/$defs/Generator"
+        },
+        "oracle_labels": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Harness-only labels. Runner MUST strip these before Agent delivery."
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "WorldCondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "operator"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(/([^/~]|~[01])*)*$"
+        },
+        "operator": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "neq",
+            "exists",
+            "not_exists",
+            "contains",
+            "gte",
+            "lte"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        }
+      }
+    },
+    "ProbeTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "after_event": {
+          "type": "string"
+        },
+        "at_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "at_time": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "world_condition": {
+          "$ref": "#/$defs/WorldCondition"
+        },
+        "manual": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ProbeInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "available_tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "content"
+          ]
+        },
+        {
+          "required": [
+            "goal"
+          ]
+        }
+      ]
+    },
+    "TrajectoryRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "required_action",
+            "forbidden_action",
+            "before",
+            "after",
+            "max_occurrences",
+            "min_occurrences"
+          ]
+        },
+        "action": {
+          "type": "string"
+        },
+        "first": {
+          "type": "string"
+        },
+        "second": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "arguments": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "Oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expected": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "accepted": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "forbidden": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "expected_status": {
+          "type": "string",
+          "enum": [
+            "known",
+            "unknown",
+            "contested",
+            "historical",
+            "not_applicable"
+          ]
+        },
+        "world_assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorldCondition"
+          }
+        },
+        "trajectory_requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TrajectoryRequirement"
+          }
+        },
+        "reference": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "minProperties": 1
+    },
+    "Probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "delivery",
+        "input",
+        "oracle",
+        "evaluators"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "factual",
+            "implicit",
+            "multi_hop",
+            "temporal",
+            "epistemic",
+            "experience",
+            "skill",
+            "prospective",
+            "self",
+            "action",
+            "historical",
+            "audit",
+            "abstention",
+            "custom"
+          ]
+        },
+        "trigger": {
+          "$ref": "#/$defs/ProbeTrigger"
+        },
+        "delivery": {
+          "type": "string",
+          "enum": [
+            "respond",
+            "act",
+            "observe_only"
+          ]
+        },
+        "input": {
+          "$ref": "#/$defs/ProbeInput"
+        },
+        "oracle": {
+          "$ref": "#/$defs/Oracle"
+        },
+        "evaluators": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "dimensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "retention_retrieval",
+              "temporal_memory",
+              "epistemic_memory",
+              "experience_memory",
+              "skill_learning_transfer",
+              "selective_forgetting",
+              "prospective_self_memory",
+              "causal_memory_impact"
+            ]
+          }
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1
+        },
+        "tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Evaluator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "set_match",
+            "structured",
+            "world_state",
+            "semantic_constraints",
+            "trajectory",
+            "llm_judge",
+            "composite"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evaluator",
+              "weight"
+            ],
+            "properties": {
+              "evaluator": {
+                "type": "string"
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "AblationTargets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "event_tags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "actor_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "checkpoint": {
+          "type": "string"
+        },
+        "selector": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      },
+      "minProperties": 1
+    },
+    "Ablation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "probes",
+        "method",
+        "expected_effect"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "relevant_memory",
+            "irrelevant_memory",
+            "no_memory",
+            "stale_memory",
+            "harmful_memory",
+            "counterexample",
+            "custom"
+          ]
+        },
+        "probes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "memory_mask",
+            "memory_delete",
+            "snapshot_branch",
+            "filtered_memory_clone",
+            "replay_excluding_events",
+            "replay_with_injections",
+            "context_filter",
+            "black_box_reconstruction"
+          ]
+        },
+        "targets": {
+          "$ref": "#/$defs/AblationTargets"
+        },
+        "injections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TimelineEvent"
+          }
+        },
+        "expected_effect": {
+          "type": "string",
+          "enum": [
+            "degrade",
+            "neutral",
+            "improve",
+            "resist",
+            "informational"
+          ]
+        },
+        "tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "ScoreRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max"
+      ],
+      "properties": {
+        "min": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        }
+      }
+    },
+    "Penalty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "condition",
+        "points"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "points": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cap": {
+          "type": "number",
+          "minimum": 0
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "Scoring": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probe_aggregation",
+        "score_range"
+      ],
+      "properties": {
+        "probe_aggregation": {
+          "type": "string",
+          "enum": [
+            "weighted_mean",
+            "mean",
+            "min",
+            "max",
+            "custom"
+          ]
+        },
+        "score_range": {
+          "$ref": "#/$defs/ScoreRange"
+        },
+        "dimension_weights": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "retention_retrieval",
+              "temporal_memory",
+              "epistemic_memory",
+              "experience_memory",
+              "skill_learning_transfer",
+              "selective_forgetting",
+              "prospective_self_memory",
+              "causal_memory_impact"
+            ]
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "causal_metrics": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "causal_memory_impact",
+              "memory_benefit",
+              "memory_harm",
+              "net_memory_gain",
+              "irrelevant_memory_stability",
+              "negative_transfer",
+              "error_recurrence"
+            ]
+          }
+        },
+        "penalties": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Penalty"
+          }
+        },
+        "normalization": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "binary",
+            "custom"
+          ],
+          "default": "linear"
+        }
+      }
+    },
+    "Integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "digest_profile": {
+          "type": "string"
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-fA-F]{64}$"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

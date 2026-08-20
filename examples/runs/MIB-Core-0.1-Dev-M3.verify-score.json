@@ -1,0 +1,399 @@
+{
+  "valid": true,
+  "stored_base_score": 99.99999999999999,
+  "recomputed_base_score": 99.99999999999999,
+  "stored_final_score": 99.99999999999999,
+  "recomputed_final_score": 99.99999999999999,
+  "difference": 0.0,
+  "template_checks": [
+    {
+      "template_id": "MIB-CAUSAL-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-CAUSAL-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-CAUSAL-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-001",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-002",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-003",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-004",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EPI-004",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-001",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-002",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-003",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-001",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-002",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-003",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-004",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-RET-004",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-001",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-002",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-003",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-001",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-002",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-002",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-003",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-004",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-004",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-TIME-004",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-001",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-001",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-001",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-002",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-002",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-002",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-002",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-003",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-X-003",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "dimension_checks": [
+    {
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "epistemic_memory",
+      "stored": 99.99999999999999,
+      "recomputed": 99.99999999999999,
+      "valid": true
+    },
+    {
+      "dimension": "experience_memory",
+      "stored": 99.99999999999999,
+      "recomputed": 99.99999999999999,
+      "valid": true
+    },
+    {
+      "dimension": "skill_learning_transfer",
+      "stored": 99.99999999999999,
+      "recomputed": 99.99999999999999,
+      "valid": true
+    },
+    {
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "errors": []
+}

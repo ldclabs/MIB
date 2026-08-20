@@ -1,0 +1,38 @@
+{
+  "id": "job_c26ec19766c04496b7b9",
+  "submission_id": "mib-no-memory-fixture-stdio",
+  "cycle_id": "cycle-m5-demo-001",
+  "backend": "local_namespace",
+  "status": "queued",
+  "created_at": "2026-08-19T06:09:34.862071Z",
+  "started_at": null,
+  "completed_at": null,
+  "result_id": null,
+  "error": null,
+  "manifest": {
+    "mib": "0.1",
+    "kind": "MIBEvaluationJobManifest",
+    "version": "0.1.0",
+    "job_id": "job_c26ec19766c04496b7b9",
+    "submission_id": "mib-no-memory-fixture-stdio",
+    "submission_spec_digest": "sha256:0d33b1cac96642598f61c445f8ae5f6c2b1109a9b5db11bafbe2fba8f059e526",
+    "cycle_id": "cycle-m5-demo-001",
+    "profile_id": "MIB-Core-0.1-Hidden-M4-Demo",
+    "private_store_digest": "sha256:941a58df7fcb2d80093ebe57e3720083efa707d1e15661c332b753c37ba10656",
+    "profile_digest": "sha256:c0fceda7973bde9824803716ce0b0a94ba9f58120964821a12f570294a44d287",
+    "scenario_schema_digest": "sha256:44c88e8323c9c7a8ade74952de697fc2d11ae080d05702cbee1a3a13a918a921",
+    "report_schema_digest": "sha256:bae2841eede7400f31718551abff3244364eaa312f7eeb1c22f9e703f053a3d3",
+    "backend": "local_namespace",
+    "runner_version": "0.5.0",
+    "created_at": "2026-08-19T06:09:34.860991Z",
+    "nonce": "85041319b46810357be55977af4d43d9"
+  },
+  "manifest_signature": {
+    "scheme": "ed25519",
+    "context": "mib-evaluation-job-manifest/v1",
+    "payload_digest": "sha256:f623cf343d50aaf554db682ce7c5ce95e3303e12589a6f79c7b9cb935df3ae50",
+    "signature": "+ceExpeHxlUsURIHKq+Vl2RN74z9IzZuANvh4QNgodocOh3FVQNnwtyvUdXnFY4ybWzBKxbIKZs+gdOQLixIBw==",
+    "public_key": "wT/nQQ5eZUlE6pAq739U41Dz2/eebn91HXed6wKalF0=",
+    "key_id": "ed25519:278e7e6a96994ad5be857329"
+  }
+}

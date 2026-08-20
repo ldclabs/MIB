@@ -1,0 +1,30 @@
+{
+  "mib": "0.1",
+  "kind": "MIBCalibrationSuite",
+  "id": "MIB-v0.1-Reference-Calibration",
+  "version": "0.1.0",
+  "profile": "MIB-Core-0.1",
+  "baselines": ["B0", "B1", "B2", "B3"],
+  "default_instance_seeds": [101, 202, 303, 404],
+  "default_repetitions": 1,
+  "causal_baseline": "B3",
+  "causal_instance_seeds": [101, 202, 303, 404],
+  "causal_repetitions": 1,
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_resamples": 2000
+  },
+  "admission_targets": {
+    "full_context_min": 0.8,
+    "no_memory_max": 0.6,
+    "memory_discriminativeness_index_min": 0.25,
+    "baseline_span_min": 0.2,
+    "causal_memory_benefit_min": 0.2,
+    "irrelevant_memory_stability_min": 0.9
+  },
+  "release_calibration": {
+    "requires_fixed_external_base_model": true,
+    "requires_same_agent_policy_for_no_memory_and_full_context": true,
+    "reference_fixtures_are_sufficient": false
+  }
+}

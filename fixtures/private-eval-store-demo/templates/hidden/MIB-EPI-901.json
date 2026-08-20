@@ -1,0 +1,317 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-EPI-901",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Evaluator-Only Fixture: Explicit Self-Correction",
+  "description": "Tests current correction adoption without erasing the historically attributable original statement.",
+  "suite": "epistemic",
+  "dimensions": [
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "correction",
+    "historical-attribution",
+    "current-belief"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 2,
+    "distractor_events": 1,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "user_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Reva",
+          "Noel",
+          "Hana",
+          "Milo"
+        ]
+      },
+      {
+        "name": "old_date",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "May 12",
+          "June 14",
+          "April 8"
+        ]
+      },
+      {
+        "name": "new_date",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "May 21",
+          "June 24",
+          "April 18"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "hidden_late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "${user_name}"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {},
+    "hidden_ground_truth": {
+      "current_birthday": "${new_date}"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-original",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "My birthday is ${old_date}.",
+      "tags": [
+        "relevant",
+        "original"
+      ]
+    },
+    {
+      "id": "e-correction",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Sorry, I misspoke. My birthday is ${new_date}.",
+      "tags": [
+        "relevant",
+        "correction"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I prefer morning appointments.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-current",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What birthday should you use for me now? Answer with the date only."
+      },
+      "oracle": {
+        "accepted": [
+          "${new_date}"
+        ],
+        "forbidden": [
+          "${old_date}"
+        ],
+        "expected_status": "known"
+      },
+      "evaluators": [
+        "eval-date"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0,
+      "extensions": {
+        "mib.probe_sampling": {
+          "input_variants": [
+            {
+              "content": "What birthday should you use for me now? Answer with the date only."
+            },
+            {
+              "content": "Which birthday is current for me? Answer with the date only."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "p-history",
+      "kind": "historical",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What birthday did I originally state before correcting it? Answer with the date only."
+      },
+      "oracle": {
+        "accepted": [
+          "${old_date}"
+        ],
+        "expected_status": "historical"
+      },
+      "evaluators": [
+        "eval-date"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0,
+      "extensions": {
+        "mib.probe_sampling": {
+          "input_variants": [
+            {
+              "content": "What birthday did I originally state before correcting it? Answer with the date only."
+            },
+            {
+              "content": "Which birthday did I originally give before the correction? Answer with the date only."
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-correction",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-current"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-correction"
+        ]
+      }
+    },
+    {
+      "id": "a-original",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-history"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-original"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-current",
+        "p-history"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-date",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "epistemic_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "hidden_eval",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "demo_fixture": true,
+    "not_canonical_hidden_content": true
+  }
+}

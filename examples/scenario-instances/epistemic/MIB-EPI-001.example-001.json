@@ -1,0 +1,189 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-EPI-001",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Unknown vs False",
+  "description": "Tests whether absence of evidence remains unknown rather than becoming a fabricated negative claim.",
+  "suite": "epistemic",
+  "dimensions": [
+    "epistemic_memory"
+  ],
+  "tags": [
+    "unknown",
+    "abstention",
+    "false-certainty"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 1,
+    "distractor_events": 1,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Benchmark User"
+    },
+    {
+      "id": "person",
+      "kind": "person",
+      "display_name": "Tessa"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-known",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "person",
+      "content": "I enjoy soup.",
+      "tags": [
+        "known-but-unrelated"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Tessa joined the afternoon meeting.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-unknown",
+      "kind": "abstention",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Is Tessa allergic to shellfish? Answer exactly one of: yes, no, unknown."
+      },
+      "oracle": {
+        "accepted": [
+          "unknown"
+        ],
+        "expected_status": "unknown"
+      },
+      "evaluators": [
+        "eval-status"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-unknown"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "e-known",
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-status",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "epistemic_memory": 1.0
+    },
+    "causal_metrics": []
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "person_name": "Tessa",
+      "known_food": "soup"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-EPI-001",
+    "template_version": "0.1.0",
+    "seed": 101,
+    "parameter_digest": "b19978241a985af03374e19a16d118a4fde452b70fc6d82277b4eb9d2f0b1727",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

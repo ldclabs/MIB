@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:calibration-report",
+  "title": "MIB Calibration Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "report_version",
+    "generated_at",
+    "profile",
+    "scenario_pack",
+    "calibration_mode",
+    "release_calibration_eligible",
+    "configuration",
+    "baselines",
+    "summary",
+    "dimension_matrix",
+    "templates"
+  ],
+  "properties": {
+    "mib": {
+      "const": "0.1"
+    },
+    "kind": {
+      "const": "MIBCalibrationReport"
+    },
+    "report_version": {
+      "type": "string"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "profile": {
+      "$ref": "#/$defs/Identity"
+    },
+    "scenario_pack": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "calibration_mode": {
+      "type": "string",
+      "enum": [
+        "reference_fixture",
+        "empirical",
+        "same_model_empirical",
+        "same_model_engineering_stub"
+      ]
+    },
+    "release_calibration_eligible": {
+      "type": "boolean"
+    },
+    "release_note": {
+      "type": "string"
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "baselines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "role",
+          "release_calibration_eligible"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "release_calibration_eligible": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "dimension_matrix": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dimension",
+          "weight",
+          "baselines"
+        ],
+        "properties": {
+          "dimension": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "baselines": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        }
+      }
+    },
+    "templates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/TemplateCard"
+      }
+    }
+  },
+  "$defs": {
+    "Identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "Stat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mean",
+        "stddev",
+        "n",
+        "min",
+        "max"
+      ],
+      "properties": {
+        "mean": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "stddev": {
+          "type": "number",
+          "minimum": 0
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "ci": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true
+        }
+      }
+    },
+    "TemplateCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_id",
+        "title",
+        "suite",
+        "dimensions",
+        "baseline_scores",
+        "metrics",
+        "causal_diagnostics",
+        "gates",
+        "recommendation",
+        "reasons",
+        "causal_risks"
+      ],
+      "properties": {
+        "template_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "suite": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "visibility": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "baseline_scores": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/Stat"
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "causal_diagnostics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "gates": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "recommendation": {
+          "type": "string"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "causal_risks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "B0",
+  "name": "No Memory",
+  "role": "no_memory",
+  "implementation": "mib_runner.calibration_baselines:NoMemoryBaselineAgent",
+  "semantics": "Past benchmark observations are discarded. Tool results created inside the current future action loop may be used transiently.",
+  "release_calibration_eligible": false
+}

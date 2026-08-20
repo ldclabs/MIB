@@ -1,0 +1,234 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-RET-002",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Implicit Attribute Application",
+  "description": "Tests whether a remembered physical constraint can be applied later without a direct lexical recall cue.",
+  "suite": "recall",
+  "dimensions": [
+    "retention_retrieval",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "implicit-recall",
+    "application",
+    "constraint"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 1,
+    "distractor_events": 2,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Sora"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-size",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "My Transit Pack has an opening that is 26 cm wide.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 15
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I like matte black accessories.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "d-2",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I will be traveling on Friday.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 50
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-apply",
+      "kind": "implicit",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "A rigid case is 30 cm wide. Will it fit through my Transit Pack opening? Answer exactly: fits or does_not_fit."
+      },
+      "oracle": {
+        "accepted": [
+          "does_not_fit"
+        ]
+      },
+      "evaluators": [
+        "eval-fit"
+      ],
+      "dimensions": [
+        "retention_retrieval"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-apply"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-size"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-apply"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1",
+          "d-2"
+        ]
+      },
+      "tolerance": 0.05
+    },
+    {
+      "id": "a-none",
+      "kind": "no_memory",
+      "probes": [
+        "p-apply"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-size",
+          "d-1",
+          "d-2"
+        ]
+      }
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-fit",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "retention_retrieval": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "user_name": "Sora",
+      "opening_width": "26",
+      "item_width": "30",
+      "bag_name": "Transit Pack"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-RET-002",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "b1dbbafdfd5ea44027aa1bfc1cb7efd4d7aa5464bada7708841ccb04d8a08b69",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

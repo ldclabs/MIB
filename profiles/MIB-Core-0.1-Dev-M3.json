@@ -1,0 +1,70 @@
+{
+  "id": "MIB-Core-0.1-Dev-M3",
+  "version": "0.1.0",
+  "description": "Complete 24-template Public Dev Pack profile for Reference Runner Milestone 3. Development only; not an official Hidden Eval score.",
+  "track": "integrated_agent",
+  "scale": "MIB-S",
+  "scenario_pack": {
+    "id": "MIB-v0.1-Public-Dev",
+    "version": "0.1.0"
+  },
+  "dimensions": {
+    "retention_retrieval": {
+      "weight": 0.14634146341463414
+    },
+    "temporal_memory": {
+      "weight": 0.15853658536585366
+    },
+    "epistemic_memory": {
+      "weight": 0.18292682926829268
+    },
+    "experience_memory": {
+      "weight": 0.18292682926829268
+    },
+    "skill_learning_transfer": {
+      "weight": 0.18292682926829268
+    },
+    "causal_memory_impact": {
+      "weight": 0.14634146341463414
+    }
+  },
+  "required_templates": [
+    "MIB-CAUSAL-001",
+    "MIB-CAUSAL-002",
+    "MIB-CAUSAL-003",
+    "MIB-EPI-001",
+    "MIB-EPI-002",
+    "MIB-EPI-003",
+    "MIB-EPI-004",
+    "MIB-EXP-001",
+    "MIB-EXP-002",
+    "MIB-EXP-003",
+    "MIB-RET-001",
+    "MIB-RET-002",
+    "MIB-RET-003",
+    "MIB-RET-004",
+    "MIB-SKILL-001",
+    "MIB-SKILL-002",
+    "MIB-SKILL-003",
+    "MIB-TIME-001",
+    "MIB-TIME-002",
+    "MIB-TIME-003",
+    "MIB-TIME-004",
+    "MIB-X-001",
+    "MIB-X-002",
+    "MIB-X-003"
+  ],
+  "required_coverage": 1.0,
+  "instance_seeds": [
+    101,
+    202,
+    303
+  ],
+  "repetitions": 2,
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_method": "hierarchical_bootstrap_percentile",
+    "bootstrap_resamples": 2000,
+    "preserve_causal_pairs": true
+  }
+}

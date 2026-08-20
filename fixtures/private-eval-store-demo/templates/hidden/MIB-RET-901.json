@@ -1,0 +1,276 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-RET-901",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Evaluator-Only Fixture: Direct Delayed Recall",
+  "description": "Tests direct long-term retention of a benchmark-local random code after unrelated interference.",
+  "suite": "recall",
+  "dimensions": [
+    "retention_retrieval",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "direct-recall",
+    "delay",
+    "distractor"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 1,
+    "distractor_events": 2,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "user_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Mira",
+          "Jonah",
+          "Leena",
+          "Tomas"
+        ]
+      },
+      {
+        "name": "project_code",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "ORCHID-91",
+          "EMBER-47",
+          "NOVA-63",
+          "CEDAR-28"
+        ]
+      },
+      {
+        "name": "distractor_topic",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "lunch",
+          "weather",
+          "printer",
+          "commute"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "hidden_late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "${user_name}"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-fact",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The access code for my private demo project is ${project_code}.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Unrelated note about ${distractor_topic}: nothing here changes the project code.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "d-2",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Another unrelated conversation about groceries and weekend plans.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 60
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-recall",
+      "kind": "factual",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What is the access code for my private demo project? Answer with the code only."
+      },
+      "oracle": {
+        "accepted": [
+          "${project_code}"
+        ]
+      },
+      "evaluators": [
+        "eval-code"
+      ],
+      "dimensions": [
+        "retention_retrieval"
+      ],
+      "weight": 1.0,
+      "extensions": {
+        "mib.probe_sampling": {
+          "input_variants": [
+            {
+              "content": "What is the access code for my private demo project? Answer with the code only."
+            },
+            {
+              "content": "For my private demo project, what is the access code? Answer with the code only."
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-recall"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-fact"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-recall"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1",
+          "d-2"
+        ]
+      },
+      "tolerance": 0.05
+    },
+    {
+      "id": "a-none",
+      "kind": "no_memory",
+      "probes": [
+        "p-recall"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-fact",
+          "d-1",
+          "d-2"
+        ]
+      }
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-code",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "retention_retrieval": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "hidden_eval",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "demo_fixture": true,
+    "not_canonical_hidden_content": true
+  }
+}

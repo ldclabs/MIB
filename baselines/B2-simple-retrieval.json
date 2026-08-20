@@ -1,0 +1,8 @@
+{
+  "id": "B2",
+  "name": "Simple Lexical Retrieval",
+  "role": "simple_retrieval",
+  "implementation": "mib_runner.calibration_baselines:RetrievalBaselineAgent",
+  "memory": {"retrieval": "lexical-overlap", "top_k": 2, "temporal_model": false, "source_model": false, "experience_compilation": false},
+  "release_calibration_eligible": false
+}

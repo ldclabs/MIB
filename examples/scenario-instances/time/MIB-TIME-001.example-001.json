@@ -1,0 +1,247 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-TIME-001",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Current Value After Update",
+  "description": "Tests adoption of a new current value while world truth remains updated even if the visible update memory is ablated.",
+  "suite": "time",
+  "dimensions": [
+    "temporal_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "current-state",
+    "update",
+    "stale-suppression"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 2,
+    "distractor_events": 1,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Oren"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "current_timezone": "UTC-4"
+    },
+    "hidden_ground_truth": {
+      "current_timezone": "UTC+8"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-old",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "My current timezone is UTC-4.",
+      "tags": [
+        "relevant",
+        "historical"
+      ]
+    },
+    {
+      "id": "w-update",
+      "stage": "past",
+      "type": "world_update",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "harness",
+      "world_updates": [
+        {
+          "op": "set",
+          "path": "/current_timezone",
+          "value": "UTC+8"
+        }
+      ],
+      "tags": [
+        "world-truth"
+      ]
+    },
+    {
+      "id": "e-update",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 31
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I have moved. My current timezone is now UTC+8.",
+      "tags": [
+        "relevant",
+        "current"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 45
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "I bought a new notebook today.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 60
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-current",
+      "kind": "temporal",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What is my current timezone? Answer with the UTC offset only."
+      },
+      "oracle": {
+        "accepted": [
+          "UTC+8"
+        ],
+        "forbidden": [
+          "UTC-4"
+        ],
+        "expected_status": "known"
+      },
+      "evaluators": [
+        "eval-zone"
+      ],
+      "dimensions": [
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-current"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-update"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-current"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-zone",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "temporal_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "user_name": "Oren",
+      "old_zone": "UTC-4",
+      "new_zone": "UTC+8"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-TIME-001",
+    "template_version": "0.1.0",
+    "seed": 101,
+    "parameter_digest": "9ecd86b051c132d44b6e64bc36739105294c1a01b6f200805463b82f2e43ada7",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

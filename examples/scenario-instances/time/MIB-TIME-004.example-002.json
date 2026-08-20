@@ -1,0 +1,331 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-TIME-004",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Correction vs Reversal",
+  "description": "Separates correction of a mistaken statement from a real world-state transition while preserving both histories.",
+  "suite": "time",
+  "dimensions": [
+    "temporal_memory",
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "correction",
+    "world-transition",
+    "historical-state"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 4,
+    "distractor_events": 0,
+    "entity_count": 1,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Sana"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "office": "Cedar Hall"
+    },
+    "hidden_ground_truth": {
+      "office": "Green Annex",
+      "serial": "BR-72"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-serial-wrong",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The device serial is CP-44.",
+      "tags": [
+        "relevant",
+        "mistaken"
+      ]
+    },
+    {
+      "id": "e-serial-correct",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Correction: I misspoke. The serial is BR-72.",
+      "tags": [
+        "relevant",
+        "correction"
+      ]
+    },
+    {
+      "id": "e-office-old",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 10
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Our office is currently Cedar Hall.",
+      "tags": [
+        "relevant",
+        "historical"
+      ]
+    },
+    {
+      "id": "w-office",
+      "stage": "past",
+      "type": "world_update",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "harness",
+      "world_updates": [
+        {
+          "op": "set",
+          "path": "/office",
+          "value": "Green Annex"
+        }
+      ]
+    },
+    {
+      "id": "e-office-new",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 21
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "We moved offices. We are now in Green Annex.",
+      "tags": [
+        "relevant",
+        "current"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 35
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-serial-current",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What is the corrected device serial? Answer with the serial only."
+      },
+      "oracle": {
+        "accepted": [
+          "BR-72"
+        ]
+      },
+      "evaluators": [
+        "eval-token"
+      ],
+      "dimensions": [
+        "epistemic_memory",
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-serial-old",
+      "kind": "historical",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What serial did I originally state before correcting myself? Answer with the serial only."
+      },
+      "oracle": {
+        "accepted": [
+          "CP-44"
+        ]
+      },
+      "evaluators": [
+        "eval-token"
+      ],
+      "dimensions": [
+        "epistemic_memory",
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-office-current",
+      "kind": "temporal",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What is our current office? Answer with the office name only."
+      },
+      "oracle": {
+        "accepted": [
+          "Green Annex"
+        ]
+      },
+      "evaluators": [
+        "eval-token"
+      ],
+      "dimensions": [
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-office-old",
+      "kind": "historical",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Which office did we occupy before the move? Answer with the office name only."
+      },
+      "oracle": {
+        "accepted": [
+          "Cedar Hall"
+        ]
+      },
+      "evaluators": [
+        "eval-token"
+      ],
+      "dimensions": [
+        "temporal_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-correction",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-serial-current"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-serial-correct"
+        ]
+      }
+    },
+    {
+      "id": "a-move",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-office-current"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-office-new"
+        ]
+      }
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-token",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "temporal_memory": 0.55,
+      "epistemic_memory": 0.3,
+      "causal_memory_impact": 0.15
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "user_name": "Sana",
+      "mistaken_serial": "CP-44",
+      "correct_serial": "BR-72",
+      "old_office": "Cedar Hall",
+      "new_office": "Green Annex"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-TIME-004",
+    "template_version": "0.1.0",
+    "seed": 202,
+    "parameter_digest": "8615f4badfc70b50e6cdf72d0c16798f6fc174b9b6c05f9df1e69399f7d5f136",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

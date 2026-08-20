@@ -1,0 +1,51 @@
+{
+  "mib": "0.1",
+  "kind": "MIBPrivateEvaluationStore",
+  "id": "MIB-M4-Demo-Private-Eval-Store",
+  "version": "0.1.0",
+  "profile": "MIB-Core-0.1-Hidden-M4-Demo",
+  "demo_only": true,
+  "warning": "This store demonstrates evaluator infrastructure. It is not the canonical future leaderboard Hidden Eval/Private Holdout content.",
+  "templates": [
+    {
+      "path": "templates/hidden/MIB-RET-901.json",
+      "visibility": "hidden_eval",
+      "public_id": "hidden-recall-A",
+      "instances": 2,
+      "title_public": "Delayed benchmark-local fact"
+    },
+    {
+      "path": "templates/hidden/MIB-TIME-901.json",
+      "visibility": "hidden_eval",
+      "public_id": "hidden-time-A",
+      "instances": 2,
+      "title_public": "Current state after revision"
+    },
+    {
+      "path": "templates/hidden/MIB-EPI-901.json",
+      "visibility": "hidden_eval",
+      "public_id": "hidden-belief-A",
+      "instances": 2,
+      "title_public": "Correction and historical attribution"
+    },
+    {
+      "path": "templates/hidden/MIB-EXP-901.json",
+      "visibility": "hidden_eval",
+      "public_id": "hidden-experience-A",
+      "instances": 2,
+      "title_public": "Failure-recovery transfer"
+    },
+    {
+      "path": "templates/holdout/MIB-SKILL-901.json",
+      "visibility": "private_holdout",
+      "public_id": "holdout-A",
+      "instances": 2
+    },
+    {
+      "path": "templates/holdout/MIB-CAUSAL-901.json",
+      "visibility": "private_holdout",
+      "public_id": "holdout-B",
+      "instances": 2
+    }
+  ]
+}

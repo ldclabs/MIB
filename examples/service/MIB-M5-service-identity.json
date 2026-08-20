@@ -1,0 +1,18 @@
+{
+  "mib": "0.1",
+  "kind": "MIBEvaluationServiceIdentity",
+  "version": "0.5.0",
+  "db": "/mnt/data/MIB-Reference-Runner-M5/service/state/service.sqlite3",
+  "artifact_root": "/mnt/data/MIB-Reference-Runner-M5/service/artifacts",
+  "backend": "local_namespace",
+  "job_signing": {
+    "scheme": "ed25519",
+    "public_key": "wT/nQQ5eZUlE6pAq739U41Dz2/eebn91HXed6wKalF0=",
+    "key_id": "ed25519:278e7e6a96994ad5be857329"
+  },
+  "result_signing": {
+    "scheme": "ed25519",
+    "public_key": "8imRXoMxUUkBqB15mo0zcJOyKF7rAYq9FxFdQ0Zoqmc=",
+    "key_id": "ed25519:f3c4cebe3a6a60cdcab68c03"
+  }
+}

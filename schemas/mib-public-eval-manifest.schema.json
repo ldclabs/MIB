@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:public-eval-manifest",
+  "title": "MIB Public Evaluation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "id",
+    "version",
+    "profile",
+    "hidden_eval",
+    "private_holdout",
+    "suite_counts"
+  ],
+  "properties": {
+    "mib": {
+      "const": "0.1"
+    },
+    "kind": {
+      "const": "MIBPublicEvaluationManifest"
+    },
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "profile": {
+      "type": "string"
+    },
+    "hidden_eval": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "public_id",
+          "visibility",
+          "suite",
+          "dimensions",
+          "title"
+        ],
+        "properties": {
+          "public_id": {
+            "type": "string"
+          },
+          "visibility": {
+            "const": "hidden_eval"
+          },
+          "suite": {
+            "type": "string"
+          },
+          "dimensions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "private_holdout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "statement"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "statement": {
+          "type": "string"
+        }
+      }
+    },
+    "suite_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  }
+}

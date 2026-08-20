@@ -1,0 +1,43 @@
+{
+  "mib": "0.1",
+  "kind": "MIBSameModelExperiment",
+  "id": "MIB-Core-0.1-same-model-release-candidate-001",
+  "pack": "../../private/MIB-v0.1-Official-Canonical-Pack-r2",
+  "scenario_schema": "../../schemas/mib-scenario.schema.json",
+  "profile": "../../private/MIB-v0.1-Official-Canonical-Pack-r2/profiles/MIB-Core-0.1.json",
+  "model": {
+    "client": "http_json",
+    "model_id": "REPLACE_WITH_FIXED_MODEL_ID",
+    "endpoint": "http://127.0.0.1:9000/complete",
+    "api_key_env": "MIB_MODEL_API_KEY",
+    "timeout_s": 120,
+    "parameters": {"temperature": 0, "max_tokens": 768},
+    "seed_policy": "paired_per_call"
+  },
+  "agent": {
+    "system_prompt": "../../prompts/same-model-agent-v0.1.txt",
+    "reasoning_policy": "../../prompts/reasoning-policy-v0.1.txt",
+    "retrieval_top_k": 4,
+    "structured_top_k": 10,
+    "structured_salient_k": 6,
+    "parse_retries": 1,
+    "memory_char_limits": {"B0": null, "B1": null, "B2": null, "B3": null}
+  },
+  "calibration": {
+    "instance_seeds": [101, 202, 303, 404],
+    "repetitions": 2,
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": "mib-same-model-release-001",
+    "causal_baseline": "B3",
+    "causal_instance_seeds": [101, 202, 303, 404],
+    "causal_repetitions": 2,
+    "thresholds": {
+      "full_context_min": 0.8,
+      "no_memory_max": 0.6,
+      "mdi_min": 0.25,
+      "baseline_span_min": 0.2,
+      "irrelevant_stability_min": 0.9,
+      "causal_memory_benefit_min": 0.2
+    }
+  }
+}

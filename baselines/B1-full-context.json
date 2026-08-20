@@ -1,0 +1,9 @@
+{
+  "id": "B1",
+  "name": "Full Visible History Fixture",
+  "role": "full_context",
+  "implementation": "mib_runner.calibration_baselines:FullContextBaselineAgent",
+  "semantics": "All Agent-visible past observations are available to a deterministic calibration reasoner at each Probe.",
+  "release_calibration_eligible": false,
+  "warning": "This is a fixture-level FC upper-bound check, not the final fixed-LLM Full Context baseline required for release calibration."
+}

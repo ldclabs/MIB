@@ -1,0 +1,28 @@
+{
+  "id": "mib-reference-fixture-stdio",
+  "transport": "stdio",
+  "command": [
+    "python",
+    "examples/stdio_reference_agent.py"
+  ],
+  "stage": [
+    {
+      "source": "../agents/stdio_reference_agent.py",
+      "dest": "examples/stdio_reference_agent.py"
+    },
+    {
+      "source": "../../src",
+      "dest": "src"
+    }
+  ],
+  "timeout_seconds": 15,
+  "sandbox": {
+    "memory_mb": 512,
+    "cpu_seconds": 60,
+    "file_size_mb": 64,
+    "nofile": 64,
+    "nproc": 32,
+    "network": "disabled_best_effort",
+    "hide_paths": []
+  }
+}

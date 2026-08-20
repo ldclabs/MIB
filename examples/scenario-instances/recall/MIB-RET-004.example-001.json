@@ -1,0 +1,296 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-RET-004",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Identity Collision",
+  "description": "Tests whether two actors with the same display name remain distinct through stable identity and organization context.",
+  "suite": "recall",
+  "dimensions": [
+    "retention_retrieval",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "identity",
+    "same-display-name",
+    "precision"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 4,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 0,
+    "probe_indirectness": 0.2
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Benchmark User"
+    },
+    {
+      "id": "person-a",
+      "kind": "person",
+      "display_name": "Sam Chen"
+    },
+    {
+      "id": "person-b",
+      "kind": "person",
+      "display_name": "Sam Chen"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-id-a",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Sam Chen from Northstar is actor person-a.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-pref-a",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 2
+      },
+      "visibility": "agent",
+      "actor": "person-a",
+      "content": "For meetings, I prefer sparkling water.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-id-b",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 10
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Sam Chen from Cobalt is actor person-b.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "e-pref-b",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 11
+      },
+      "visibility": "agent",
+      "actor": "person-b",
+      "content": "For meetings, I prefer green tea.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 25
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "Both organizations use the same meeting room today.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-a",
+      "kind": "factual",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What drink should I order for Sam Chen from Northstar? Answer with the drink only."
+      },
+      "oracle": {
+        "accepted": [
+          "sparkling water"
+        ]
+      },
+      "evaluators": [
+        "eval-drink"
+      ],
+      "dimensions": [
+        "retention_retrieval"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-b",
+      "kind": "factual",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What drink should I order for Sam Chen from Cobalt? Answer with the drink only."
+      },
+      "oracle": {
+        "accepted": [
+          "green tea"
+        ]
+      },
+      "evaluators": [
+        "eval-drink"
+      ],
+      "dimensions": [
+        "retention_retrieval"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant-a",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-a"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-id-a",
+          "e-pref-a"
+        ]
+      }
+    },
+    {
+      "id": "a-relevant-b",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-b"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-id-b",
+          "e-pref-b"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-a",
+        "p-b"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-drink",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "retention_retrieval": 0.85,
+      "causal_memory_impact": 0.15
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1,
+    "materialized_example": true,
+    "parameter_values": {
+      "shared_name": "Sam Chen",
+      "org_a": "Northstar",
+      "org_b": "Cobalt",
+      "drink_a": "sparkling water",
+      "drink_b": "green tea"
+    }
+  },
+  "instantiation": {
+    "template_id": "MIB-RET-004",
+    "template_version": "0.1.0",
+    "seed": 101,
+    "parameter_digest": "b7f535b6cebf8c0a6285cc71f9c84cfa60c254d8ec4e41171e1460e6e3afb607",
+    "generator_version": "mib-public-dev-materializer/0.1.0"
+  }
+}

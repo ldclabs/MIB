@@ -1,0 +1,61 @@
+{
+  "kind": "MIBPairedSystemComparison",
+  "profile_id": "MIB-Core-0.1-Hidden-M4-Demo",
+  "cycle_compatible": true,
+  "paired_template_count": 6,
+  "paired_instance_count": 12,
+  "mib_score_delta_a_minus_b": 86.67247386759581,
+  "paired_ci": {
+    "lower": 35.45296167247386,
+    "upper": 86.67247386759581,
+    "level": 0.95,
+    "method": "paired_hierarchical_bootstrap_public_aggregates",
+    "resamples": 5000,
+    "seed": "20260819"
+  },
+  "statistically_distinguishable_95": true,
+  "dimension_deltas": {
+    "causal_memory_impact": {
+      "mean_bootstrap_delta": 71.42857142857142,
+      "ci": {
+        "lower": 71.42857142857142,
+        "upper": 71.42857142857142
+      }
+    },
+    "epistemic_memory": {
+      "mean_bootstrap_delta": 66.76,
+      "ci": {
+        "lower": 0.0,
+        "upper": 100.0
+      }
+    },
+    "experience_memory": {
+      "mean_bootstrap_delta": 66.36,
+      "ci": {
+        "lower": 0.0,
+        "upper": 100.0
+      }
+    },
+    "retention_retrieval": {
+      "mean_bootstrap_delta": 66.62,
+      "ci": {
+        "lower": 0.0,
+        "upper": 100.0
+      }
+    },
+    "skill_learning_transfer": {
+      "mean_bootstrap_delta": 33.39,
+      "ci": {
+        "lower": 0.0,
+        "upper": 50.0
+      }
+    },
+    "temporal_memory": {
+      "mean_bootstrap_delta": 67.14,
+      "ci": {
+        "lower": 0.0,
+        "upper": 100.0
+      }
+    }
+  }
+}

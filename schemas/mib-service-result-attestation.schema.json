@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:service-result-attestation",
+  "title": "MIB Service Result Attestation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "version",
+    "result_id",
+    "job_id",
+    "job_manifest_digest",
+    "submission_id",
+    "cycle_id",
+    "profile_id",
+    "score",
+    "public_report_digest",
+    "internal_report_digest",
+    "backend",
+    "backend_evidence",
+    "started_at",
+    "completed_at",
+    "attestation_type",
+    "statement"
+  ],
+  "properties": {
+    "mib": {
+      "const": "0.1"
+    },
+    "kind": {
+      "const": "MIBServiceResultAttestation"
+    },
+    "version": {
+      "type": "string"
+    },
+    "result_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "job_manifest_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "submission_id": {
+      "type": "string"
+    },
+    "cycle_id": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string"
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "public_report_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "internal_report_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "backend": {
+      "enum": [
+        "local_namespace",
+        "oci_command",
+        "microvm_command"
+      ]
+    },
+    "backend_evidence": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "attestation_type": {
+      "const": "service_attestation"
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

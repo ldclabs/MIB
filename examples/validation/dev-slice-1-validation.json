@@ -1,0 +1,220 @@
+{
+  "mib": "0.1",
+  "pack": "MIB-v0.1-Dev-Slice-1",
+  "schema": "urn:mib:0.1:schema:scenario",
+  "result": "pass",
+  "checks": {
+    "template_schema_validation": {
+      "passed": 12,
+      "failed": 0
+    },
+    "materialized_instance_schema_validation": {
+      "passed": 24,
+      "failed": 0
+    },
+    "semantic_reference_validation": "pass",
+    "timeline_monotonicity": "pass",
+    "dimension_weight_sum": "pass",
+    "leakage_policy": "pass",
+    "placeholder_validation": "pass",
+    "deterministic_evaluators_only": "pass",
+    "llm_judge_usage": 0
+  },
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "6bb7598269fda7e81c75e43d4b938b04037e8b81761cad9b93b3c158fc98985d",
+      "bytes": 1101
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-001.example-001.json",
+      "sha256": "793cf1588e2f1ec6821fc020be725c4a039cdb9d57f6b944ea5816573d5ed776",
+      "bytes": 4070
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-001.example-002.json",
+      "sha256": "8efeb322b7ef26ea065de1fc41ec227fff04f1b5dd8ffd5b2b0d9dfea79fc9d4",
+      "bytes": 4066
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-002.example-001.json",
+      "sha256": "6d72de4751829dc37cb9c472fe530a48e335ee80abd409ac8b2a9c8ed138fb04",
+      "bytes": 5700
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-002.example-002.json",
+      "sha256": "0e1f60fd99c9e9de9b1e30d6cda9e229b22bc3b20df813671b95677de85b65ac",
+      "bytes": 5700
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-003.example-001.json",
+      "sha256": "c1e53ff00bcae64fb015c18df5483963221a787dfbb07ba2cca29ddb101b9184",
+      "bytes": 6261
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-003.example-002.json",
+      "sha256": "87e95918b75411edda0116195d9577a461b76eebd9b562bc79f1c3e323e2a4a9",
+      "bytes": 6264
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-004.example-001.json",
+      "sha256": "710c28743974c3c07e23e7a19ce8a2427fadf47c3887889fc4196e3475fa3839",
+      "bytes": 6771
+    },
+    {
+      "path": "examples/epistemic/MIB-EPI-004.example-002.json",
+      "sha256": "cb0808217f00d50ec33cefe403dce085191ebb54ffabf172bb0e97594b24af57",
+      "bytes": 6768
+    },
+    {
+      "path": "examples/recall/MIB-RET-001.example-001.json",
+      "sha256": "95ba1a362fd574c23ea30c389715726205c1ea27990debbafa997a7b28351696",
+      "bytes": 5062
+    },
+    {
+      "path": "examples/recall/MIB-RET-001.example-002.json",
+      "sha256": "b8cdad00f7bad2b6edda97572b0c05f1b579526e7a2c0e99de8657469782975b",
+      "bytes": 5065
+    },
+    {
+      "path": "examples/recall/MIB-RET-002.example-001.json",
+      "sha256": "e906846e2bcc6788b27f4d18a5089409a669ce2bd0d567d43454d530b1864d95",
+      "bytes": 5057
+    },
+    {
+      "path": "examples/recall/MIB-RET-002.example-002.json",
+      "sha256": "14ff2de7a7f867b7625415079edd8ccc527a3bc55fc06131c1ba4ec8dfa51a39",
+      "bytes": 5059
+    },
+    {
+      "path": "examples/recall/MIB-RET-003.example-001.json",
+      "sha256": "561548a53cebc2888b68bb0fd96996dadfca2728525f0b47679bcc3565e1cb3c",
+      "bytes": 5772
+    },
+    {
+      "path": "examples/recall/MIB-RET-003.example-002.json",
+      "sha256": "612745cb4de57c48b223f31cf896e64681178e2864b14b09c3abaa3db63d5945",
+      "bytes": 5768
+    },
+    {
+      "path": "examples/recall/MIB-RET-004.example-001.json",
+      "sha256": "ef2e06c39e1e41f5de2d1f11e5b72f8c289fe22e4df9ddd419a89709a57a2794",
+      "bytes": 6357
+    },
+    {
+      "path": "examples/recall/MIB-RET-004.example-002.json",
+      "sha256": "591f90514af463612e413843384515b8d608bb13c4dad2ca720c4d75f8aa60eb",
+      "bytes": 6354
+    },
+    {
+      "path": "examples/time/MIB-TIME-001.example-001.json",
+      "sha256": "a6f3dd5012c97e5a92f4157450f64e8deb20ec5cb2497d6c294e26e008453132",
+      "bytes": 5265
+    },
+    {
+      "path": "examples/time/MIB-TIME-001.example-002.json",
+      "sha256": "5906b0e74399971810024dd5f261c556b36a13c9ef81e2e626090d8a32bce333",
+      "bytes": 5267
+    },
+    {
+      "path": "examples/time/MIB-TIME-002.example-001.json",
+      "sha256": "a797c6f74f77b426e4d9cd9a37d60f20e1136e16ded457c143c140791fcecc5d",
+      "bytes": 6057
+    },
+    {
+      "path": "examples/time/MIB-TIME-002.example-002.json",
+      "sha256": "853c4be7d54994f07a74876ab88083b36a6642048f6b905a5c9553ceae9afc58",
+      "bytes": 6055
+    },
+    {
+      "path": "examples/time/MIB-TIME-003.example-001.json",
+      "sha256": "799d1116c22b933ac041f718d883f9313ff3e919e5a2e96de174b3322ae4097e",
+      "bytes": 6094
+    },
+    {
+      "path": "examples/time/MIB-TIME-003.example-002.json",
+      "sha256": "4647da3ed34c7bc57134695314989638edfd1a2c20f93d269b65fe26b70583ee",
+      "bytes": 6094
+    },
+    {
+      "path": "examples/time/MIB-TIME-004.example-001.json",
+      "sha256": "094bb6e76f4ed1035efdbef04aaa2241b1255d705f7148f58c88c5375d9213ad",
+      "bytes": 7169
+    },
+    {
+      "path": "examples/time/MIB-TIME-004.example-002.json",
+      "sha256": "a8a716ee51defed59c8d30464bd80ebca33429b7090f916ad9b65d1dc522bb11",
+      "bytes": 7169
+    },
+    {
+      "path": "manifest.json",
+      "sha256": "160eaa2b574a5913c4964e0b7d5daced8bc698853ad6b7ca7b5984a4350d6f95",
+      "bytes": 6685
+    },
+    {
+      "path": "scenarios/dev/epistemic/MIB-EPI-001.json",
+      "sha256": "9268ad18793dfa23c537e7287abb6406624d4239938dc10564888001cce708f6",
+      "bytes": 4283
+    },
+    {
+      "path": "scenarios/dev/epistemic/MIB-EPI-002.json",
+      "sha256": "e7c95ac3fee7165d2e1610c16fdad12df75f30ccd339ea72f49c0230b844068b",
+      "bytes": 6107
+    },
+    {
+      "path": "scenarios/dev/epistemic/MIB-EPI-003.json",
+      "sha256": "792237df1fa1b867c5d89acc86a5e513cf7556fd67eddceeefadcc65a3af48cd",
+      "bytes": 6851
+    },
+    {
+      "path": "scenarios/dev/epistemic/MIB-EPI-004.json",
+      "sha256": "340ad0c2e2055ad4a0e1407b2cef3a0cb8e556071b2c7a06b2f609d07b4ee2a2",
+      "bytes": 7433
+    },
+    {
+      "path": "scenarios/dev/recall/MIB-RET-001.json",
+      "sha256": "4e2dd2212b718cc69cd1bb0bee831bdaf4fb0953c25ec7d025af69b33e9730d7",
+      "bytes": 5519
+    },
+    {
+      "path": "scenarios/dev/recall/MIB-RET-002.json",
+      "sha256": "278d9779bb3c99af8fd7ccfc760f207de41bce580cb6024aab9d3ec6d8022ba6",
+      "bytes": 5647
+    },
+    {
+      "path": "scenarios/dev/recall/MIB-RET-003.json",
+      "sha256": "50606eea175cfae84e10085d01edf2f99033538d2ec56a84461cbb41d0ded051",
+      "bytes": 6405
+    },
+    {
+      "path": "scenarios/dev/recall/MIB-RET-004.json",
+      "sha256": "ae37229ff8239ae4a3cf8194f835c2485dc0a694f3fdf930a235d30f152146e3",
+      "bytes": 7159
+    },
+    {
+      "path": "scenarios/dev/time/MIB-TIME-001.json",
+      "sha256": "f2d643c6eabab22b8028681742c93e07b141c85912150ead254f5053b2305cf4",
+      "bytes": 5682
+    },
+    {
+      "path": "scenarios/dev/time/MIB-TIME-002.json",
+      "sha256": "8874d8331ffbdb2bdfc7e9aa94d38485c841c7a9bdda219b388109fd7d8700bf",
+      "bytes": 6472
+    },
+    {
+      "path": "scenarios/dev/time/MIB-TIME-003.json",
+      "sha256": "c92b10082dd9a305be107614330a99e9583abf66bd61829c3b7c02a7199b5860",
+      "bytes": 6478
+    },
+    {
+      "path": "scenarios/dev/time/MIB-TIME-004.json",
+      "sha256": "0919066ea6f40631bde471d0dfcd1792e28ea4fd61e3f0b5ac1ee886126b82c2",
+      "bytes": 8022
+    },
+    {
+      "path": "schemas/mib-scenario.schema.json",
+      "sha256": "44c88e8323c9c7a8ade74952de697fc2d11ae080d05702cbee1a3a13a918a921",
+      "bytes": 32163
+    }
+  ]
+}

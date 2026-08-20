@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:submission",
+  "title": "MIB Submission Spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "transport"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "transport": {
+      "enum": [
+        "stdio",
+        "http"
+      ]
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "command": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "base_url": {
+      "type": "string",
+      "minLength": 1
+    },
+    "headers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "stage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "dest"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "dest": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memory_mb": {
+          "type": "integer",
+          "minimum": 128
+        },
+        "cpu_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "file_size_mb": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nofile": {
+          "type": "integer",
+          "minimum": 16
+        },
+        "nproc": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "network": {
+          "enum": [
+            "inherit",
+            "disabled_best_effort",
+            "disabled_strict"
+          ]
+        },
+        "env_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hide_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "display_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "type": "string"
+    },
+    "track": {
+      "enum": [
+        "memory_system",
+        "integrated_agent",
+        "diagnostics"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "transport": {
+            "const": "stdio"
+          }
+        },
+        "required": [
+          "transport"
+        ]
+      },
+      "then": {
+        "required": [
+          "command"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "transport": {
+            "const": "http"
+          }
+        },
+        "required": [
+          "transport"
+        ]
+      },
+      "then": {
+        "required": [
+          "base_url"
+        ]
+      }
+    }
+  ]
+}

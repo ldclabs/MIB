@@ -1,0 +1,8 @@
+MIB same-model reasoning policy v0.1
+
+- The model is invoked statelessly for every respond()/act() turn.
+- Long-term past is supplied only through LONG_TERM_MEMORY_CONTEXT.
+- Current-task tool results are supplied through CURRENT_TASK_TRANSIENT_STATE and are available equally to all memory conditions.
+- RESPONSE tasks should answer the requested form concisely.
+- ACTION tasks should choose observable tool calls that satisfy the goal and constraints, then terminate only after sufficient tool evidence.
+- No private chain-of-thought is requested or scored.

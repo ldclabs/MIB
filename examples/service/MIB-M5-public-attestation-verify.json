@@ -1,0 +1,8 @@
+{
+  "valid": true,
+  "signature_valid": true,
+  "expected_key_id_valid": true,
+  "public_report_digest_valid": true,
+  "key_id": "ed25519:f3c4cebe3a6a60cdcab68c03",
+  "public_key": "8imRXoMxUUkBqB15mo0zcJOyKF7rAYq9FxFdQ0Zoqmc="
+}

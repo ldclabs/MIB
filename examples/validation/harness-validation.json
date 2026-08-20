@@ -1,0 +1,132 @@
+{
+  "mib": "0.1",
+  "kind": "MIBSameModelHarnessValidation",
+  "version": "0.1.0",
+  "generated_at": "2026-08-19T09:40:37.878434Z",
+  "result": "pass",
+  "package": "MIB-v0.1-Same-Model-Empirical-Harness",
+  "package_version": "0.7.0",
+  "tests": {
+    "passed": 39,
+    "failed": 0,
+    "status": "PASS",
+    "scope": "M1-M5 + calibration + same-model + HTTP model client + CLI artifact contract"
+  },
+  "schemas": {
+    "mib_same_model_experiment": "PASS",
+    "mib_same_model_report": "PASS",
+    "mib_calibration_report": "PASS",
+    "mib_scenario": "PASS",
+    "stub_experiment_config": "PASS",
+    "external_http_experiment_config": "PASS",
+    "stub_report_outer": "PASS",
+    "stub_report_embedded_calibration": "PASS"
+  },
+  "official_pack_r2": {
+    "template_count": 36,
+    "hidden_eval_count": 30,
+    "private_holdout_count": 6,
+    "template_schema_validation": "36/36 PASS",
+    "materialized_instance_validation": "144/144 PASS",
+    "fixture_calibration_full_gate": "36/36 PASS",
+    "open_fixture_revision_queue": 0,
+    "release_grade_same_model_empirical": "pending"
+  },
+  "same_model_fairness": {
+    "experiment_lock_digest": "sha256:f1a631197a3fdb40d16917b9c6eb7c0af249af58db5db90b68e85d899553851d",
+    "single_model_identity": true,
+    "same_system_prompt": true,
+    "same_reasoning_policy": true,
+    "same_tool_interface": true,
+    "same_decoding_parameters": true,
+    "only_memory_policy_varies": true,
+    "condition_label_model_visible": false,
+    "stateless_model_contract": true,
+    "statelessness_preflight": "PASS",
+    "semantic_seed_pairing": "respond:<probe_id> / act:<task_id>:<turn>; condition label excluded",
+    "counterbalanced_condition_order": "counterbalanced_latin_rotation_v1",
+    "official_paired_units": 288,
+    "official_position_counts": {
+      "B0": [
+        72,
+        72,
+        72,
+        72
+      ],
+      "B1": [
+        72,
+        72,
+        72,
+        72
+      ],
+      "B2": [
+        72,
+        72,
+        72,
+        72
+      ],
+      "B3": [
+        72,
+        72,
+        72,
+        72
+      ]
+    },
+    "official_schedule_balanced": true,
+    "paired_agent_seed_and_future_probe": true,
+    "B1_full_context_truncation_gate": "required zero"
+  },
+  "engineering_stub": {
+    "mode": "same_model_engineering_stub",
+    "purpose": "plumbing/fairness validation only; not empirical evidence",
+    "fairness_valid": true,
+    "statelessness_preflight": true,
+    "pairing_valid": true,
+    "pairing_mismatch_count": 0,
+    "condition_order_balanced": true,
+    "B1_memory_truncations": 0,
+    "model_errors": 0,
+    "csv_template_rows": 36,
+    "template_full_gate_passed": 0,
+    "template_total": 36,
+    "release_calibration_eligible": false
+  },
+  "external_release_candidate": {
+    "status": "pending_external_model_run",
+    "reason": "No externally callable fixed model endpoint or model credentials were supplied in the current execution environment.",
+    "model_client": "http_json",
+    "model_id_placeholder": "REPLACE_WITH_FIXED_MODEL_ID",
+    "instance_seeds": [
+      101,
+      202,
+      303,
+      404
+    ],
+    "repetitions": 2,
+    "bootstrap_resamples": 10000,
+    "minimum_condition_runs": 2232,
+    "full_baseline_condition_runs": 1152,
+    "additional_causal_ablation_runs": 1080,
+    "minimum_model_turns": 3152,
+    "actual_model_turns_note": "ACTION probes may require multiple model turns, so actual model calls can exceed minimum_model_turns.",
+    "release_calibration_eligible": false
+  },
+  "implementation": {
+    "stateless_model_requests": "PASS",
+    "provider_neutral_http_json_contract": "PASS",
+    "openai_compatible_optional_adapter": "implemented",
+    "subprocess_jsonl_model_adapter": "implemented",
+    "semantic_seed_pairing": "PASS",
+    "interleaved_latin_rotation": "PASS",
+    "B3_causal_full_run_reuse": "PASS",
+    "estimate_only_output_json_contract": "PASS",
+    "lock_only_output_json_contract": "PASS",
+    "offline_editable_install": "PASS",
+    "installed_cli_help": "PASS"
+  },
+  "release_decision": {
+    "freeze_leaderboard_pack_now": false,
+    "reason": "A real fixed external model has not yet been run under the locked same-model experiment. Engineering stub results cannot satisfy release calibration.",
+    "next_required_evidence": "Run the external HTTP experiment with one fixed stateless model; all fairness gates must pass and all 36 official Templates must satisfy empirical admission gates."
+  }
+}

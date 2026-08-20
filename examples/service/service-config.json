@@ -1,0 +1,11 @@
+{
+  "db_path": "./state/service.sqlite3",
+  "artifact_root": "./artifacts",
+  "scenario_schema": "../mib-scenario.schema.json",
+  "report_schema": "../mib-report.schema.json",
+  "submission_schema": "../schemas/mib-submission.schema.json",
+  "job_manifest_schema": "../schemas/mib-evaluation-job-manifest.schema.json",
+  "result_attestation_schema": "../schemas/mib-service-result-attestation.schema.json",
+  "service_root_secret_env": "MIB_SERVICE_ROOT_SECRET",
+  "backend": "local_namespace"
+}

@@ -1,0 +1,398 @@
+from __future__ import annotations
+
+import argparse
+import importlib
+import json
+from pathlib import Path
+
+from .agents import ReferenceMemoryAgent
+from .benchmark import load_templates, run_benchmark_pack, run_materialized_pack
+from .capability import render_capability_card
+from .materialize import materialize
+from .hidden import HiddenEvalStore, redact_report_for_public
+from .submission import build_submission_runtime, load_submission_spec
+from .report import build_basic_report, validate_report, verify_score
+from .runner import run_scenario
+from .validation import load_json, validate_scenario
+
+
+def _load_agent_factory(spec: str | None):
+    if not spec or spec == "reference":
+        return ReferenceMemoryAgent
+    if ":" not in spec:
+        raise SystemExit("--agent must be 'reference' or module:Class")
+    module_name, class_name = spec.split(":", 1)
+    return getattr(importlib.import_module(module_name), class_name)
+
+
+def _parse_seed(value: str):
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _parse_seeds(value: str):
+    return [_parse_seed(x.strip()) for x in value.split(",") if x.strip()]
+
+
+def cmd_validate(args) -> int:
+    schema = load_json(args.schema)
+    scenario = load_json(args.scenario)
+    result = validate_scenario(scenario, schema)
+    print(json.dumps({"valid": result.valid, "errors": result.errors, "warnings": result.warnings}, indent=2, ensure_ascii=False))
+    return 0 if result.valid else 2
+
+
+def _load_materialized(path: str, schema_path: str, seed: str | int):
+    schema = load_json(schema_path)
+    src = load_json(path)
+    vr = validate_scenario(src, schema)
+    if not vr.valid:
+        raise SystemExit("Scenario validation failed:\n" + "\n".join(vr.errors))
+    instance = materialize(src, seed)
+    vr2 = validate_scenario(instance, schema)
+    if not vr2.valid:
+        raise SystemExit("Materialized instance validation failed:\n" + "\n".join(vr2.errors))
+    return instance
+
+
+def cmd_run(args) -> int:
+    seed = _parse_seed(args.seed)
+    scenario = _load_materialized(args.scenario, args.schema, seed)
+    factory = _load_agent_factory(args.agent)
+    agent_desc = factory().describe()
+    runs = run_scenario(scenario=scenario, agent_factory=factory, include_ablations=not args.full_only, repetition=0, agent_seed=seed)
+    report = build_basic_report(runs=runs, scenario=scenario, agent_descriptor=agent_desc)
+    if args.report_schema:
+        validate_report(report, load_json(args.report_schema))
+    output = {
+        "scenario": scenario["id"],
+        "runs": [{"condition": r["condition"], "score": r["scenario_score"], "status": r["status"]} for r in runs],
+        "dev_score": report["aggregates"]["mib_score"]["final_score"],
+        "report": report,
+    }
+    text = json.dumps(output, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_run_pack(args) -> int:
+    schema = load_json(args.schema)
+    report_schema = load_json(args.report_schema) if args.report_schema else None
+    factory = _load_agent_factory(args.agent)
+    files = sorted(Path(args.path).rglob("MIB-*.json")) if Path(args.path).is_dir() else [Path(args.path)]
+    results = []
+    for p in files:
+        if ".example-" in p.name:
+            continue
+        scenario = load_json(p)
+        vr = validate_scenario(scenario, schema)
+        if not vr.valid:
+            results.append({"path": str(p), "valid": False, "errors": vr.errors})
+            continue
+        instance = materialize(scenario, args.seed)
+        runs = run_scenario(scenario=instance, agent_factory=factory, include_ablations=not args.full_only, repetition=0, agent_seed=args.seed)
+        report = build_basic_report(runs=runs, scenario=instance, agent_descriptor=factory().describe())
+        if report_schema:
+            validate_report(report, report_schema)
+        results.append({
+            "path": str(p), "valid": True, "scenario": scenario["id"],
+            "full_score": next(r["scenario_score"] for r in runs if r["condition"] == "full"),
+            "dev_score": report["aggregates"]["mib_score"]["final_score"],
+            "conditions": {r["condition"]: r["scenario_score"] for r in runs},
+        })
+    valid_rows = [x for x in results if x.get("valid")]
+    summary = {
+        "count": len(results),
+        "passed_validation": len(valid_rows),
+        "mean_full_score": sum(x["full_score"] for x in valid_rows) / max(1, len(valid_rows)),
+        "results": results,
+    }
+    text = json.dumps(summary, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_benchmark(args) -> int:
+    schema = load_json(args.schema)
+    report_schema = load_json(args.report_schema) if args.report_schema else None
+    profile = load_json(args.profile)
+    templates = load_templates(args.path)
+    factory = _load_agent_factory(args.agent)
+    seeds = _parse_seeds(args.seeds) if args.seeds else list(profile.get("instance_seeds") or [101, 202])
+    repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 2))
+    boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
+    report, summary = run_benchmark_pack(
+        templates=templates,
+        schema=schema,
+        profile=profile,
+        agent_factory=factory,
+        instance_seeds=seeds,
+        repetitions=repetitions,
+        include_ablations=not args.full_only,
+        bootstrap_resamples=boot,
+        bootstrap_seed=args.bootstrap_seed,
+    )
+    if report_schema:
+        validate_report(report, report_schema)
+    if args.output_report:
+        Path(args.output_report).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.output_summary:
+        Path(args.output_summary).write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    card = render_capability_card(report)
+    if args.card:
+        Path(args.card).write_text(card, encoding="utf-8")
+    output = {"summary": summary, "report": args.output_report, "capability_card": args.card}
+    print(json.dumps(output, indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_capability_card(args) -> int:
+    report = load_json(args.report)
+    text = render_capability_card(report)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_verify_score(args) -> int:
+    report = load_json(args.report)
+    if args.report_schema:
+        validate_report(report, load_json(args.report_schema))
+    result = verify_score(report, tolerance=args.tolerance)
+    print(json.dumps(result, indent=2))
+    return 0 if result["valid"] else 3
+
+
+
+def cmd_public_eval_manifest(args) -> int:
+    store = HiddenEvalStore(args.store)
+    manifest = store.public_manifest()
+    text = json.dumps(manifest, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
+    return 0
+
+
+def cmd_agent_smoke_test(args) -> int:
+    spec = load_submission_spec(args.submission)
+    runtime = build_submission_runtime(spec)
+    agent = runtime.factory()
+    try:
+        descriptor = agent.describe()
+        run_id = "smoke_opaque_run"
+        agent.reset(run_id=run_id, seed="smoke-seed", virtual_time="2026-01-01T00:00:00Z")
+        from .types import Observation
+        agent.observe(
+            run_id=run_id,
+            request_id="req_smoke_observe",
+            observation=Observation(
+                observation_id="obs_smoke",
+                type="user_message",
+                virtual_time="2026-01-01T00:00:00Z",
+                actor={"id": "user", "kind": "person", "display_name": "Smoke User"},
+                content="The access code for my private demo project is ORCHID-91.",
+            ),
+        )
+        output = agent.respond(
+            run_id=run_id,
+            request_id="req_smoke_respond",
+            interaction_id="smoke",
+            input_data={"content": "What is the access code for my private demo project? Answer with the code only."},
+            virtual_time="2026-01-02T00:00:00Z",
+        )
+        result = {
+            "valid": output.content == "ORCHID-91",
+            "submission": spec["id"],
+            "transport": runtime.transport,
+            "descriptor": descriptor,
+            "output": {"type": output.type, "content": output.content, "value": output.value},
+        }
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result["valid"] else 4
+    finally:
+        close = getattr(agent, "close", None)
+        if callable(close):
+            try:
+                close(run_id="smoke_opaque_run")
+            except TypeError:
+                close()
+
+
+def cmd_evaluate_hidden(args) -> int:
+    schema = load_json(args.schema)
+    report_schema = load_json(args.report_schema) if args.report_schema else None
+    profile = load_json(args.profile)
+    store = HiddenEvalStore(args.store)
+    eval_key = args.eval_key or __import__("os").environ.get("MIB_EVAL_KEY")
+    if not eval_key:
+        raise SystemExit("--eval-key or MIB_EVAL_KEY is required")
+    templates, instances, aliases = store.materialize_instances(
+        schema=schema,
+        evaluation_key=eval_key,
+        cycle_id=args.cycle,
+    )
+    spec = load_submission_spec(args.submission)
+    # The evaluator-only store path is automatically hidden from local stdio
+    # submissions when namespace isolation is available.  Submission specs do
+    # not need to know where private evaluator data lives.
+    if spec.get("transport") == "stdio":
+        sandbox = spec.setdefault("sandbox", {})
+        hides = list(sandbox.get("hide_paths") or [])
+        store_path = str(Path(args.store).resolve())
+        if store_path not in hides:
+            hides.append(store_path)
+        sandbox["hide_paths"] = hides
+    runtime = build_submission_runtime(spec)
+    repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 1))
+    boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
+    report, summary = run_materialized_pack(
+        templates=templates,
+        instances=instances,
+        schema=schema,
+        profile=profile,
+        agent_factory=runtime.factory,
+        repetitions=repetitions,
+        include_ablations=not args.full_only,
+        bootstrap_resamples=boot,
+        bootstrap_seed=args.bootstrap_seed,
+    )
+    report.setdefault("provenance", {})["notes"] = f"Hidden evaluation cycle {args.cycle}; submission={spec['id']}; transport={runtime.transport}."
+    if report_schema:
+        validate_report(report, report_schema)
+    public = redact_report_for_public(report, aliases=aliases, redaction_key=eval_key)
+    if report_schema:
+        validate_report(public, report_schema)
+    verify = verify_score(public)
+    if not verify["valid"]:
+        raise SystemExit("redacted public report failed score verification")
+    if args.output_internal:
+        Path(args.output_internal).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.output_public:
+        Path(args.output_public).write_text(json.dumps(public, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.card:
+        Path(args.card).write_text(render_capability_card(public), encoding="utf-8")
+    output = {
+        "submission": spec["id"],
+        "profile": profile["id"],
+        "cycle": args.cycle,
+        "templates": len(templates),
+        "instances": len(instances),
+        "summary": summary,
+        "public_report_verified": True,
+        "internal_report": args.output_internal,
+        "public_report": args.output_public,
+        "capability_card": args.card,
+    }
+    print(json.dumps(output, indent=2, ensure_ascii=False))
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="mib", description="MIB Reference Runner Milestone 4")
+    sub = p.add_subparsers(dest="command", required=True)
+
+    v = sub.add_parser("validate", help="Validate one MIB Scenario")
+    v.add_argument("scenario")
+    v.add_argument("--schema", required=True)
+    v.set_defaults(func=cmd_validate)
+
+    r = sub.add_parser("run", help="Run one Scenario/Template")
+    r.add_argument("scenario")
+    r.add_argument("--schema", required=True)
+    r.add_argument("--report-schema")
+    r.add_argument("--agent", default="reference")
+    r.add_argument("--seed", default="101")
+    r.add_argument("--full-only", action="store_true")
+    r.add_argument("--output")
+    r.set_defaults(func=cmd_run)
+
+    rp = sub.add_parser("run-pack", help="Run Templates independently; legacy development summary")
+    rp.add_argument("path")
+    rp.add_argument("--schema", required=True)
+    rp.add_argument("--report-schema")
+    rp.add_argument("--agent", default="reference")
+    rp.add_argument("--seed", type=int, default=101)
+    rp.add_argument("--full-only", action="store_true")
+    rp.add_argument("--output")
+    rp.set_defaults(func=cmd_run_pack)
+
+    b = sub.add_parser("benchmark", help="Execute and aggregate a complete MIB Benchmark Pack")
+    b.add_argument("path")
+    b.add_argument("--profile", required=True)
+    b.add_argument("--schema", required=True)
+    b.add_argument("--report-schema")
+    b.add_argument("--agent", default="reference")
+    b.add_argument("--seeds", help="Comma-separated Scenario instance seeds; defaults to Profile")
+    b.add_argument("--repetitions", type=int)
+    b.add_argument("--bootstrap-resamples", type=int)
+    b.add_argument("--bootstrap-seed", default="20260819")
+    b.add_argument("--full-only", action="store_true")
+    b.add_argument("--output-report")
+    b.add_argument("--output-summary")
+    b.add_argument("--card")
+    b.set_defaults(func=cmd_benchmark)
+
+    cc = sub.add_parser("capability-card", help="Render a Markdown Capability Card from a MIB Report")
+    cc.add_argument("report")
+    cc.add_argument("--output")
+    cc.set_defaults(func=cmd_capability_card)
+
+    vs = sub.add_parser("verify-score", help="Recompute Template, Dimension, and final report scores")
+    vs.add_argument("report")
+    vs.add_argument("--report-schema")
+    vs.add_argument("--tolerance", type=float, default=1e-9)
+    vs.set_defaults(func=cmd_verify_score)
+
+
+    pm = sub.add_parser("public-eval-manifest", help="Derive a participant-safe manifest from a private evaluation store")
+    pm.add_argument("store")
+    pm.add_argument("--output")
+    pm.set_defaults(func=cmd_public_eval_manifest)
+
+    sm = sub.add_parser("agent-smoke-test", help="Test an external HTTP/stdio Agent submission")
+    sm.add_argument("--submission", required=True)
+    sm.set_defaults(func=cmd_agent_smoke_test)
+
+    he = sub.add_parser("evaluate-hidden", help="Execute evaluator-only Hidden/Private Scenarios against an external submission")
+    he.add_argument("store")
+    he.add_argument("--profile", required=True)
+    he.add_argument("--submission", required=True)
+    he.add_argument("--schema", required=True)
+    he.add_argument("--report-schema")
+    he.add_argument("--eval-key", help="Evaluator secret; prefer MIB_EVAL_KEY in hosted evaluation")
+    he.add_argument("--cycle", default="cycle-1")
+    he.add_argument("--repetitions", type=int)
+    he.add_argument("--bootstrap-resamples", type=int)
+    he.add_argument("--bootstrap-seed", default="20260819")
+    he.add_argument("--full-only", action="store_true")
+    he.add_argument("--output-internal")
+    he.add_argument("--output-public")
+    he.add_argument("--card")
+    he.set_defaults(func=cmd_evaluate_hidden)
+
+    return p
+
+
+def main(argv=None) -> int:
+    args = build_parser().parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

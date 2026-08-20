@@ -1,0 +1,6 @@
+{
+  "id": "mib-reference-fixture-http",
+  "transport": "http",
+  "base_url": "http://127.0.0.1:8765",
+  "timeout_seconds": 15
+}

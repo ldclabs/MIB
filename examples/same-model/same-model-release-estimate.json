@@ -1,0 +1,14 @@
+{
+  "experiment_id": "MIB-Core-0.1-same-model-release-candidate-001",
+  "experiment_lock": "sha256:f1a631197a3fdb40d16917b9c6eb7c0af249af58db5db90b68e85d899553851d",
+  "estimate": {
+    "template_count": 36,
+    "instance_seeds": 4,
+    "repetitions": 2,
+    "minimum_condition_runs": 2232,
+    "full_baseline_condition_runs": 1152,
+    "additional_causal_ablation_runs": 1080,
+    "minimum_model_turns": 3152,
+    "note": "ACTION probes may require multiple model turns, so actual model calls can exceed minimum_model_turns."
+  }
+}

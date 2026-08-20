@@ -1,0 +1,1827 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:report",
+  "title": "MIB Report",
+  "description": "Machine-readable score report for the Memory Intelligence Benchmark. Records benchmark identity, system identity, per-run/per-probe evidence, Scenario/Template/Dimension aggregation, causal metrics, coverage, statistics, efficiency, warnings, and enough numeric material to recompute the published score.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "report_version",
+    "report_id",
+    "generated_at",
+    "benchmark",
+    "system",
+    "execution",
+    "results",
+    "aggregates",
+    "coverage",
+    "statistics"
+  ],
+  "properties": {
+    "mib": {
+      "type": "string",
+      "const": "0.1",
+      "description": "MIB report format family."
+    },
+    "kind": {
+      "type": "string",
+      "const": "MIBReport"
+    },
+    "report_version": {
+      "$ref": "#/$defs/SemVer"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "internal",
+        "submission",
+        "public"
+      ],
+      "default": "submission",
+      "description": "Controls expected disclosure/redaction policy, not score semantics."
+    },
+    "benchmark": {
+      "$ref": "#/$defs/BenchmarkIdentity"
+    },
+    "system": {
+      "$ref": "#/$defs/SystemIdentity"
+    },
+    "adapter": {
+      "$ref": "#/$defs/AdapterIdentity"
+    },
+    "environment": {
+      "$ref": "#/$defs/EnvironmentIdentity"
+    },
+    "execution": {
+      "$ref": "#/$defs/ExecutionSummary"
+    },
+    "results": {
+      "$ref": "#/$defs/ResultEvidence"
+    },
+    "aggregates": {
+      "$ref": "#/$defs/Aggregates"
+    },
+    "causal_metrics": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CausalMetric"
+      }
+    },
+    "coverage": {
+      "$ref": "#/$defs/CoverageSummary"
+    },
+    "statistics": {
+      "$ref": "#/$defs/StatisticsSummary"
+    },
+    "efficiency": {
+      "$ref": "#/$defs/EfficiencySummary"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      }
+    },
+    "provenance": {
+      "$ref": "#/$defs/Provenance"
+    },
+    "integrity": {
+      "$ref": "#/$defs/Integrity"
+    },
+    "extensions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"
+      },
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "JsonValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      ]
+    },
+    "Score01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Normalized internal score."
+    },
+    "Score100": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Displayed capability score."
+    },
+    "SignedUnit": {
+      "type": "number",
+      "minimum": -1,
+      "maximum": 1
+    },
+    "Rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "ConfidenceInterval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "lower",
+        "upper",
+        "method"
+      ],
+      "properties": {
+        "level": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "lower": {
+          "type": "number"
+        },
+        "upper": {
+          "type": "number"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "hierarchical_bootstrap_percentile",
+            "paired_hierarchical_bootstrap_percentile",
+            "bootstrap_percentile",
+            "bca",
+            "normal_approximation",
+            "binomial",
+            "custom"
+          ]
+        },
+        "resamples": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        }
+      }
+    },
+    "ScoreWithCI": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value"
+      ],
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stddev": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "BenchmarkIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mib_version",
+        "profile",
+        "track",
+        "scale",
+        "scenario_pack"
+      ],
+      "properties": {
+        "mib_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "digest": {
+              "type": "string"
+            }
+          }
+        },
+        "track": {
+          "type": "string",
+          "enum": [
+            "memory_system",
+            "integrated_agent",
+            "diagnostics"
+          ]
+        },
+        "scale": {
+          "type": "string",
+          "enum": [
+            "MIB-S",
+            "MIB-M",
+            "MIB-L",
+            "custom"
+          ]
+        },
+        "scenario_pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "digest": {
+              "type": "string"
+            }
+          }
+        },
+        "scoring_spec_version": {
+          "type": "string"
+        },
+        "scenario_schema_version": {
+          "type": "string"
+        },
+        "agent_adapter_protocol": {
+          "type": "string"
+        }
+      }
+    },
+    "ComponentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "configuration_digest": {
+          "type": "string"
+        }
+      }
+    },
+    "ModelIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "configuration_digest": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "endpoint_class": {
+          "type": "string"
+        },
+        "sampling": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "SystemIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agent"
+      ],
+      "properties": {
+        "agent": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "model": {
+          "$ref": "#/$defs/ModelIdentity"
+        },
+        "memory": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "orchestrator": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "system_prompt_digest": {
+          "type": "string"
+        },
+        "tool_policy_digest": {
+          "type": "string"
+        },
+        "external_services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "AdapterIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "protocol": {
+          "type": "string"
+        },
+        "implementation": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "descriptor_digest": {
+          "type": "string"
+        },
+        "conformance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "passed": {
+              "type": "boolean"
+            },
+            "suite_version": {
+              "type": "string"
+            },
+            "report_ref": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "EnvironmentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runner": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "world_simulator": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "tool_runtime": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "evaluator_bundle": {
+          "$ref": "#/$defs/ComponentIdentity"
+        },
+        "judge_models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ComponentIdentity"
+          }
+        },
+        "platform": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "ExecutionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "started_at",
+        "completed_at",
+        "scheduled_probe_attempts",
+        "execution_failed_probe_attempts"
+      ],
+      "properties": {
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scheduled_runs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completed_runs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scheduled_probe_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_failed_probe_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "execution_failure_rate": {
+          "$ref": "#/$defs/Rate"
+        },
+        "unsupported_required_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "total_required_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "unsupported_rate": {
+          "$ref": "#/$defs/Rate"
+        },
+        "repetitions_policy": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "condition_order_policy": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "EvaluatorResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluator_id",
+        "score"
+      ],
+      "properties": {
+        "evaluator_id": {
+          "type": "string"
+        },
+        "evaluator_type": {
+          "type": "string"
+        },
+        "score": {
+          "$ref": "#/$defs/Score01"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "failure_codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "formation_miss",
+              "retrieval_miss",
+              "identity_mismatch",
+              "stale_memory_adoption",
+              "source_confusion",
+              "correction_loss",
+              "false_certainty",
+              "trajectory_collapse",
+              "skill_non_transfer",
+              "negative_transfer",
+              "counterexample_neglect",
+              "commitment_miss",
+              "self_model_drift",
+              "memory_hallucination",
+              "irrelevant_memory_interference",
+              "authority_confusion",
+              "execution_failure",
+              "timeout",
+              "rate_limited",
+              "adapter_error",
+              "tool_error",
+              "evaluator_error",
+              "custom"
+            ]
+          }
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "judge": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "rubric_version": {
+              "type": "string"
+            },
+            "samples": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    },
+    "ProbeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probe_id",
+        "outcome",
+        "condition",
+        "repetition",
+        "weight"
+      ],
+      "properties": {
+        "probe_id": {
+          "type": "string"
+        },
+        "probe_kind": {
+          "type": "string"
+        },
+        "condition": {
+          "type": "string",
+          "enum": [
+            "full",
+            "relevant_ablation",
+            "irrelevant_ablation",
+            "no_memory",
+            "harmful_memory",
+            "stale_memory",
+            "counterexample",
+            "full_context",
+            "custom"
+          ]
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome": {
+          "type": "string",
+          "enum": [
+            "scored",
+            "execution_failure",
+            "unsupported",
+            "invalid",
+            "not_run"
+          ]
+        },
+        "score": {
+          "$ref": "#/$defs/Score01"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dimensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "retention_retrieval",
+              "temporal_memory",
+              "epistemic_memory",
+              "experience_memory",
+              "skill_learning_transfer",
+              "selective_forgetting",
+              "prospective_self_memory",
+              "causal_memory_impact"
+            ]
+          }
+        },
+        "evaluator_results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvaluatorResult"
+          }
+        },
+        "failure_codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "formation_miss",
+              "retrieval_miss",
+              "identity_mismatch",
+              "stale_memory_adoption",
+              "source_confusion",
+              "correction_loss",
+              "false_certainty",
+              "trajectory_collapse",
+              "skill_non_transfer",
+              "negative_transfer",
+              "counterexample_neglect",
+              "commitment_miss",
+              "self_model_drift",
+              "memory_hallucination",
+              "irrelevant_memory_interference",
+              "authority_confusion",
+              "execution_failure",
+              "timeout",
+              "rate_limited",
+              "adapter_error",
+              "tool_error",
+              "evaluator_error",
+              "custom"
+            ]
+          }
+        },
+        "output_ref": {
+          "type": "string"
+        },
+        "output_digest": {
+          "type": "string"
+        },
+        "latency_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageMetrics"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "scored"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "required": [
+              "score"
+            ]
+          }
+        }
+      ]
+    },
+    "RunResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "scenario_instance_id",
+        "template_id",
+        "condition",
+        "repetition",
+        "status",
+        "probe_results"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scenario_instance_id": {
+          "type": "string"
+        },
+        "scenario_instance_version": {
+          "type": "string"
+        },
+        "template_id": {
+          "type": "string"
+        },
+        "template_version": {
+          "type": "string"
+        },
+        "instance_seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "condition": {
+          "type": "string",
+          "enum": [
+            "full",
+            "relevant_ablation",
+            "irrelevant_ablation",
+            "no_memory",
+            "harmful_memory",
+            "stale_memory",
+            "counterexample",
+            "full_context",
+            "custom"
+          ]
+        },
+        "ablation_id": {
+          "type": "string"
+        },
+        "ablation_method": {
+          "type": "string"
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "agent_seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "succeeded",
+            "failed",
+            "unsupported",
+            "invalid",
+            "not_run"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scenario_score": {
+          "$ref": "#/$defs/Score01"
+        },
+        "penalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "probe_results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ProbeResult"
+          }
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageMetrics"
+        },
+        "validity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "causal_pair_valid": {
+              "type": "boolean"
+            },
+            "runner_valid": {
+              "type": "boolean"
+            },
+            "notes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "trace_ref": {
+          "type": "string"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      }
+    },
+    "ScenarioInstanceAggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_instance_id",
+        "template_id",
+        "full_score"
+      ],
+      "properties": {
+        "scenario_instance_id": {
+          "type": "string"
+        },
+        "template_id": {
+          "type": "string"
+        },
+        "instance_seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "full_score": {
+          "$ref": "#/$defs/Score01"
+        },
+        "full_score_ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "dimension_scores": {
+          "$ref": "#/$defs/DimensionScoreMap01"
+        },
+        "condition_scores": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "full",
+              "relevant_ablation",
+              "irrelevant_ablation",
+              "no_memory",
+              "harmful_memory",
+              "stale_memory",
+              "counterexample",
+              "full_context",
+              "custom"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Score01"
+          }
+        },
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "causal_pair_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "causal_metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CausalMetric"
+          }
+        }
+      }
+    },
+    "TemplateAggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "template_id",
+        "instance_count",
+        "dimension_scores"
+      ],
+      "properties": {
+        "template_id": {
+          "type": "string"
+        },
+        "template_version": {
+          "type": "string"
+        },
+        "instance_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "template_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "full_score": {
+          "$ref": "#/$defs/Score100"
+        },
+        "full_score_ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "dimension_scores": {
+          "$ref": "#/$defs/DimensionScoreMap100"
+        },
+        "dimension_weights": {
+          "$ref": "#/$defs/DimensionWeightMap"
+        },
+        "causal_components": {
+          "$ref": "#/$defs/CausalComponentAggregate"
+        },
+        "coverage_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      }
+    },
+    "DimensionScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dimension",
+        "score",
+        "weight",
+        "coverage"
+      ],
+      "properties": {
+        "dimension": {
+          "type": "string",
+          "enum": [
+            "retention_retrieval",
+            "temporal_memory",
+            "epistemic_memory",
+            "experience_memory",
+            "skill_learning_transfer",
+            "selective_forgetting",
+            "prospective_self_memory",
+            "causal_memory_impact"
+          ]
+        },
+        "score": {
+          "$ref": "#/$defs/Score100"
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "coverage": {
+          "$ref": "#/$defs/Rate"
+        },
+        "ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "template_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eligible_template_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "required_template_weight": {
+          "type": "number",
+          "minimum": 0
+        },
+        "evaluated_template_weight": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "DimensionScoreMap01": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "retention_retrieval",
+          "temporal_memory",
+          "epistemic_memory",
+          "experience_memory",
+          "skill_learning_transfer",
+          "selective_forgetting",
+          "prospective_self_memory",
+          "causal_memory_impact"
+        ]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Score01"
+      }
+    },
+    "DimensionScoreMap100": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "retention_retrieval",
+          "temporal_memory",
+          "epistemic_memory",
+          "experience_memory",
+          "skill_learning_transfer",
+          "selective_forgetting",
+          "prospective_self_memory",
+          "causal_memory_impact"
+        ]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Score100"
+      }
+    },
+    "DimensionWeightMap": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "retention_retrieval",
+          "temporal_memory",
+          "epistemic_memory",
+          "experience_memory",
+          "skill_learning_transfer",
+          "selective_forgetting",
+          "prospective_self_memory",
+          "causal_memory_impact"
+        ]
+      },
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "CausalComponentAggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "headroom_normalized_memory_benefit": {
+          "$ref": "#/$defs/Score01"
+        },
+        "irrelevant_memory_stability": {
+          "$ref": "#/$defs/Score01"
+        },
+        "harm_resistance": {
+          "$ref": "#/$defs/Score01"
+        },
+        "causal_score": {
+          "$ref": "#/$defs/Score100"
+        },
+        "relevant_benefit_coverage": {
+          "$ref": "#/$defs/Rate"
+        },
+        "irrelevant_stability_coverage": {
+          "$ref": "#/$defs/Rate"
+        },
+        "harm_resistance_coverage": {
+          "$ref": "#/$defs/Rate"
+        }
+      }
+    },
+    "MIBScore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_score",
+        "final_score",
+        "official",
+        "partial"
+      ],
+      "properties": {
+        "base_score": {
+          "$ref": "#/$defs/Score100"
+        },
+        "global_guardrail_penalty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 0
+        },
+        "final_score": {
+          "$ref": "#/$defs/Score100"
+        },
+        "ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "official": {
+          "type": "boolean"
+        },
+        "partial": {
+          "type": "boolean"
+        },
+        "profile_eligible": {
+          "type": "boolean"
+        },
+        "formula": {
+          "type": "string",
+          "default": "weighted_dimension_sum"
+        }
+      }
+    },
+    "Aggregates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_instances",
+        "templates",
+        "dimensions",
+        "mib_score"
+      ],
+      "properties": {
+        "scenario_instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScenarioInstanceAggregate"
+          }
+        },
+        "templates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TemplateAggregate"
+          }
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DimensionScore"
+          }
+        },
+        "mib_score": {
+          "$ref": "#/$defs/MIBScore"
+        },
+        "dimension_weight_sum": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1.0000001
+        }
+      }
+    },
+    "ResultEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runs"
+      ],
+      "properties": {
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RunResult"
+          }
+        },
+        "redacted": {
+          "type": "boolean",
+          "default": false
+        },
+        "raw_output_policy": {
+          "type": "string",
+          "enum": [
+            "included",
+            "digest_only",
+            "external_ref",
+            "redacted"
+          ]
+        }
+      }
+    },
+    "CausalMetric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "value",
+        "unit"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "causal_memory_impact",
+            "memory_benefit",
+            "headroom_normalized_memory_benefit",
+            "irrelevant_memory_stability",
+            "memory_harm",
+            "harm_resistance",
+            "net_memory_gain",
+            "memory_induced_error_rate",
+            "negative_transfer",
+            "negative_transfer_rate",
+            "negative_transfer_resistance",
+            "error_recurrence_rate",
+            "error_avoidance_score",
+            "learning_gain",
+            "area_under_learning_curve",
+            "memory_discriminativeness_index",
+            "memory_gap_closure",
+            "historical_fidelity",
+            "stale_adoption_rate",
+            "source_attribution_accuracy",
+            "authority_confusion_rate",
+            "self_limitation_continuity"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "normalized",
+            "score_0_100",
+            "percentage_points",
+            "rate",
+            "count",
+            "ratio"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "probe",
+            "scenario_instance",
+            "template",
+            "dimension",
+            "benchmark"
+          ]
+        },
+        "template_id": {
+          "type": "string"
+        },
+        "scenario_instance_id": {
+          "type": "string"
+        },
+        "probe_id": {
+          "type": "string"
+        },
+        "reference_condition": {
+          "type": "string",
+          "enum": [
+            "full",
+            "relevant_ablation",
+            "irrelevant_ablation",
+            "no_memory",
+            "harmful_memory",
+            "stale_memory",
+            "counterexample",
+            "full_context",
+            "custom"
+          ]
+        },
+        "comparison_condition": {
+          "type": "string",
+          "enum": [
+            "full",
+            "relevant_ablation",
+            "irrelevant_ablation",
+            "no_memory",
+            "harmful_memory",
+            "stale_memory",
+            "counterexample",
+            "full_context",
+            "custom"
+          ]
+        },
+        "eligible_n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_n": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "$ref": "#/$defs/Rate"
+        },
+        "ci": {
+          "$ref": "#/$defs/ConfidenceInterval"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "CoverageSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall"
+      ],
+      "properties": {
+        "overall": {
+          "$ref": "#/$defs/Rate"
+        },
+        "profile_required": {
+          "$ref": "#/$defs/Rate"
+        },
+        "by_dimension": {
+          "type": "object",
+          "propertyNames": {
+            "enum": [
+              "retention_retrieval",
+              "temporal_memory",
+              "epistemic_memory",
+              "experience_memory",
+              "skill_learning_transfer",
+              "selective_forgetting",
+              "prospective_self_memory",
+              "causal_memory_impact"
+            ]
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Rate"
+          }
+        },
+        "missing_required_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unsupported_required_templates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "partial_score_reason": {
+          "type": "string"
+        }
+      }
+    },
+    "BootstrapSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "resamples"
+      ],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "hierarchical_bootstrap_percentile",
+            "paired_hierarchical_bootstrap_percentile",
+            "bootstrap_percentile",
+            "bca",
+            "custom"
+          ]
+        },
+        "resamples": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "seed": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "template_resampling": {
+          "type": "boolean"
+        },
+        "instance_resampling": {
+          "type": "boolean"
+        },
+        "repetition_resampling": {
+          "type": "boolean"
+        },
+        "preserve_causal_pairs": {
+          "type": "boolean"
+        }
+      }
+    },
+    "StatisticsSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidence_level"
+      ],
+      "properties": {
+        "confidence_level": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "bootstrap": {
+          "$ref": "#/$defs/BootstrapSpec"
+        },
+        "mib_score": {
+          "$ref": "#/$defs/ScoreWithCI"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dimension",
+              "value"
+            ],
+            "properties": {
+              "dimension": {
+                "type": "string",
+                "enum": [
+                  "retention_retrieval",
+                  "temporal_memory",
+                  "epistemic_memory",
+                  "experience_memory",
+                  "skill_learning_transfer",
+                  "selective_forgetting",
+                  "prospective_self_memory",
+                  "causal_memory_impact"
+                ]
+              },
+              "value": {
+                "type": "number"
+              },
+              "ci": {
+                "$ref": "#/$defs/ConfidenceInterval"
+              },
+              "stddev": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "causal_metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "value"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "enum": [
+                  "causal_memory_impact",
+                  "memory_benefit",
+                  "headroom_normalized_memory_benefit",
+                  "irrelevant_memory_stability",
+                  "memory_harm",
+                  "harm_resistance",
+                  "net_memory_gain",
+                  "memory_induced_error_rate",
+                  "negative_transfer",
+                  "negative_transfer_rate",
+                  "negative_transfer_resistance",
+                  "error_recurrence_rate",
+                  "error_avoidance_score",
+                  "learning_gain",
+                  "area_under_learning_curve",
+                  "memory_discriminativeness_index",
+                  "memory_gap_closure",
+                  "historical_fidelity",
+                  "stale_adoption_rate",
+                  "source_attribution_accuracy",
+                  "authority_confusion_rate",
+                  "self_limitation_continuity"
+                ]
+              },
+              "value": {
+                "type": "number"
+              },
+              "ci": {
+                "$ref": "#/$defs/ConfidenceInterval"
+              },
+              "stddev": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "UsageMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model_input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "model_output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "embedding_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_read_operations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "memory_write_operations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "external_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "participant_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "wall_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "LatencySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "p50_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p95_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "p99_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "mean_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "EfficiencySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "memory_writes_per_meaningful_event": {
+          "type": "number",
+          "minimum": 0
+        },
+        "storage_bytes_per_1k_events": {
+          "type": "number",
+          "minimum": 0
+        },
+        "retrieval_latency": {
+          "$ref": "#/$defs/LatencySummary"
+        },
+        "end_to_end_latency": {
+          "$ref": "#/$defs/LatencySummary"
+        },
+        "tokens_injected_per_task": {
+          "type": "number",
+          "minimum": 0
+        },
+        "formation_tokens_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recall_tokens_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "external_calls_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cost_usd_per_1k_events": {
+          "type": "number",
+          "minimum": 0
+        },
+        "write_amplification": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maintenance_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "participant_reported": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "runner_measured": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "Warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{1,127}$"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning",
+            "error",
+            "critical"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "report",
+            "dimension",
+            "template",
+            "scenario_instance",
+            "run",
+            "probe"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        }
+      }
+    },
+    "ArtifactRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "run_artifact",
+            "adapter_conformance_report",
+            "trace",
+            "raw_output",
+            "scenario_pack",
+            "capability_card",
+            "other"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string"
+        },
+        "media_type": {
+          "type": "string"
+        }
+      }
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "generated_by": {
+          "type": "string"
+        },
+        "generator_version": {
+          "type": "string"
+        },
+        "source_run_artifact_digest": {
+          "type": "string"
+        },
+        "score_recomputed": {
+          "type": "boolean"
+        },
+        "verification_status": {
+          "type": "string",
+          "enum": [
+            "unverified",
+            "verified",
+            "partially_verified"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "Integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "digest_profile": {
+          "type": "string"
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-fA-F]{64}$"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}

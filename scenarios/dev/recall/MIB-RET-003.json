@@ -1,0 +1,308 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-RET-003",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Multi-Hop Memory Composition",
+  "description": "Tests composition of three separately observed benchmark-local relations.",
+  "suite": "recall",
+  "dimensions": [
+    "retention_retrieval",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "multi-hop",
+    "composition",
+    "distributed-memory"
+  ],
+  "difficulty": {
+    "level": "easy",
+    "meaningful_events": 3,
+    "distractor_events": 2,
+    "entity_count": 3,
+    "memory_hops": 3,
+    "probe_indirectness": 0.5
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "person_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Ilya",
+          "Marin",
+          "Keiko",
+          "Ravi"
+        ]
+      },
+      {
+        "name": "project_name",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Project Cedar",
+          "Project Lumen",
+          "Project Kestrel"
+        ]
+      },
+      {
+        "name": "team_zone",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "Zone Vela",
+          "Zone Argo",
+          "Zone Mira"
+        ]
+      },
+      {
+        "name": "utc_offset",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "UTC+4",
+          "UTC-3",
+          "UTC+6"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Benchmark User"
+    },
+    {
+      "id": "person",
+      "kind": "person",
+      "display_name": "${person_name}"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-01-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {}
+  },
+  "timeline": [
+    {
+      "id": "e-1",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "${person_name} is assigned to ${project_name}.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 10
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The cafeteria closes at 18:00.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "e-2",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "${project_name} schedules all member calls using ${team_zone}.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-2",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 30
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "A different project uses a blue logo.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "e-3",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "${team_zone} corresponds to ${utc_offset}.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 70
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-hop",
+      "kind": "multi_hop",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Which UTC offset should I use when scheduling a ${project_name} call with ${person_name}? Answer with the UTC offset only."
+      },
+      "oracle": {
+        "accepted": [
+          "${utc_offset}"
+        ]
+      },
+      "evaluators": [
+        "eval-offset"
+      ],
+      "dimensions": [
+        "retention_retrieval"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-hop"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-1",
+          "e-2",
+          "e-3"
+        ]
+      }
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-hop"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1",
+          "d-2"
+        ]
+      },
+      "tolerance": 0.05
+    },
+    {
+      "id": "a-none",
+      "kind": "no_memory",
+      "probes": [
+        "p-hop"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-1",
+          "e-2",
+          "e-3",
+          "d-1",
+          "d-2"
+        ]
+      }
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-offset",
+      "type": "set_match",
+      "config": {
+        "normalization": "casefold_trim"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "retention_retrieval": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Core-0.1",
+    "test_plan": "MIB-v0.1-Test-Plan.md",
+    "canonical_dev_slice": 1
+  }
+}

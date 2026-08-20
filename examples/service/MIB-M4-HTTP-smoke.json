@@ -1,0 +1,37 @@
+{
+  "valid": true,
+  "submission": "mib-reference-fixture-http",
+  "transport": "http",
+  "descriptor": {
+    "protocol": "mib-agent/0.1",
+    "implementation": {
+      "name": "MIB Reference Fixture Agent",
+      "version": "0.4.0",
+      "vendor": "MIB"
+    },
+    "track_support": [
+      "integrated_agent"
+    ],
+    "capabilities": {
+      "observe": true,
+      "respond": true,
+      "act": true,
+      "spontaneous_emissions": false,
+      "maintenance": false,
+      "runner_managed_tools": true,
+      "structured_output": false,
+      "virtual_time": true,
+      "seedable": true
+    },
+    "state": {
+      "run_isolation": "hard",
+      "observe_visibility": "read_after_write",
+      "request_idempotency": true
+    }
+  },
+  "output": {
+    "type": "message",
+    "content": "ORCHID-91",
+    "value": null
+  }
+}

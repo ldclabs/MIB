@@ -1,0 +1,23 @@
+{
+  "mib": "0.1",
+  "kind": "MIBSameModelEmpiricalRunStatus",
+  "status": "pending_external_model_run",
+  "reason": "No externally callable fixed model endpoint or model credentials were supplied in the current execution environment.",
+  "experiment_id": "MIB-Core-0.1-same-model-release-candidate-001",
+  "experiment_lock": "sha256:f1a631197a3fdb40d16917b9c6eb7c0af249af58db5db90b68e85d899553851d",
+  "planned_model_client": "http_json",
+  "planned_model_id": "REPLACE_WITH_FIXED_MODEL_ID",
+  "official_template_count": 36,
+  "instance_seeds": [
+    101,
+    202,
+    303,
+    404
+  ],
+  "repetitions": 2,
+  "bootstrap_resamples": 10000,
+  "estimated_minimum_condition_runs": 2232,
+  "estimated_minimum_model_turns": 3152,
+  "next_action": "Point same-model-experiment.external-http.json at one fixed stateless model endpoint, set the model id/credentials, and run mib-same-model-calibrate.",
+  "release_calibration_eligible": false
+}

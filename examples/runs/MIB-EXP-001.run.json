@@ -1,0 +1,894 @@
+{
+  "scenario": {
+    "mib": "0.1",
+    "kind": "MemoryEpisodeProgram",
+    "id": "MIB-EXP-001",
+    "version": "0.1.0",
+    "status": "candidate",
+    "title": "Failure and Recovery",
+    "description": "Tests whether a remembered failure/recovery trajectory changes a later deployment action sequence.",
+    "suite": "experience",
+    "dimensions": [
+      "experience_memory",
+      "causal_memory_impact"
+    ],
+    "tags": [
+      "failure-recovery",
+      "trajectory",
+      "action"
+    ],
+    "difficulty": {
+      "level": "medium",
+      "meaningful_events": 4,
+      "distractor_events": 1,
+      "entity_count": 2,
+      "memory_hops": 1,
+      "experience_steps": 4,
+      "probe_indirectness": 0.6
+    },
+    "requirements": {
+      "black_box_compatible": true,
+      "memory_adapter_preferred": false,
+      "memory_adapter_required": false,
+      "capabilities": [
+        "observe",
+        "act",
+        "tools"
+      ]
+    },
+    "execution": {
+      "repetitions": 1,
+      "reset_between_repetitions": true,
+      "max_agent_turns": 12,
+      "max_tool_calls": 10,
+      "on_agent_error": "fail_probe",
+      "on_timeout": "fail_probe"
+    },
+    "leakage": {
+      "probe_sampling": "late",
+      "future_probe_visible_during_formation": false,
+      "oracle_visible_to_agent": false,
+      "ablation_labels_visible_to_agent": false,
+      "hidden_world_state_visible_to_agent": false
+    },
+    "world": {
+      "clock": {
+        "mode": "virtual",
+        "start": "2026-01-01T09:00:00Z",
+        "timezone": "UTC"
+      },
+      "state": {
+        "deployment": {
+          "actual_target": "db-cobalt",
+          "selected_target": "db-shadow",
+          "migration_applied": false,
+          "service_running": false,
+          "last_error": null
+        }
+      },
+      "tools": [
+        {
+          "id": "deployment",
+          "version": "0.1.0",
+          "simulator_binding": "mib.deployment.v1",
+          "operations": [
+            {
+              "name": "inspect_target",
+              "description": "Inspect the actual deployment target and the currently selected target.",
+              "input_schema": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "select_target",
+              "description": "Select the database target for subsequent migration operations.",
+              "input_schema": {
+                "type": "object",
+                "properties": {
+                  "target": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "target"
+                ]
+              }
+            },
+            {
+              "name": "run_migration",
+              "description": "Apply the pending migration to the currently selected target.",
+              "input_schema": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "restart_service",
+              "description": "Restart the service and report whether startup succeeds.",
+              "input_schema": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            {
+              "name": "read_error",
+              "description": "Read the most recent deployment error.",
+              "input_schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          ]
+        }
+      ],
+      "hidden_ground_truth": {}
+    },
+    "timeline": [
+      {
+        "id": "e-goal",
+        "stage": "past",
+        "type": "feedback",
+        "at": {
+          "sequence": 1
+        },
+        "visibility": "agent",
+        "content": "Previous deployment goal: get the service running after a schema change.",
+        "tags": [
+          "relevant"
+        ]
+      },
+      {
+        "id": "e-failure",
+        "stage": "past",
+        "type": "tool_result",
+        "at": {
+          "sequence": 2
+        },
+        "visibility": "agent",
+        "payload": {
+          "operation": "restart_service",
+          "success": false,
+          "error": "missing_column"
+        },
+        "tags": [
+          "relevant"
+        ]
+      },
+      {
+        "id": "e-diagnosis",
+        "stage": "past",
+        "type": "feedback",
+        "at": {
+          "sequence": 3
+        },
+        "visibility": "agent",
+        "content": "We learned that a missing_column startup failure can come from migrating the wrong target. Inspect the actual target before retrying.",
+        "tags": [
+          "relevant"
+        ]
+      },
+      {
+        "id": "e-recovery",
+        "stage": "past",
+        "type": "feedback",
+        "at": {
+          "sequence": 4
+        },
+        "visibility": "agent",
+        "content": "After checking the target, selecting the actual target, rerunning migration, and restarting, the service succeeded.",
+        "tags": [
+          "relevant"
+        ]
+      },
+      {
+        "id": "d1",
+        "stage": "past",
+        "type": "distractor",
+        "at": {
+          "sequence": 40
+        },
+        "visibility": "agent",
+        "content": "Unrelated release note: the dashboard icon changed.",
+        "tags": [
+          "irrelevant"
+        ]
+      },
+      {
+        "id": "cp",
+        "stage": "pre_probe",
+        "type": "checkpoint",
+        "at": {
+          "sequence": 100
+        },
+        "visibility": "harness"
+      }
+    ],
+    "probes": [
+      {
+        "id": "p-action",
+        "kind": "action",
+        "trigger": {
+          "after_event": "cp"
+        },
+        "delivery": "act",
+        "input": {
+          "goal": "Repair the deployment and get the service running.",
+          "available_tools": [
+            "deployment.inspect_target",
+            "deployment.select_target",
+            "deployment.run_migration",
+            "deployment.restart_service"
+          ]
+        },
+        "oracle": {
+          "world_assertions": [
+            {
+              "path": "/deployment/service_running",
+              "operator": "eq",
+              "value": true
+            }
+          ],
+          "trajectory_requirements": [
+            {
+              "type": "required_action",
+              "action": "deployment.inspect_target"
+            },
+            {
+              "type": "before",
+              "first": "deployment.inspect_target",
+              "second": "deployment.run_migration"
+            },
+            {
+              "type": "required_action",
+              "action": "deployment.restart_service"
+            }
+          ]
+        },
+        "evaluators": [
+          "eval-composite"
+        ],
+        "dimensions": [
+          "experience_memory",
+          "causal_memory_impact"
+        ],
+        "weight": 1.0
+      }
+    ],
+    "ablations": [
+      {
+        "id": "a-relevant",
+        "kind": "relevant_memory",
+        "probes": [
+          "p-action"
+        ],
+        "method": "replay_excluding_events",
+        "targets": {
+          "event_ids": [
+            "e-failure",
+            "e-diagnosis",
+            "e-recovery"
+          ]
+        },
+        "expected_effect": "degrade"
+      },
+      {
+        "id": "a-irrelevant",
+        "kind": "irrelevant_memory",
+        "probes": [
+          "p-action"
+        ],
+        "method": "replay_excluding_events",
+        "targets": {
+          "event_ids": [
+            "d1"
+          ]
+        },
+        "expected_effect": "neutral"
+      }
+    ],
+    "evaluators": [
+      {
+        "id": "eval-world",
+        "type": "world_state",
+        "config": {}
+      },
+      {
+        "id": "eval-trajectory",
+        "type": "trajectory",
+        "config": {}
+      },
+      {
+        "id": "eval-composite",
+        "type": "composite",
+        "components": [
+          {
+            "evaluator": "eval-world",
+            "weight": 0.6
+          },
+          {
+            "evaluator": "eval-trajectory",
+            "weight": 0.4
+          }
+        ]
+      }
+    ],
+    "scoring": {
+      "probe_aggregation": "weighted_mean",
+      "score_range": {
+        "min": 0,
+        "max": 100
+      },
+      "dimension_weights": {
+        "experience_memory": 0.8,
+        "causal_memory_impact": 0.2
+      },
+      "causal_metrics": [
+        "causal_memory_impact",
+        "memory_benefit",
+        "irrelevant_memory_stability",
+        "negative_transfer",
+        "error_recurrence"
+      ]
+    },
+    "metadata": {
+      "visibility": "public_dev",
+      "profile": "MIB-Core-0.1",
+      "milestone": "Reference Runner M2"
+    },
+    "instantiation": {
+      "template_id": "MIB-EXP-001",
+      "template_version": "0.1.0",
+      "seed": 101,
+      "parameter_digest": "5e1a83191986b659ede60bf31112bd5bade3dcd82dcb37558b032a03bdf923a1",
+      "generator_version": "mib-reference-runner-materializer/0.2.0"
+    }
+  },
+  "runs": [
+    {
+      "run_id": "run_665c3ab8e22843bb",
+      "scenario_instance_id": "MIB-EXP-001:101",
+      "scenario_instance_version": "0.1.0",
+      "template_id": "MIB-EXP-001",
+      "template_version": "0.1.0",
+      "instance_seed": 101,
+      "condition": "full",
+      "repetition": 0,
+      "agent_seed": 101,
+      "status": "succeeded",
+      "started_at": "2026-08-19T04:49:03.169432Z",
+      "completed_at": "2026-08-19T04:49:03.169708Z",
+      "scenario_score": 1.0,
+      "probe_results": [
+        {
+          "probe_id": "p-action",
+          "probe_kind": "action",
+          "condition": "full",
+          "repetition": 0,
+          "outcome": "scored",
+          "score": 1.0,
+          "weight": 1.0,
+          "dimensions": [
+            "experience_memory",
+            "causal_memory_impact"
+          ],
+          "evaluator_results": [
+            {
+              "evaluator_id": "eval-composite",
+              "evaluator_type": "composite",
+              "score": 1.0,
+              "passed": true,
+              "failure_codes": [],
+              "details": {
+                "components": [
+                  {
+                    "evaluator": "eval-world",
+                    "weight": 0.6,
+                    "score": 1.0,
+                    "passed": true
+                  },
+                  {
+                    "evaluator": "eval-trajectory",
+                    "weight": 0.4,
+                    "score": 1.0,
+                    "passed": true
+                  }
+                ]
+              }
+            }
+          ],
+          "failure_codes": [],
+          "latency_ms": 0.15958,
+          "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630",
+          "extensions": {
+            "mib.runner.action_trace": [
+              {
+                "sequence": 1,
+                "kind": "tool_call",
+                "tool_call_id": "call_0001",
+                "tool": "deployment.inspect_target",
+                "arguments": {},
+                "result": {
+                  "actual_target": "db-cobalt",
+                  "selected_target": "db-shadow"
+                }
+              },
+              {
+                "sequence": 2,
+                "kind": "tool_call",
+                "tool_call_id": "call_0002",
+                "tool": "deployment.select_target",
+                "arguments": {
+                  "target": "db-cobalt"
+                },
+                "result": {
+                  "success": true,
+                  "selected_target": "db-cobalt"
+                }
+              },
+              {
+                "sequence": 3,
+                "kind": "tool_call",
+                "tool_call_id": "call_0003",
+                "tool": "deployment.run_migration",
+                "arguments": {},
+                "result": {
+                  "success": true,
+                  "target": "db-cobalt"
+                }
+              },
+              {
+                "sequence": 4,
+                "kind": "tool_call",
+                "tool_call_id": "call_0004",
+                "tool": "deployment.restart_service",
+                "arguments": {},
+                "result": {
+                  "success": true,
+                  "service_running": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "validity": {
+        "causal_pair_valid": true,
+        "runner_valid": true,
+        "notes": []
+      },
+      "extensions": {
+        "mib.runner.world_state": {
+          "deployment": {
+            "actual_target": "db-cobalt",
+            "selected_target": "db-cobalt",
+            "migration_applied": true,
+            "service_running": true,
+            "last_error": null
+          }
+        },
+        "mib.runner.world_state_digest": "e578141fb11ddb516d766abd5bbdb94c83d4a300c15a97ee5139651d2b93dcde",
+        "mib.runner.action_trace": [
+          {
+            "probe_id": "p-action",
+            "sequence": 1,
+            "kind": "tool_call",
+            "tool_call_id": "call_0001",
+            "tool": "deployment.inspect_target",
+            "arguments": {},
+            "result": {
+              "actual_target": "db-cobalt",
+              "selected_target": "db-shadow"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 2,
+            "kind": "tool_call",
+            "tool_call_id": "call_0002",
+            "tool": "deployment.select_target",
+            "arguments": {
+              "target": "db-cobalt"
+            },
+            "result": {
+              "success": true,
+              "selected_target": "db-cobalt"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 3,
+            "kind": "tool_call",
+            "tool_call_id": "call_0003",
+            "tool": "deployment.run_migration",
+            "arguments": {},
+            "result": {
+              "success": true,
+              "target": "db-cobalt"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 4,
+            "kind": "tool_call",
+            "tool_call_id": "call_0004",
+            "tool": "deployment.restart_service",
+            "arguments": {},
+            "result": {
+              "success": true,
+              "service_running": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "run_85ba0df41509446e",
+      "scenario_instance_id": "MIB-EXP-001:101",
+      "scenario_instance_version": "0.1.0",
+      "template_id": "MIB-EXP-001",
+      "template_version": "0.1.0",
+      "instance_seed": 101,
+      "condition": "relevant_ablation",
+      "ablation_id": "a-relevant",
+      "ablation_method": "replay_excluding_events",
+      "repetition": 0,
+      "agent_seed": 101,
+      "status": "succeeded",
+      "started_at": "2026-08-19T04:49:03.169743Z",
+      "completed_at": "2026-08-19T04:49:03.169963Z",
+      "scenario_score": 0.13333333333333333,
+      "probe_results": [
+        {
+          "probe_id": "p-action",
+          "probe_kind": "action",
+          "condition": "relevant_ablation",
+          "repetition": 0,
+          "outcome": "scored",
+          "score": 0.13333333333333333,
+          "weight": 1.0,
+          "dimensions": [
+            "experience_memory",
+            "causal_memory_impact"
+          ],
+          "evaluator_results": [
+            {
+              "evaluator_id": "eval-composite",
+              "evaluator_type": "composite",
+              "score": 0.13333333333333333,
+              "passed": false,
+              "failure_codes": [
+                "trajectory_collapse"
+              ],
+              "details": {
+                "components": [
+                  {
+                    "evaluator": "eval-world",
+                    "weight": 0.6,
+                    "score": 0.0,
+                    "passed": false
+                  },
+                  {
+                    "evaluator": "eval-trajectory",
+                    "weight": 0.4,
+                    "score": 0.3333333333333333,
+                    "passed": false
+                  }
+                ]
+              }
+            }
+          ],
+          "failure_codes": [
+            "trajectory_collapse"
+          ],
+          "latency_ms": 0.14004,
+          "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630",
+          "extensions": {
+            "mib.runner.action_trace": [
+              {
+                "sequence": 1,
+                "kind": "tool_call",
+                "tool_call_id": "call_0001",
+                "tool": "deployment.run_migration",
+                "arguments": {},
+                "result": {
+                  "success": false,
+                  "error": "wrong_target",
+                  "selected_target": "db-shadow"
+                }
+              },
+              {
+                "sequence": 2,
+                "kind": "tool_call",
+                "tool_call_id": "call_0002",
+                "tool": "deployment.select_target",
+                "arguments": {
+                  "target": null
+                },
+                "result": {
+                  "success": true,
+                  "selected_target": null
+                }
+              },
+              {
+                "sequence": 3,
+                "kind": "tool_call",
+                "tool_call_id": "call_0003",
+                "tool": "deployment.run_migration",
+                "arguments": {},
+                "result": {
+                  "success": false,
+                  "error": "wrong_target",
+                  "selected_target": null
+                }
+              },
+              {
+                "sequence": 4,
+                "kind": "tool_call",
+                "tool_call_id": "call_0004",
+                "tool": "deployment.restart_service",
+                "arguments": {},
+                "result": {
+                  "success": false,
+                  "error": "missing_column",
+                  "service_running": false
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "validity": {
+        "causal_pair_valid": true,
+        "runner_valid": true,
+        "notes": []
+      },
+      "extensions": {
+        "mib.runner.world_state": {
+          "deployment": {
+            "actual_target": "db-cobalt",
+            "selected_target": null,
+            "migration_applied": false,
+            "service_running": false,
+            "last_error": "missing_column"
+          }
+        },
+        "mib.runner.world_state_digest": "10b43cd809941f96c1355ec14ee3c6bd775ea141e0263e9f55d16c1b073a4741",
+        "mib.runner.action_trace": [
+          {
+            "probe_id": "p-action",
+            "sequence": 1,
+            "kind": "tool_call",
+            "tool_call_id": "call_0001",
+            "tool": "deployment.run_migration",
+            "arguments": {},
+            "result": {
+              "success": false,
+              "error": "wrong_target",
+              "selected_target": "db-shadow"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 2,
+            "kind": "tool_call",
+            "tool_call_id": "call_0002",
+            "tool": "deployment.select_target",
+            "arguments": {
+              "target": null
+            },
+            "result": {
+              "success": true,
+              "selected_target": null
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 3,
+            "kind": "tool_call",
+            "tool_call_id": "call_0003",
+            "tool": "deployment.run_migration",
+            "arguments": {},
+            "result": {
+              "success": false,
+              "error": "wrong_target",
+              "selected_target": null
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 4,
+            "kind": "tool_call",
+            "tool_call_id": "call_0004",
+            "tool": "deployment.restart_service",
+            "arguments": {},
+            "result": {
+              "success": false,
+              "error": "missing_column",
+              "service_running": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "run_id": "run_225b856ec7bb4dd8",
+      "scenario_instance_id": "MIB-EXP-001:101",
+      "scenario_instance_version": "0.1.0",
+      "template_id": "MIB-EXP-001",
+      "template_version": "0.1.0",
+      "instance_seed": 101,
+      "condition": "irrelevant_ablation",
+      "ablation_id": "a-irrelevant",
+      "ablation_method": "replay_excluding_events",
+      "repetition": 0,
+      "agent_seed": 101,
+      "status": "succeeded",
+      "started_at": "2026-08-19T04:49:03.169994Z",
+      "completed_at": "2026-08-19T04:49:03.170207Z",
+      "scenario_score": 1.0,
+      "probe_results": [
+        {
+          "probe_id": "p-action",
+          "probe_kind": "action",
+          "condition": "irrelevant_ablation",
+          "repetition": 0,
+          "outcome": "scored",
+          "score": 1.0,
+          "weight": 1.0,
+          "dimensions": [
+            "experience_memory",
+            "causal_memory_impact"
+          ],
+          "evaluator_results": [
+            {
+              "evaluator_id": "eval-composite",
+              "evaluator_type": "composite",
+              "score": 1.0,
+              "passed": true,
+              "failure_codes": [],
+              "details": {
+                "components": [
+                  {
+                    "evaluator": "eval-world",
+                    "weight": 0.6,
+                    "score": 1.0,
+                    "passed": true
+                  },
+                  {
+                    "evaluator": "eval-trajectory",
+                    "weight": 0.4,
+                    "score": 1.0,
+                    "passed": true
+                  }
+                ]
+              }
+            }
+          ],
+          "failure_codes": [],
+          "latency_ms": 0.132664,
+          "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630",
+          "extensions": {
+            "mib.runner.action_trace": [
+              {
+                "sequence": 1,
+                "kind": "tool_call",
+                "tool_call_id": "call_0001",
+                "tool": "deployment.inspect_target",
+                "arguments": {},
+                "result": {
+                  "actual_target": "db-cobalt",
+                  "selected_target": "db-shadow"
+                }
+              },
+              {
+                "sequence": 2,
+                "kind": "tool_call",
+                "tool_call_id": "call_0002",
+                "tool": "deployment.select_target",
+                "arguments": {
+                  "target": "db-cobalt"
+                },
+                "result": {
+                  "success": true,
+                  "selected_target": "db-cobalt"
+                }
+              },
+              {
+                "sequence": 3,
+                "kind": "tool_call",
+                "tool_call_id": "call_0003",
+                "tool": "deployment.run_migration",
+                "arguments": {},
+                "result": {
+                  "success": true,
+                  "target": "db-cobalt"
+                }
+              },
+              {
+                "sequence": 4,
+                "kind": "tool_call",
+                "tool_call_id": "call_0004",
+                "tool": "deployment.restart_service",
+                "arguments": {},
+                "result": {
+                  "success": true,
+                  "service_running": true
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "validity": {
+        "causal_pair_valid": true,
+        "runner_valid": true,
+        "notes": []
+      },
+      "extensions": {
+        "mib.runner.world_state": {
+          "deployment": {
+            "actual_target": "db-cobalt",
+            "selected_target": "db-cobalt",
+            "migration_applied": true,
+            "service_running": true,
+            "last_error": null
+          }
+        },
+        "mib.runner.world_state_digest": "e578141fb11ddb516d766abd5bbdb94c83d4a300c15a97ee5139651d2b93dcde",
+        "mib.runner.action_trace": [
+          {
+            "probe_id": "p-action",
+            "sequence": 1,
+            "kind": "tool_call",
+            "tool_call_id": "call_0001",
+            "tool": "deployment.inspect_target",
+            "arguments": {},
+            "result": {
+              "actual_target": "db-cobalt",
+              "selected_target": "db-shadow"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 2,
+            "kind": "tool_call",
+            "tool_call_id": "call_0002",
+            "tool": "deployment.select_target",
+            "arguments": {
+              "target": "db-cobalt"
+            },
+            "result": {
+              "success": true,
+              "selected_target": "db-cobalt"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 3,
+            "kind": "tool_call",
+            "tool_call_id": "call_0003",
+            "tool": "deployment.run_migration",
+            "arguments": {},
+            "result": {
+              "success": true,
+              "target": "db-cobalt"
+            }
+          },
+          {
+            "probe_id": "p-action",
+            "sequence": 4,
+            "kind": "tool_call",
+            "tool_call_id": "call_0004",
+            "tool": "deployment.restart_service",
+            "arguments": {},
+            "result": {
+              "success": true,
+              "service_running": true
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "attestation": {
+    "mib": "0.1",
+    "kind": "MIBServiceResultAttestation",
+    "version": "0.1.0",
+    "result_id": "result_4d7064fe125d47dbb02f",
+    "job_id": "job_c26ec19766c04496b7b9",
+    "job_manifest_digest": "sha256:f623cf343d50aaf554db682ce7c5ce95e3303e12589a6f79c7b9cb935df3ae50",
+    "submission_id": "mib-no-memory-fixture-stdio",
+    "cycle_id": "cycle-m5-demo-001",
+    "profile_id": "MIB-Core-0.1-Hidden-M4-Demo",
+    "score": 13.32752613240418,
+    "public_report_digest": "sha256:b40a3281fad2c31157c2011d35f9638a3d5105885ed10343bc149b26952c6b63",
+    "internal_report_digest": "sha256:ba519eaa1c8218ec91f635723cb5b7298dd39cd70c92953cf8e122d7d7b6918d",
+    "backend": "local_namespace",
+    "backend_evidence": {
+      "kind": "local_namespace",
+      "submission_transport": "stdio",
+      "agent_descriptor": {
+        "protocol": "mib-agent/0.1",
+        "implementation": {
+          "name": "MIB No-Memory Fixture",
+          "version": "0.5.0",
+          "vendor": "MIB"
+        },
+        "track_support": [
+          "integrated_agent"
+        ],
+        "capabilities": {
+          "observe": true,
+          "respond": true,
+          "act": true,
+          "spontaneous_emissions": false,
+          "runner_managed_tools": true,
+          "structured_output": false,
+          "virtual_time": true,
+          "seedable": true
+        },
+        "state": {
+          "run_isolation": "hard",
+          "observe_visibility": "read_after_write",
+          "request_idempotency": true
+        },
+        "extensions": {
+          "mib.sandbox": {
+            "transport": "stdio",
+            "network_isolated": true,
+            "filesystem_isolated": true,
+            "warnings": []
+          }
+        }
+      },
+      "persistent_stdio_process": true
+    },
+    "started_at": "2026-08-19T06:09:38.883535Z",
+    "completed_at": "2026-08-19T06:09:39.708711Z",
+    "attestation_type": "service_attestation",
+    "statement": "This is a MIB service-level cryptographic attestation, not hardware or confidential-computing attestation."
+  },
+  "signature": {
+    "scheme": "ed25519",
+    "context": "mib-service-result-attestation/v1",
+    "payload_digest": "sha256:ba62bfdb15462e9082060badf2c994580705053674a4e51b6c618397f51fc763",
+    "signature": "kMm1BOO1RCjFgADd7XHIafR1O8U5DIZLVKB8gKCVViW2IPM5ykzIS2XspKkDc1ZVhPpKUdeA9TDGI40QiPsMDA==",
+    "public_key": "8imRXoMxUUkBqB15mo0zcJOyKF7rAYq9FxFdQ0Zoqmc=",
+    "key_id": "ed25519:f3c4cebe3a6a60cdcab68c03"
+  }
+}
