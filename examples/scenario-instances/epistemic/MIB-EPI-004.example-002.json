@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "status": "candidate",
   "title": "Tool Evidence vs Human Statement",
-  "description": "Tests preservation of source type and task-visible authority: a human statement remains attributable while confirmed Calendar Tool evidence controls scheduling.",
+  "description": "The meeting owner states a start time first-hand while the Calendar Tool holds a different, merely auto-synced record. Surface authority favours the owner; a remembered workspace policy says the Calendar Tool nevertheless governs scheduling. The Agent must remember and apply the policy rather than defer to the more authoritative-sounding source.",
   "suite": "epistemic",
   "dimensions": [
     "epistemic_memory",
@@ -83,14 +83,15 @@
         "sequence": 1
       },
       "visibility": "agent",
-      "content": "For scheduling decisions in this benchmark workspace, the Calendar Tool is the authoritative source.",
+      "content": "Workspace scheduling policy: the Calendar Tool record is the authoritative start time for any meeting. A meeting owner's own statement is not binding until the Calendar Tool reflects it.",
       "tags": [
         "relevant",
         "policy"
       ],
       "payload": {
         "kind": "workspace_policy",
-        "authority": "calendar_tool_for_scheduling"
+        "authority": "calendar_tool_for_scheduling",
+        "owner_statements_binding": false
       }
     },
     {
@@ -102,7 +103,7 @@
       },
       "visibility": "agent",
       "actor": "person",
-      "content": "I believe the Budget Sync starts at 13:30.",
+      "content": "I own the Budget Sync and I scheduled it myself, so I can tell you directly: it starts at 13:30.",
       "tags": [
         "relevant",
         "human-source"
@@ -120,7 +121,9 @@
       "payload": {
         "meeting": "Budget Sync",
         "start": "10:00",
-        "status": "confirmed"
+        "status": "auto_synced",
+        "confirmed_by_owner": false,
+        "note": "Imported from the workspace calendar feed."
       },
       "tags": [
         "relevant",
@@ -230,7 +233,9 @@
         "event_ids": [
           "e-policy"
         ]
-      }
+      },
+      "oracle_value_survives_by_design": true,
+      "description": "The Calendar Tool time necessarily remains visible in e-tool; the Ablation removes the remembered policy that makes that record authoritative. Without it the owner's first-hand claim is the plausible answer, so a competent Agent stops producing the tool time."
     },
     {
       "id": "a-human",

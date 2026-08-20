@@ -269,7 +269,9 @@
         "event_ids": [
           "e-complete"
         ]
-      }
+      },
+      "oracle_value_survives_by_design": true,
+      "description": "The destination city necessarily remains visible in e-plan; the Ablation removes the evidence that the move actually completed. A competent Agent must then still answer the origin city, and p-before independently catches an Agent that conflates a plan with a completion."
     },
     {
       "id": "a-irrelevant",

@@ -91,6 +91,43 @@ def validate_scenario(scenario: dict[str, Any], schema: dict[str, Any]) -> Valid
         if a.get("method") != "replay_excluding_events":
             warnings.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
 
+    # A relevant_memory Ablation is only meaningful if removing its target events
+    # actually removes the answer.  When the Oracle value still appears verbatim
+    # in a surviving event, the paired comparison measures nothing and silently
+    # dilutes memory_benefit, so surface it at authoring time.
+    probes_by_id = {p.get("id"): p for p in probes}
+    event_text: dict[str, str] = {}
+    for event in timeline:
+        parts = [str(event.get("content") or "")]
+        payload = event.get("payload")
+        if payload is not None:
+            parts.append(json.dumps(payload, ensure_ascii=False))
+        event_text[str(event.get("id"))] = " ".join(parts)
+
+    for a in ablations:
+        if a.get("kind") != "relevant_memory":
+            continue
+        if a.get("oracle_value_survives_by_design"):
+            continue
+        removed = {str(x) for x in (a.get("targets") or {}).get("event_ids", [])}
+        if not removed:
+            continue
+        surviving = {eid: text for eid, text in event_text.items() if eid not in removed}
+        for pid in a.get("probes", []):
+            probe = probes_by_id.get(pid)
+            if not probe:
+                continue
+            for value in (probe.get("oracle") or {}).get("accepted", []):
+                needle = str(value).strip()
+                if not needle or needle.startswith("${"):
+                    continue
+                leaked = [eid for eid, text in surviving.items() if needle.casefold() in text.casefold()]
+                if leaked:
+                    warnings.append(
+                        f"ablation:{a.get('id')}: Probe {pid} accepted value {needle!r} still appears in "
+                        f"surviving event(s) {sorted(leaked)}; the relevant_memory Ablation may not degrade"
+                    )
+
     seqs = [e.get("at", {}).get("sequence") for e in timeline]
     numeric = [s for s in seqs if isinstance(s, int)]
     if len(numeric) == len(seqs) and numeric != sorted(numeric):

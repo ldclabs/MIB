@@ -1320,6 +1320,11 @@
         "extensions": {
           "type": "object",
           "additionalProperties": true
+        },
+        "oracle_value_survives_by_design": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set when the Probe's accepted Oracle value legitimately remains visible in a surviving event after this Ablation, and the Ablation is nonetheless expected to change a competent Agent's answer (for example a planned-versus-completed transition, or a remembered policy that overrides the surface-plausible source). Suppresses the authoring-time leakage warning and records that the design was reviewed. Do not set it to silence a genuine leak: verify first that the Ablation actually degrades."
         }
       }
     },

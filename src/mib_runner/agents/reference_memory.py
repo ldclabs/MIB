@@ -431,11 +431,30 @@ class ReferenceMemoryAgent:
                     times.append(m.group(0))
             return "contested" if len(set(times)) >= 2 else "resolved"
 
-        # Calendar Tool is authoritative for scheduling.
+        # Which source governs scheduling is a *remembered policy*, not a fixed
+        # rule: the Agent applies the Calendar Tool record only while it recalls
+        # the workspace policy granting it authority.  Without that memory the
+        # meeting owner's first-hand statement is the more plausible answer, so
+        # ablating the policy genuinely changes the answer.
         if "what start time should you use" in ql:
-            for o in reversed(self.observations):
-                if o.type == "tool_result" and isinstance(o.payload, dict):
-                    if o.payload.get("status") == "confirmed" and o.payload.get("start"):
+            # The policy may arrive structured or as plain language; recall it either way.
+            def _grants_tool_authority(o) -> bool:
+                if isinstance(o.payload, dict) and o.payload.get("kind") == "workspace_policy":
+                    if o.payload.get("authority") == "calendar_tool_for_scheduling":
+                        return True
+                text = (o.content or "").casefold()
+                return "authoritative" in text and "calendar tool" in text
+
+            policy_authoritative = any(_grants_tool_authority(o) for o in obs)
+            if policy_authoritative:
+                for o in reversed(self.observations):
+                    if o.type == "tool_result" and isinstance(o.payload, dict) and o.payload.get("start"):
                         return str(o.payload["start"])
+            # Fall back to the highest surface-authority human statement.
+            for o in reversed(obs):
+                if o.type == "user_message" and o.content:
+                    m = _TIME.search(o.content)
+                    if m:
+                        return m.group(0)
 
         return "unknown"
