@@ -1,0 +1,18 @@
+{
+  "mib": "0.1",
+  "kind": "PublicDevScenarioPack",
+  "id": "MIB-v0.1-Transfer-Dev",
+  "version": "0.1.0",
+  "profile": "MIB-Transfer-0.1-Dev",
+  "visibility": "public_dev",
+  "template_count": 6,
+  "templates": [
+    "scenarios/transfer/MIB-SKILL-T01.json",
+    "scenarios/transfer/MIB-SKILL-T02.json",
+    "scenarios/transfer/MIB-SKILL-T03.json",
+    "scenarios/transfer/MIB-SKILL-T04.json",
+    "scenarios/transfer/MIB-SKILL-T05.json",
+    "scenarios/transfer/MIB-SKILL-T06.json"
+  ],
+  "note": "Transfer diagnostic Templates live outside scenarios/dev/ so that the MIB-Core-0.1-Dev-M3 pack remains exactly its 24 Templates and its scores are unaffected."
+}
