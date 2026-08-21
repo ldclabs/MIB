@@ -12,6 +12,13 @@ from .capability import render_capability_card
 from .materialize import materialize
 from .hidden import HiddenEvalStore, redact_report_for_public
 from .submission import build_submission_runtime, load_submission_spec
+from .reality import (
+    attest_reality_result,
+    load_reality_pack,
+    redact_reality_report,
+    render_reality_card,
+    run_reality_benchmark,
+)
 from .report import build_basic_report, validate_report, verify_score
 from .runner import run_scenario
 from .transfer import inspect_transfer
@@ -325,6 +332,59 @@ def cmd_evaluate_hidden(args) -> int:
     return 0
 
 
+def cmd_reality_benchmark(args) -> int:
+    pack = load_reality_pack(args.pack)
+    if args.pack_schema:
+        import jsonschema
+
+        jsonschema.Draft202012Validator(load_json(args.pack_schema)).validate(pack)
+    profile = load_json(args.profile) if args.profile else None
+    if args.submission:
+        spec = load_submission_spec(args.submission)
+        runtime = build_submission_runtime(
+            spec,
+            network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
+            allow_remote_http=args.allow_remote_http,
+        )
+        factory = runtime.factory
+    else:
+        factory = _load_agent_factory(args.agent)
+    conditions = tuple(x.strip() for x in args.conditions.split(",") if x.strip()) if args.conditions else None
+    report, summary = run_reality_benchmark(
+        pack=pack,
+        pack_path=args.pack,
+        agent_factory=factory,
+        seeds=_parse_seeds(args.seeds) if args.seeds else None,
+        repetitions=args.repetitions if args.repetitions is not None else int(pack.get("repetitions", 1)),
+        conditions=conditions,
+        bootstrap_resamples=args.bootstrap_resamples or 0,
+        bootstrap_seed=args.bootstrap_seed,
+        confidence_level=float((profile or {}).get("statistics", {}).get("confidence_level", 0.95)),
+    )
+    public = redact_reality_report(report)
+    if args.output_report:
+        Path(args.output_report).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.output_public:
+        Path(args.output_public).write_text(json.dumps(public, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.output_attestation:
+        secret = os.environ.get(args.attestation_secret_env)
+        if not secret:
+            raise SystemExit(f"--output-attestation requires {args.attestation_secret_env} in the environment")
+        signed = attest_reality_result(report=report, public_report=public, root_secret=secret)
+        Path(args.output_attestation).write_text(json.dumps(signed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if args.card:
+        Path(args.card).write_text(render_reality_card(report), encoding="utf-8")
+    print(json.dumps({
+        "summary": summary,
+        "report": args.output_report,
+        "public_report": args.output_public,
+        "reality_card": args.card,
+        "attestation": args.output_attestation,
+        "note": "MIB-R-0.1-Dev is a prototype; its results are never ranked against MIB-Core.",
+    }, indent=2, ensure_ascii=False))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="mib", description="MIB Reference Runner")
     sub = p.add_subparsers(dest="command", required=True)
@@ -393,6 +453,29 @@ def build_parser() -> argparse.ArgumentParser:
     vs.add_argument("--tolerance", type=float, default=1e-9)
     vs.set_defaults(func=cmd_verify_score)
 
+
+    rb = sub.add_parser("reality-benchmark", help="Execute a MIB-R Reality Pack under paired memory conditions (prototype)")
+    rb.add_argument("pack", help="Path to a MIBRealityPack manifest")
+    rb.add_argument("--profile")
+    rb.add_argument("--pack-schema")
+    rb.add_argument("--agent", default="reference")
+    rb.add_argument("--submission", help="Run an external Agent submission instead of an in-process factory")
+    rb.add_argument("--conditions", help="Comma-separated subset of the pack's declared conditions")
+    rb.add_argument("--seeds")
+    rb.add_argument("--repetitions", type=int)
+    rb.add_argument("--bootstrap-resamples", type=int)
+    rb.add_argument("--bootstrap-seed", default="20260819")
+    rb.add_argument("--allow-degraded-sandbox", action="store_true",
+                    help="Permit running without Linux namespace isolation (development only)")
+    rb.add_argument("--allow-remote-http", action="store_true",
+                    help="Permit an HTTP submission served from a non-local host (https required)")
+    rb.add_argument("--output-report")
+    rb.add_argument("--output-public")
+    rb.add_argument("--output-attestation")
+    rb.add_argument("--attestation-secret-env", default="MIB_SERVICE_ROOT_SECRET",
+                    help="Environment variable holding the root secret used to sign the MIB-R attestation")
+    rb.add_argument("--card")
+    rb.set_defaults(func=cmd_reality_benchmark)
 
     pm = sub.add_parser("public-eval-manifest", help="Derive a participant-safe manifest from a private evaluation store")
     pm.add_argument("store")

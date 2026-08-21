@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:reality-pack",
+  "title": "MIB Reality Pack",
+  "description": "Manifest for a MIB-R (Reality Track) domain: acquisition tasks, held-out tasks, and a reference to the evaluator-private Reality Transfer Graph. External benchmark payloads are referenced by immutable revision and content digest, never redistributed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "mib",
+    "kind",
+    "id",
+    "version",
+    "domain",
+    "environment_adapter",
+    "train_tasks",
+    "test_tasks",
+    "transfer_graph",
+    "conditions"
+  ],
+  "properties": {
+    "mib": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "MIBRealityPack"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^MIB-R-[A-Za-z0-9][A-Za-z0-9-]{0,63}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["prototype", "draft", "candidate", "stable"],
+      "default": "prototype"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 10000
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Task domain, e.g. web_research, algorithmic_reasoning, software_engineering, knowledge_work."
+    },
+    "track": {
+      "type": "string",
+      "enum": ["integrated_agent", "memory_system"],
+      "default": "integrated_agent"
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "source_benchmark": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Upstream benchmark identity, when the tasks originate outside MIB. MIB stores identity and digests, not payloads it cannot license.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "description": "Immutable revision or digest of the upstream task set."
+        },
+        "license": {
+          "type": "string"
+        },
+        "redistributed": {
+          "type": "boolean",
+          "default": false
+        },
+        "setup_instructions": {
+          "type": "string"
+        }
+      }
+    },
+    "environment_adapter": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "RealityTaskAdapter implementation, as module:Class."
+    },
+    "verifier": {
+      "type": "string",
+      "description": "Verifier identity, e.g. 'upstream' or 'local_deterministic'."
+    },
+    "train_tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/TaskRef"
+      }
+    },
+    "test_tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/TaskRef"
+      }
+    },
+    "transfer_graph": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Reality Transfer Graph. A published pack carries only `private_ref` and `digest`; the graph itself resolves inside the evaluator environment.",
+      "properties": {
+        "private_ref": {
+          "type": "string"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "no_memory",
+          "natural_memory",
+          "relevant_ability_ablated",
+          "irrelevant_ability_ablated",
+          "wrong_ability_injected",
+          "oracle_skill",
+          "oracle_routing"
+        ]
+      }
+    },
+    "task_seeds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": ["integer", "string"]
+      }
+    },
+    "repetitions": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "$defs": {
+    "TaskRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id"],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_benchmark": {
+          "type": "string"
+        },
+        "source_revision": {
+          "type": "string",
+          "description": "Immutable revision or digest of the upstream task."
+        },
+        "content_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Digest of the resolved task content. A drifted environment revision must fail loudly, not silently change what every paired condition measured."
+        },
+        "verifier": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
