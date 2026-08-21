@@ -53,6 +53,25 @@ CELL_CONDITIONS = {
 }
 
 
+def eligible_transfer_templates(templates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Templates the diagnostic cells can actually run against.
+
+    A Template is eligible only when it declares a Transfer Support Annotation,
+    at least one annotated Probe, and at least one oracle Skill artifact.
+    Without an oracle artifact there is no ceiling, and every efficiency ratio
+    would be undefined rather than informative.
+    """
+    out = []
+    for template in templates:
+        support = parse_transfer_support(template)
+        if support is None:
+            continue
+        if not annotated_probe_ids(support) or not abilities_with_oracle(support):
+            continue
+        out.append(template)
+    return out
+
+
 def annotated_probe_ids(support: TransferSupport) -> list[str]:
     return [r.probe_id for r in support.probe_relations]
 

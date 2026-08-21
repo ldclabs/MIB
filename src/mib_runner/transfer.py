@@ -234,6 +234,29 @@ def transfer_support_digest(support: TransferSupport | dict[str, Any]) -> str:
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def oracle_artifact_bundle_digest(scenarios: list[dict[str, Any]]) -> str | None:
+    """Digest over the oracle Skill content of a Template set.
+
+    Binding this into an Experiment Lock means that editing an oracle artifact
+    after the experiment was locked invalidates the lock, instead of silently
+    changing the ceiling every efficiency ratio is measured against.
+    """
+    rows: list[dict[str, Any]] = []
+    for scenario in scenarios:
+        support = parse_transfer_support(scenario)
+        if support is None:
+            continue
+        for ability in support.abilities:
+            artifact = ability.oracle_artifact
+            if artifact:
+                rows.append({"scenario": str(scenario.get("id")), "ability": ability.id, "artifact": artifact})
+    if not rows:
+        return None
+    rows.sort(key=lambda r: (r["scenario"], r["ability"]))
+    payload = json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
 def _event_text(scenario: dict[str, Any]) -> dict[str, str]:
     out: dict[str, str] = {}
     for event in scenario.get("timeline") or []:

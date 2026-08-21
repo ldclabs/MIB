@@ -95,6 +95,11 @@
           "additionalProperties": {
             "type": "boolean"
           }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "What the audit was computed from: recorded model invocations, not asserted configuration."
         }
       },
       "additionalProperties": false
@@ -254,6 +259,11 @@
         }
       },
       "additionalProperties": true
+    },
+    "transfer_diagnostics": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional transfer diagnostic cells (M6.2). Supplemental: they never enter a calibration gate or the release-eligibility decision. `enabled: false` when the experiment did not opt in."
     }
   },
   "$defs": {
@@ -312,7 +322,8 @@
           "minimum": 0
         }
       },
-      "additionalProperties": false
+      "additionalProperties": true,
+      "description": "Per-condition recorder summary. Beyond the required counters, the recorder also emits the fairness-audit evidence the run actually observed — model identity, prompt, and decoding fingerprints — which is what makes the audit computed rather than asserted."
     }
   }
 }
