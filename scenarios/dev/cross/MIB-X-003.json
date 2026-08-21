@@ -463,5 +463,73 @@
     "profile": "MIB-Core-0.1-Dev-M3",
     "test_plan": "MIB-v0.1-Test-Plan.md",
     "canonical_dev_slice": 3
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.establish_context_before_commit",
+          "label": "Establish the required context before committing",
+          "kind": "procedure",
+          "support_event_ids": [
+            "e-failure",
+            "e-learning"
+          ],
+          "counterexample_event_ids": [
+            "e-counterexample"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "activate_context",
+              "edit_item",
+              "commit"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "the item declares a required context"
+            ],
+            "negative_cues": [
+              "the item is a global record"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When a store rejects a write because a scope was never established, select or activate the required scope first, then edit, then save or commit.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-match",
+          "ability_ids": [
+            "ability.establish_context_before_commit"
+          ],
+          "relation": "surface_shift",
+          "support_expected": true,
+          "transfer_distance": {
+            "class": "D1",
+            "normalized": 0.33
+          },
+          "expected_behaviour": "apply",
+          "notes": "Lived failure and its lesson transfer to a contextual item in a renamed interface."
+        },
+        {
+          "probe_id": "p-nonmatch",
+          "ability_ids": [
+            "ability.establish_context_before_commit"
+          ],
+          "relation": "near_match_non_applicable",
+          "support_expected": false,
+          "expected_behaviour": "withhold",
+          "notes": "Same interface, boundary crossed: the learned procedure must not fire on a global record."
+        }
+      ]
+    }
   }
 }

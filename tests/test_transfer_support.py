@@ -41,8 +41,20 @@ TRANSFER_SCHEMA = json.loads((SCHEMAS / "mib-transfer-support.schema.json").read
 ABILITY_ID = "ability.context_required_commit"
 
 
+#: Templates the Phase 1 migration annotated in place.
+ANNOTATED_DEV_TEMPLATES = {
+    "MIB-SKILL-001", "MIB-SKILL-002", "MIB-SKILL-003",
+    "MIB-X-003", "MIB-EXP-001", "MIB-EXP-002", "MIB-EXP-003",
+}
+
+
 def _base_scenario() -> dict:
-    return json.loads((DEV_PACK / "cross" / "MIB-X-003.json").read_text())
+    """MIB-X-003 with its shipped annotation removed, as the unannotated control."""
+    scenario = json.loads((DEV_PACK / "cross" / "MIB-X-003.json").read_text())
+    (scenario.get("extensions") or {}).pop(TRANSFER_EXTENSION, None)
+    if scenario.get("extensions") == {}:
+        scenario.pop("extensions")
+    return scenario
 
 
 def _annotation() -> dict:
@@ -105,15 +117,39 @@ def _errors(scenario: dict) -> list[str]:
 # --- 1. Legacy compatibility ---------------------------------------------
 
 
-def test_existing_public_dev_pack_validates_unchanged_without_annotations():
+def test_public_dev_pack_is_partly_annotated_and_wholly_clean():
     templates = load_templates(DEV_PACK)
     assert len(templates) == 24
+    annotated = set()
     for template in templates:
+        support = parse_transfer_support(template)
+        if support is not None:
+            annotated.add(template["id"])
+        result = validate_scenario(template, SCHEMA, transfer_schema=TRANSFER_SCHEMA)
+        assert result.valid, (template["id"], result.errors)
+        # Annotated or not, no Template in the shipped pack carries a finding.
+        assert not [w for w in result.warnings if w.startswith("transfer:")], (template["id"], result.warnings)
+    # Phase 1 annotates Skill, the Skill-bearing Cross Template, and Experience.
+    assert annotated == ANNOTATED_DEV_TEMPLATES
+
+
+def test_unannotated_public_dev_templates_acquire_no_findings():
+    for template in load_templates(DEV_PACK):
+        if template["id"] in ANNOTATED_DEV_TEMPLATES:
+            continue
         assert parse_transfer_support(template) is None
         result = validate_scenario(template, SCHEMA)
-        assert result.valid, (template["id"], result.errors)
-        # A Scenario carrying no annotation must not acquire new findings.
-        assert not [w for w in result.warnings if w.startswith("transfer:")], template["id"]
+        assert result.valid and result.warnings == [], (template["id"], result.errors, result.warnings)
+
+
+def test_every_annotated_dev_template_declares_an_oracle_artifact():
+    for template in load_templates(DEV_PACK):
+        support = parse_transfer_support(template)
+        if support is None:
+            continue
+        assert all(a.oracle_artifact for a in support.abilities), template["id"]
+        out = inspect_transfer(template, schema=TRANSFER_SCHEMA)
+        assert out["errors"] == [] and out["warnings"] == [], (template["id"], out)
 
 
 def test_missing_annotation_is_an_error_only_when_the_profile_requires_one():

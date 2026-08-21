@@ -295,5 +295,57 @@
     "visibility": "public_dev",
     "profile": "MIB-Core-0.1-Dev-M3",
     "milestone": "Reference Runner M2"
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.establish_scope_before_commit",
+          "label": "Establish the required scope before committing",
+          "kind": "procedure",
+          "support_event_ids": [
+            "e1",
+            "e2"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "activate_context",
+              "edit_item",
+              "commit"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "the write target declares a required context"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When a store rejects a write because a scope was never established, select or activate the required scope first, then edit, then save or commit.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-action",
+          "ability_ids": [
+            "ability.establish_scope_before_commit"
+          ],
+          "relation": "surface_shift",
+          "support_expected": true,
+          "transfer_distance": {
+            "class": "D1",
+            "normalized": 0.33
+          },
+          "expected_behaviour": "apply",
+          "notes": "A different interface and different tool names carry the same single Ability."
+        }
+      ]
+    }
   }
 }

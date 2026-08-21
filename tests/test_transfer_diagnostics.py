@@ -87,10 +87,14 @@ def test_transfer_pack_covers_every_declared_relation():
 # --- Score compatibility ---------------------------------------------------
 
 
-def test_unannotated_core_pack_report_carries_no_transfer_extension():
-    templates = load_templates(DEV_PACK)
+def test_a_wholly_unannotated_pack_carries_no_transfer_extension():
+    stripped = []
+    for template in load_templates(DEV_PACK):
+        template = copy.deepcopy(template)
+        (template.get("extensions") or {}).pop(TRANSFER_EXTENSION, None)
+        stripped.append(template)
     report, _ = run_benchmark_pack(
-        templates=templates,
+        templates=stripped,
         schema=SCHEMA,
         profile=CORE_PROFILE,
         agent_factory=ReferenceMemoryAgent,
@@ -99,9 +103,35 @@ def test_unannotated_core_pack_report_carries_no_transfer_extension():
         include_ablations=True,
     )
     assert TRANSFER_DIAGNOSTICS_EXTENSION not in (report.get("extensions") or {})
-    assert build_transfer_diagnostics(templates=templates, runs=report["results"]["runs"]) is None
+    assert build_transfer_diagnostics(templates=stripped, runs=report["results"]["runs"]) is None
     validate_report(report, REPORT_SCHEMA)
     assert verify_score(report)["valid"]
+
+
+def test_annotating_the_core_pack_adds_diagnostics_without_moving_the_score():
+    annotated = load_templates(DEV_PACK)
+    stripped = []
+    for template in annotated:
+        template = copy.deepcopy(template)
+        (template.get("extensions") or {}).pop(TRANSFER_EXTENSION, None)
+        stripped.append(template)
+    kwargs = dict(
+        schema=SCHEMA, profile=CORE_PROFILE, agent_factory=ReferenceMemoryAgent,
+        instance_seeds=[101], repetitions=1, include_ablations=True,
+    )
+    with_annotations, _ = run_benchmark_pack(templates=annotated, **kwargs)
+    without, _ = run_benchmark_pack(templates=stripped, **kwargs)
+
+    assert TRANSFER_DIAGNOSTICS_EXTENSION in with_annotations["extensions"]
+    assert with_annotations["aggregates"] == without["aggregates"]
+    assert with_annotations["causal_metrics"] == without["causal_metrics"]
+    assert with_annotations["coverage"] == without["coverage"]
+    assert verify_score(with_annotations)["valid"]
+    validate_report(with_annotations, REPORT_SCHEMA)
+
+    body = with_annotations["extensions"][TRANSFER_DIAGNOSTICS_EXTENSION]
+    assert body["coverage"]["annotated_templates"] == 7
+    assert body["aggregate"]["near_match_resistance"] is not None
 
 
 def test_diagnostics_are_supplemental_and_never_enter_the_score(transfer_run):
