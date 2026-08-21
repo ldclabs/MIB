@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import copy
 import json
+import runpy
+import sys
 import threading
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 
 from mib_runner.agents import ReferenceMemoryAgent
 from mib_runner.benchmark import run_materialized_pack, validate_causal_pairs
@@ -33,6 +36,16 @@ REPORT_SCHEMA = json.loads(REPORT_SCHEMA_PATH.read_text())
 STORE = PRIVATE_EVAL_STORE_DEMO
 PROFILE = json.loads((PROFILES / "MIB-Core-0.1-Hidden-M4-Demo.json").read_text())
 STDIO_SPEC = EXAMPLES / "submissions" / "reference-stdio.json"
+
+
+def test_sandbox_availability_gate_uses_runtime_probe(monkeypatch):
+    """Linux alone is insufficient when the runner disables user namespaces."""
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr("mib_runner.sandbox._namespace_supported", lambda: False)
+
+    paths = runpy.run_path(str(Path(__file__).with_name("paths.py")))
+
+    assert paths["SANDBOX_AVAILABLE"] is False
 
 
 def test_hidden_store_hmac_materialization_is_deterministic_and_cycle_scoped():

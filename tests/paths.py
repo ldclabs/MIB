@@ -15,6 +15,8 @@ import os
 import sys
 from pathlib import Path
 
+from mib_runner.sandbox import _namespace_supported
+
 BASE = Path(__file__).resolve().parents[1]
 
 SCHEMAS = BASE / "schemas"
@@ -39,12 +41,15 @@ OFFICIAL_PACK = Path(
     )
 )
 
-# The submission sandbox needs Linux user/mount/network namespaces (via `unshare`)
-# and a workable RLIMIT_AS.  Neither holds on macOS, where setting RLIMIT_AS kills
-# the child before it can exec.  Tests that spawn sandboxed submissions are gated
-# on this rather than failing on unsupported platforms.
-SANDBOX_AVAILABLE = sys.platform.startswith("linux")
-SANDBOX_REASON = "submission sandbox requires Linux namespaces; unavailable on " + sys.platform
+# The submission sandbox needs usable Linux user/mount/network namespaces (via
+# `unshare`), not merely a Linux kernel. Hosted runners and containers can disable
+# those namespaces, so gate integration tests on the same runtime probe used by
+# the sandbox itself.
+SANDBOX_AVAILABLE = _namespace_supported()
+SANDBOX_REASON = (
+    "submission sandbox requires usable Linux user/mount/network namespaces; "
+    "unavailable or disabled on " + sys.platform
+)
 
 
 def slice_files(families: tuple[str, ...]) -> list[Path]:
