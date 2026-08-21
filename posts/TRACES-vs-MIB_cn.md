@@ -8,7 +8,7 @@
 
 有时答案隐藏在一篇文档中；有时分散在诸多网页里；有时需要经历若干推理步骤。但其底层逻辑如出一辙：在某处存在一个标准答案，而对 AI 的评判标准就在于它能否给出该答案。
 
-两个新项目——来自 Apodex AI 的 **[TRACES](https://traces.apodex.com/)** 与 **[MIB（Memory Intelligence Benchmark，记忆智能基准）](https://github.com/ldclabs/MIB)**——正从不同的维度打破这一固有范式。
+两个新项目——来自 Apodex AI 的 **[TRACES][3]** 与 **[MIB（Memory Intelligence Benchmark，记忆智能基准）][4]**——正从不同的维度打破这一固有范式。
 
 TRACES 提出：
 
@@ -110,16 +110,16 @@ TRACES 是 Apodex 构建其所谓的 **“发现型 AI（Discoverative AI）”*
 * 它的各项主张是否真正立足于证据？
 * 它是否清晰知晓其结论的边界与适用范围？
 
-TRACES 通过名为 **HDS6** 的六个维度来捕捉这些特质：
+TRACES 通过名为 **HDS6** 的六个维度来捕捉这些特质（其首字母缩写即为 **TRACES**）：
 
-| 维度 | 通俗含义 |
-| :--- | :--- |
-| **工具调用（Tools）** | 智能体是否正确使用了恰当的工具？ |
-| **错误修复（Repair）** | 它能否识别错误并从中恢复调整？ |
-| **备选解释（Alternatives）** | 它是否认真考虑了相互竞争的替代解释？ |
-| **连贯性（Coherence）** | 在整个调查过程中，逻辑是否始终保持一致？ |
-| **证据依据（Evidence）** | 其观点是否建立在观测事实和可靠来源之上？ |
-| **适用范围（Scope）** | 智能体是否清楚其结论在何处适用、在何处不适用？ |
+| 维度                         | 通俗含义                                       |
+| :--------------------------- | :--------------------------------------------- |
+| **工具调用（Tools）**        | 智能体是否正确使用了恰当的工具？               |
+| **错误修复（Repair）**       | 它能否识别错误并从中恢复调整？                 |
+| **备选解释（Alternatives）** | 它是否认真考虑了相互竞争的替代解释？           |
+| **连贯性（Coherence）**      | 在整个调查过程中，逻辑是否始终保持一致？       |
+| **证据依据（Evidence）**     | 其观点是否建立在观测事实和可靠来源之上？       |
+| **适用范围（Scope）**        | 智能体是否清楚其结论在何处适用、在何处不适用？ |
 
 值得注意的是，这些维度的评测独立于最终任务的成功与否。Apodex 论文还描述了在通用 TRACES 任务接口下开展的受控消融实验，以研究哪些求解器（Solver）组件真正提升了表现。([arXiv][1])
 
@@ -252,14 +252,14 @@ MIB 期望系统能够精准维护这些差异。
 
 因此，其 v0.1 基准重点评测六大核心维度：
 
-| MIB 维度 | 核心考量 |
-| :--- | :--- |
-| **留存与检索（Retention & Retrieval）** | 系统能否准确找回相关的过往信息？ |
-| **时序记忆（Temporal Memory）** | 能否区分曾经为真与当下为真？ |
-| **认知状态记忆（Epistemic Memory）** | 能否保留来源出处、不确定性、观点冲突与修正过程？ |
-| **经验记忆（Experience Memory）** | 能否记住目标、动作、失败、反馈与执行结果？ |
+| MIB 维度                                        | 核心考量                                               |
+| :---------------------------------------------- | :----------------------------------------------------- |
+| **留存与检索（Retention & Retrieval）**         | 系统能否准确找回相关的过往信息？                       |
+| **时序记忆（Temporal Memory）**                 | 能否区分曾经为真与当下为真？                           |
+| **认知状态记忆（Epistemic Memory）**            | 能否保留来源出处、不确定性、观点冲突与修正过程？       |
+| **经验记忆（Experience Memory）**               | 能否记住目标、动作、失败、反馈与执行结果？             |
 | **技能习得与迁移（Skill Learning & Transfer）** | 经验能否转化为可复用的行为策略，并具备清晰的适用边界？ |
-| **因果记忆影响（Causal Memory Impact）** | 能否证明记忆切实改变了后续的行为决策？ |
+| **因果记忆影响（Causal Memory Impact）**        | 能否证明记忆切实改变了后续的行为决策？                 |
 
 最后一个维度尤为关键。
 
@@ -371,7 +371,7 @@ TRACES 考察调查在展开过程中是否始终保持严密。
 
 MIB 考察早期的经验是否改变了后续的认知与行为。
 
-因此，两者都属于从**结果评测（Answer Evaluation）**转向**过程与行为评测（Process and Behavior Evaluation）**的大趋势。
+因此，两者都属于从 **结果评测（Answer Evaluation）** 转向 **过程与行为评测（Process and Behavior Evaluation）** 的大趋势。
 
 ---
 
@@ -433,7 +433,7 @@ MIB 则格外聚焦于：
 
 这导出了一个精辟的对照：
 
-> **TRACES 评估单次调查内部的连贯性。**  
+> **TRACES 评估单次调查内部的连贯性。**
 > **MIB 评估跨调查周期的持续学习能力。**
 
 两者的边界并非绝对割裂。长程 TRACES 调查显然需要状态维护与记忆能力，而 MIB 场景同样包含复杂的智能体行动轨迹。
@@ -446,7 +446,7 @@ MIB 则格外聚焦于：
 
 在将 TRACES 的六大维度与 MIB 进行对比时，这一区别尤为关键。
 
-以**连贯性（Coherence）**为例：
+以 **连贯性（Coherence）** 为例：
 
 如果智能体遗忘了早期的约束条件，就会导致前后矛盾。因此连贯性显然依赖于记忆。
 
@@ -491,14 +491,14 @@ MIB 则试图直接孤立出这一因果变量：
 
 例如：
 
-| TRACES 行为维度 | 可能支撑它的记忆功能 |
-| :--- | :--- |
-| **工具调用（Tools）** | 经验记忆、技能习得、时序状态 |
-| **错误修复（Repair）** | 失败记忆、纠错修正、经验学习 |
+| TRACES 行为维度              | 可能支撑它的记忆功能             |
+| :--------------------------- | :------------------------------- |
+| **工具调用（Tools）**        | 经验记忆、技能习得、时序状态     |
+| **错误修复（Repair）**       | 失败记忆、纠错修正、经验学习     |
 | **备选解释（Alternatives）** | 认知状态记忆、竞争假说、来源记忆 |
-| **连贯性（Coherence）** | 记忆留存、时序状态、长期约束记忆 |
-| **证据依据（Evidence）** | 来源出处、来源区分、证据独立性 |
-| **适用范围（Scope）** | 技能适用性、抗负迁移能力 |
+| **连贯性（Coherence）**      | 记忆留存、时序状态、长期约束记忆 |
+| **证据依据（Evidence）**     | 来源出处、来源区分、证据独立性   |
+| **适用范围（Scope）**        | 技能适用性、抗负迁移能力         |
 
 这揭示了一个有益的概念分野：
 
@@ -636,7 +636,7 @@ MIB
 
 这也构成了区分两个项目最清晰的界线：
 
-> **TRACES 关注：调查过程是否严密？**  
+> **TRACES 关注：调查过程是否严密？**
 > **MIB 关注：调查经历是否沉淀为学习？**
 
 ---
@@ -671,7 +671,7 @@ MIB
 
 简言之：
 
-> **没有发现的记忆只能固守已知。**  
+> **没有发现的记忆只能固守已知。**
 > **没有记忆的发现无法形成累积。**
 
 ---
@@ -986,9 +986,9 @@ MIB 发问：
 我已站在了全新的起点之上。
 ```
 
-唯有此时，经验才不再只是尘封的历史，而真正蜕变为智慧的跃迁。([arXiv][1])
+唯有此时，经验才不再只是尘封的历史，而真正蜕变为智慧的跃迁。
 
-[1]: https://arxiv.org/abs/2608.11341?utm_source=chatgpt.com "Apodex Discovery: Reality Benchmarks and Environments for Evaluating and Building Discoverative Artificial Intelligence"
-[2]: https://www.apodex.com/discover?utm_source=chatgpt.com "Apodex | Self-Evolving Heavy-Duty Solver"
+[1]: https://arxiv.org/abs/2608.11341 "Apodex Discovery: Reality Benchmarks and Environments for Evaluating and Building Discoverative Artificial Intelligence"
+[2]: https://www.apodex.com/discover "Apodex | Self-Evolving Heavy-Duty Solver"
 [3]: https://traces.apodex.com/ "TRACES 评测基准"
 [4]: https://github.com/ldclabs/MIB "MIB 记忆智能基准（Memory Intelligence Benchmark）"

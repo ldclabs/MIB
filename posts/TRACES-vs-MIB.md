@@ -8,7 +8,7 @@ For years, most AI benchmarks have asked a familiar kind of question:
 
 Sometimes the answer is hidden in a document. Sometimes it is buried across many web pages. Sometimes it requires several steps of reasoning. But the basic structure remains the same: somewhere, there is a correct answer, and the AI is judged by whether it can produce it.
 
-Two new projects, **[TRACES](https://traces.apodex.com/)** from Apodex AI and **[MIB — Memory Intelligence Benchmark](https://github.com/ldclabs/MIB)**, challenge that framing from different directions.
+Two new projects, **[TRACES][3]** from Apodex AI and **[MIB — Memory Intelligence Benchmark][4]**, challenge that framing from different directions.
 
 TRACES asks:
 
@@ -110,7 +110,7 @@ You also want to know:
 * Were its claims actually grounded in evidence?
 * Did it understand the limits of its conclusion?
 
-TRACES captures this through six dimensions, called **HDS6**:
+TRACES captures this through six dimensions, called **HDS6** (whose initials spell **TRACES**):
 
 | Dimension        | Plain-English meaning                                               |
 | ---------------- | ------------------------------------------------------------------- |
@@ -1000,9 +1000,9 @@ And the next time,
 I began from somewhere new.
 ```
 
-That is when experience stops being history and starts becoming intelligence. ([arXiv][1])
+That is when experience stops being history and starts becoming intelligence.
 
-[1]: https://arxiv.org/abs/2608.11341?utm_source=chatgpt.com "Apodex Discovery: Reality Benchmarks and Environments for Evaluating and Building Discoverative Artificial Intelligence"
-[2]: https://www.apodex.com/discover?utm_source=chatgpt.com "Apodex | Self-Evolving Heavy-Duty Solver"
+[1]: https://arxiv.org/abs/2608.11341 "Apodex Discovery: Reality Benchmarks and Environments for Evaluating and Building Discoverative Artificial Intelligence"
+[2]: https://www.apodex.com/discover "Apodex | Self-Evolving Heavy-Duty Solver"
 [3]: https://traces.apodex.com/ "TRACES Benchmark"
 [4]: https://github.com/ldclabs/MIB "Memory Intelligence Benchmark (MIB)"
