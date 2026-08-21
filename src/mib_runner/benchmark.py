@@ -16,6 +16,14 @@ from .materialize import materialize
 from .report import strip_extensions_for_report
 from .runner import run_scenario
 from .scoring import ablation_tolerances, tolerant_harm_resistance, tolerant_stability
+from .transfer_diagnostics import (
+    DEFAULT_EPSILON,
+    attach_transfer_diagnostics,
+    build_transfer_diagnostics,
+    transfer_diagnostic_aggregates,
+    transfer_distance_aggregates,
+    transfer_relation_aggregates,
+)
 from .validation import validate_scenario
 
 CAUSAL_DIM = "causal_memory_impact"
@@ -545,6 +553,7 @@ def build_pack_report(
     profile: dict[str, Any],
     agent_descriptor: dict[str, Any],
     statistics: dict[str, Any] | None = None,
+    transfer_diagnostics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     templates_by_id = {t["id"]: t for t in templates}
     instance_by_iid = {f"{s['id']}:{(s.get('instantiation') or {}).get('seed', 'instance')}": s for s in instances}
@@ -699,6 +708,10 @@ def build_pack_report(
         for m in report.get("causal_metrics", []):
             if m["name"] in stat_causal and stat_causal[m["name"]].get("ci"):
                 m["ci"] = copy.deepcopy(stat_causal[m["name"]]["ci"])
+    # Supplemental diagnostics only.  A pack whose Templates carry no Transfer
+    # Support Annotation produces a report with no extension at all, so an
+    # unannotated MIB-Core report is byte-identical to the pre-extension one.
+    attach_transfer_diagnostics(report, transfer_diagnostics)
     return report
 
 
@@ -713,6 +726,8 @@ def run_benchmark_pack(
     include_ablations: bool = True,
     bootstrap_resamples: int = 0,
     bootstrap_seed: int | str = 20260819,
+    transfer_diagnostics: bool = True,
+    transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     all_instances: list[dict[str, Any]] = []
     all_runs: list[dict[str, Any]] = []
@@ -766,6 +781,14 @@ def run_benchmark_pack(
         profile=profile,
         agent_descriptor=describe_agent_factory(agent_factory),
         statistics=stats,
+        transfer_diagnostics=build_transfer_diagnostics(
+            templates=templates,
+            runs=all_runs,
+            epsilon=transfer_epsilon,
+            bootstrap_resamples=bootstrap_resamples,
+            bootstrap_seed=bootstrap_seed,
+            confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
+        ) if transfer_diagnostics else None,
     )
     summary = {
         "profile": profile["id"],
@@ -794,6 +817,8 @@ def run_materialized_pack(
     include_ablations: bool = True,
     bootstrap_resamples: int = 0,
     bootstrap_seed: int | str = 20260819,
+    transfer_diagnostics: bool = True,
+    transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Execute evaluator-materialized instances without exposing generation seeds to the submission."""
     templates_by_id = {t["id"]: t for t in templates}
@@ -844,6 +869,14 @@ def run_materialized_pack(
         profile=profile,
         agent_descriptor=describe_agent_factory(agent_factory),
         statistics=stats,
+        transfer_diagnostics=build_transfer_diagnostics(
+            templates=templates,
+            runs=all_runs,
+            epsilon=transfer_epsilon,
+            bootstrap_resamples=bootstrap_resamples,
+            bootstrap_seed=bootstrap_seed,
+            confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
+        ) if transfer_diagnostics else None,
     )
     summary = {
         "profile": profile["id"],

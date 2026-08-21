@@ -82,6 +82,11 @@ class ServiceDB:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as con:
             con.executescript(DDL)
+            # Additive migration: a store registered before transfer diagnostics
+            # existed keeps working, and gains the column on next open.
+            columns = {r["name"] for r in con.execute("PRAGMA table_info(cycles)")}
+            if "transfer_digest" not in columns:
+                con.execute("ALTER TABLE cycles ADD COLUMN transfer_digest TEXT")
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -124,14 +129,15 @@ class ServiceDB:
         now = utc_now()
         with self.connect() as con:
             con.execute(
-                """INSERT INTO cycles(id,profile_id,store_path,profile_path,store_digest,profile_digest,public_manifest_json,status,created_at,activated_at)
-                   VALUES(?,?,?,?,?,?,?,?,?,?)
+                """INSERT INTO cycles(id,profile_id,store_path,profile_path,store_digest,profile_digest,public_manifest_json,status,created_at,activated_at,transfer_digest)
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(id) DO UPDATE SET profile_id=excluded.profile_id,store_path=excluded.store_path,
                    profile_path=excluded.profile_path,store_digest=excluded.store_digest,profile_digest=excluded.profile_digest,
-                   public_manifest_json=excluded.public_manifest_json,status=excluded.status,activated_at=excluded.activated_at""",
+                   public_manifest_json=excluded.public_manifest_json,status=excluded.status,activated_at=excluded.activated_at,
+                   transfer_digest=excluded.transfer_digest""",
                 (row["id"], row["profile_id"], row["store_path"], row["profile_path"], row["store_digest"], row["profile_digest"],
                  json.dumps(row["public_manifest"], separators=(",", ":"), ensure_ascii=False), row.get("status", "registered"),
-                 row.get("created_at", now), row.get("activated_at")),
+                 row.get("created_at", now), row.get("activated_at"), row.get("transfer_digest")),
             )
 
     def activate_cycle(self, cycle_id: str) -> None:

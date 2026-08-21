@@ -8,6 +8,28 @@ from typing import Any
 
 from .service_db import ServiceDB
 
+#: Result families.  A leaderboard query must never produce one rank that mixes
+#: the controlled synthetic laboratory with the realistic external-task track.
+CORE_FAMILY = "core"
+TRANSFER_FAMILY = "transfer_diagnostic"
+REALITY_FAMILY = "reality"
+
+
+def result_family(profile: dict[str, Any] | str) -> str:
+    """Result family of a Profile, by declaration or by identity prefix."""
+    if isinstance(profile, dict):
+        declared = profile.get("result_family")
+        if declared:
+            return str(declared)
+        pid = str(profile.get("id", ""))
+    else:
+        pid = str(profile)
+    if pid.startswith("MIB-R-") or pid == "MIB-R":
+        return REALITY_FAMILY
+    if "Transfer" in pid:
+        return TRANSFER_FAMILY
+    return CORE_FAMILY
+
 
 def percentile(values: list[float], q: float) -> float:
     if not values:
@@ -43,11 +65,14 @@ def leaderboard(db: ServiceDB, *, cycle_id: str | None = None, profile_id: str |
             "attestation_ref": f"/results/{row['id']}/attestation",
             "attestation": json.loads(row["attestation_signature_json"]),
         })
+    family = result_family(cycle["profile_id"])
     return {
         "mib": "0.1",
         "kind": "MIBLeaderboard",
         "cycle_id": cycle["id"],
         "profile_id": cycle["profile_id"],
+        "result_family": family,
+        "cross_family_ranking": False,
         "entries": entries,
     }
 
@@ -71,6 +96,10 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
     We pair on opaque instance aliases, resample Templates then Instances, and
     preserve the same paired instance in both systems.
     """
+    family_a = result_family(report_a["benchmark"]["profile"]["id"])
+    family_b = result_family(report_b["benchmark"]["profile"]["id"])
+    if family_a != family_b:
+        raise ValueError(f"cannot compare across result families: {family_a} vs {family_b}")
     a = _instance_map(report_a); b = _instance_map(report_b)
     common_ids = sorted(set(a) & set(b))
     if not common_ids:
@@ -118,6 +147,7 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
     return {
         "kind":"MIBPairedSystemComparison",
         "profile_id":report_a["benchmark"]["profile"]["id"],
+        "result_family":family_a,
         "cycle_compatible": report_a["benchmark"]["scenario_pack"]["id"] == report_b["benchmark"]["scenario_pack"]["id"],
         "paired_template_count":len(by_template),
         "paired_instance_count":sum(len(v) for v in by_template.values()),

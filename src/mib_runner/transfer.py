@@ -365,7 +365,8 @@ def validate_transfer_support(
                 f"Probe {relation.probe_id} relation {relation.relation} requires at least one Ability reference",
                 **scope,
             ))
-        if relation.minimum_required_ability_count > len(relation.ability_ids):
+        declares_minimum = "minimum_required_ability_count" in relation.raw
+        if (declares_minimum or relation.ability_ids) and relation.minimum_required_ability_count > len(relation.ability_ids):
             findings.append(_finding(
                 "error", "transfer.minimum_ability_count",
                 f"Probe {relation.probe_id} requires {relation.minimum_required_ability_count} Abilities but declares {len(relation.ability_ids)}",
