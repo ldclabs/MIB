@@ -4399,3 +4399,61 @@ report generation
 ```
 
 before the World Simulator and tool-driven Experience/Skill suites are added.
+
+---
+
+# Appendix F — Transfer and Reality Test Surfaces
+
+Three test surfaces were added alongside the v0.1 plan. All three are supplemental: none of them may change a `MIB-Core-0.1` score, and the regression suite asserts that directly.
+
+## F.1 Transfer Support Annotation
+
+`tests/test_transfer_support.py`
+
+```text
+the 24-Template Public Dev pack validates unchanged and gains no new findings
+a valid annotation parses and validates against both schemas
+broken event, Probe, and Ability references fail semantic validation
+a negative control cannot declare a positive-transfer distance
+an oracle artifact restating a Probe answer fails
+no annotation reaches any Agent request
+public redaction leaks no Ability ID
+annotation presence does not move a score or break verify-score
+```
+
+## F.2 Transfer diagnostics and the 2x2 matrix
+
+`tests/test_transfer_diagnostics.py`, `tests/test_transfer_matrix.py`
+
+```text
+an unannotated pack produces a report with no diagnostics extension
+disabling diagnostics leaves aggregates, causal metrics, and coverage identical
+diagnostic cells never appear in results.runs or in execution counts
+Template-first aggregation: four Probes in one Template do not outvote one
+Formation and Routing efficiency separate the six fixture failure modes
+insufficient oracle headroom is unknown, not zero
+a black-box Agent still gets Routing Efficiency and the uptake ceiling
+public redaction exposes aliases and aggregates only
+```
+
+## F.3 MIB-R Reality Track
+
+`tests/test_reality_track.py`
+
+```text
+the prototype pack meets its acceptance counts and relation coverage
+every declared convention is load-bearing
+task and graph digest mismatches fail loudly
+conditions are paired on everything but memory state
+the irrelevant control never removes load-bearing experience
+a capped irrelevant control is reported, not hidden
+healthy / naive / over-generalizing systems produce distinct profiles
+signed deltas are not absolute values
+MIB-R is its own result family and cross-family comparison raises
+the public report withholds per-task rows and graph structure
+the attestation binds pack, graph, and environment and carries no score
+```
+
+## F.4 Development pack layout
+
+The Transfer Diagnostic Dev Pack lives in `scenarios/transfer/`, deliberately outside `scenarios/dev/`. The Runner globs a pack root recursively, so placing it inside the Public Dev tree would silently enlarge the `MIB-Core-0.1-Dev-M3` pack beyond its 24 Templates and move its score.
