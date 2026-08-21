@@ -24,6 +24,10 @@ SCENARIO_SCHEMA_PATH = SCHEMAS / "mib-scenario.schema.json"
 REPORT_SCHEMA_PATH = SCHEMAS / "mib-report.schema.json"
 
 DEV_PACK = BASE / "scenarios" / "dev"
+# Transfer diagnostic Templates live outside scenarios/dev/ on purpose: the
+# MIB-Core-0.1-Dev-M3 pack must stay exactly its 24 Templates so that installing
+# the transfer extension cannot move a MIB-Core score.
+TRANSFER_PACK = BASE / "scenarios" / "transfer"
 PROFILES = BASE / "profiles"
 EXAMPLES = BASE / "examples"
 PRIVATE_EVAL_STORE_DEMO = BASE / "fixtures" / "private-eval-store-demo"

@@ -1,0 +1,310 @@
+{
+  "mib": "0.1",
+  "kind": "MIBRealityPack",
+  "id": "MIB-R-Demo-LedgerCodes",
+  "version": "0.1.0",
+  "status": "prototype",
+  "title": "MIB-R Demo — Ledger Codes",
+  "description": "Prototype Reality Track pack. 23 acquisition tasks and 12 held-out tasks in a deterministic algorithmic-reasoning environment with an upstream-style verifier, covering supported transfer at every positive distance class plus the near-match and unsupported negative controls. It redistributes no external benchmark data.",
+  "domain": "algorithmic_reasoning",
+  "track": "integrated_agent",
+  "profile": {
+    "id": "MIB-R-0.1-Dev",
+    "version": "0.1.0"
+  },
+  "environment_adapter": "mib_runner.reality_domains.ledger_codes:LedgerCodesAdapter",
+  "verifier": "local_deterministic",
+  "train_tasks": [
+    {
+      "task_id": "train-mod97-01",
+      "content_digest": "sha256:357a58a64c5811b68a057f19bb5a6cd5c635cb0f9449233f1e7aef42045ec27d",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-mod97-02",
+      "content_digest": "sha256:434610a9b3d0e09625da88869c9722a0805278ca247dc232f459f6d25b9a9406",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-mod97-03",
+      "content_digest": "sha256:d6834c8605571fbf066141fe0a1cc2920b8ce86d5bff1c8c443f79457ddbe072",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-mod97-04",
+      "content_digest": "sha256:8e79f7154ef4d61b0a17814588b9e91e123ea3b00dfa2d777f4608120d24b43e",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-mod97-05",
+      "content_digest": "sha256:746a41fe7abddce9794f9a70e0ea5b936e0ad832a9e17eab460a5b8e74e1b93e",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-mod97-06",
+      "content_digest": "sha256:eec04aeade503a3d47d218601e50e3bad063615d111269de8748baa9464bdc71",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-normalize-01",
+      "content_digest": "sha256:dfeb5d4489d2e3619adf04f23ec1d72f3dccc4a152cc3d2258d4846b2f7b0418",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:normalize",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-normalize-02",
+      "content_digest": "sha256:420d3c9bf3b71b375783ea87165989023d9a42cec214fefdb0f0f03142725a0d",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:normalize",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-normalize-03",
+      "content_digest": "sha256:b7a107b64c748598c35815c647ff6790ad9f45f15b0de30e1cdbefdf46558cf7",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:normalize",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-normalize-04",
+      "content_digest": "sha256:b12272ff7dae51759983ec1475d660df3ad25d45985eeadd6d90b5517aa65d36",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:normalize",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-normalize-05",
+      "content_digest": "sha256:652f56e10912d14b6a81073efdd3208a956c93499836a249e15c27cf522f69db",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:normalize",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-prefix-01",
+      "content_digest": "sha256:3da9bed0693ebb1ccdb5f1f37eaa8189360f9bbdb7543da8ac7b70e0be12afbb",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:drop_ck",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-prefix-02",
+      "content_digest": "sha256:352703dba1ac36c01fa8d910b504b4c3325297c8bb0e10961f3eb6fd84b6b8c1",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:drop_ck",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-prefix-03",
+      "content_digest": "sha256:424d6394861c06c29309266778ff8aa9503475e42f65abcf87e26cc301a38dad",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:drop_ck",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-prefix-04",
+      "content_digest": "sha256:58112e73f9c4c98ee91425618a0dcca77f32f26124366654c822f02015dd05ea",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:drop_ck",
+        "supports:mod97"
+      ]
+    },
+    {
+      "task_id": "train-legacy-01",
+      "content_digest": "sha256:43bcb1767066e824524f2b3fb019c94962bf119f8efd0bf381b5f7fd22063a8e",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:legacy_mod100"
+      ]
+    },
+    {
+      "task_id": "train-legacy-02",
+      "content_digest": "sha256:80ada0f4ec0fb1db993ac0ef182a8df8ae431ff0eb792b8738a72a050880cea8",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:legacy_mod100"
+      ]
+    },
+    {
+      "task_id": "train-legacy-03",
+      "content_digest": "sha256:d0d4dfbd687842918c6a104a7406e2709f9bddfad24bec55f04a0698fb081390",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:legacy_mod100"
+      ]
+    },
+    {
+      "task_id": "train-legacy-04",
+      "content_digest": "sha256:eee945eaadd0c9600be6d08f4489318bb1ae0b4a67a3c45583fbb6d0ae407941",
+      "verifier": "local_deterministic",
+      "tags": [
+        "supports:legacy_mod100",
+        "supports:normalize"
+      ]
+    },
+    {
+      "task_id": "train-unrelated-01",
+      "content_digest": "sha256:7c4b51dd83b9ba4cf1436d457b66e814acc005ed12cf1d75d1bc3c4306a51a85",
+      "verifier": "local_deterministic",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "task_id": "train-unrelated-02",
+      "content_digest": "sha256:c46ee056eb70848934cc9c0d3995d322f449397b7604730a0bd5cd9d974e51ef",
+      "verifier": "local_deterministic",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "task_id": "train-unrelated-03",
+      "content_digest": "sha256:e5036bb1cdc61f240ffb76fea95b4d071e0bf72d74eea2d7f3a2c21baaf96857",
+      "verifier": "local_deterministic",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "task_id": "train-unrelated-04",
+      "content_digest": "sha256:4e881b43591310ef7e39a2c57726e547443ed15da09cab8f84859ad69be1839e",
+      "verifier": "local_deterministic",
+      "tags": [
+        "irrelevant"
+      ]
+    }
+  ],
+  "test_tasks": [
+    {
+      "task_id": "test-01",
+      "content_digest": "sha256:ec40f298025f1e21304430daa36c4a488bb149403793e761aa13ee4204574e4b",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-02",
+      "content_digest": "sha256:fdce351ce16e3f08f03074b0e9c18a5e1f75a7a8415d62fa7fad223f25d11c1f",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-03",
+      "content_digest": "sha256:89f665356361a3db8669f8573d8d9c19b2e915dafbb00146c7d8596c4cb11fd8",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-04",
+      "content_digest": "sha256:d874d4106200c04364b7ec18dc77a8abf9eb4b3901012e6a3bdda65d182ac54c",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-05",
+      "content_digest": "sha256:b1ad3f4cdeb00c4397b634ad83fde5921877824ce07e03a508cc0b7485930e58",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-06",
+      "content_digest": "sha256:17969e7c55883413bfaff4b0d42994d68e85258ed7a2933334531414dabcd80a",
+      "verifier": "local_deterministic",
+      "tags": [
+        "structural"
+      ]
+    },
+    {
+      "task_id": "test-07",
+      "content_digest": "sha256:163689f373044a50aa041305c1fbc730577b96cf908f83153cd3f1ad0c7e4b27",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-08",
+      "content_digest": "sha256:1f147cb4eeb64b29ce358ed89ad772b76adc33bb80e298cd5a6f043ee8362eca",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-09",
+      "content_digest": "sha256:eb9ee6db13f2eb0ec095f5f6e9180f79d9ba834640e83e513bae03c9acfa1066",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-10",
+      "content_digest": "sha256:6ae72e3b046557b920f40d67d78805a3bb086775c5d26dfc68d4489babeaa4d7",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-11",
+      "content_digest": "sha256:edc57a1be3f033f90aa53306d4ba3a946b808c7381c7abd7c3f4e2cdc00b2b6d",
+      "verifier": "local_deterministic",
+      "tags": []
+    },
+    {
+      "task_id": "test-12",
+      "content_digest": "sha256:6803a1d877920abc9a96b51b9d88624314156b2f0cb92287e5ef2e87c3983e90",
+      "verifier": "local_deterministic",
+      "tags": []
+    }
+  ],
+  "transfer_graph": {
+    "private_ref": "graph.evaluator.json",
+    "digest": "sha256:a198b53df32877ecc3c73a7d79ef9051699f8e9032c1436185cd87b47bad96dd"
+  },
+  "conditions": [
+    "no_memory",
+    "natural_memory",
+    "relevant_ability_ablated",
+    "irrelevant_ability_ablated",
+    "wrong_ability_injected",
+    "oracle_skill",
+    "oracle_routing"
+  ],
+  "task_seeds": [
+    101
+  ],
+  "repetitions": 1,
+  "metadata": {
+    "visibility": "public_prototype",
+    "note": "MIB-R-0.1-Dev is not official. Its results are their own result family and are never ranked against MIB-Core."
+  }
+}

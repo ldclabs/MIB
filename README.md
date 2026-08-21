@@ -574,6 +574,15 @@ MIB v0.1 currently includes:
 
 ✓ Same-Model Empirical Harness
 
+✓ Transfer Intelligence diagnostics
+  Formation / Routing / Uptake, transfer distance D0–D3,
+  near-match and unsupported negative controls
+  supplemental only: no MIB Score changes
+
+○ MIB-R Reality Track
+  prototype; its own result family, no official score,
+  never ranked against MIB-Core
+
 ○ Real fixed-model empirical calibration
   pending
 
@@ -596,6 +605,8 @@ MIB/
 │   ├── MIB-Agent-Adapter.md
 │   ├── MIB-Scoring.md
 │   ├── MIB-Leaderboard-Evaluation-Service.md
+│   ├── MIB-Transfer-Intelligence.md
+│   ├── MIB-R-Reality-Track.md
 │   ├── MIB-v0.1-Test-Plan.md
 │   └── harness/                           calibration, same-model, hidden-eval,
 │                                          and evaluation-service harness notes
@@ -604,13 +615,18 @@ MIB/
 │                                          submission, job manifest, attestation,
 │                                          calibration, same-model experiment)
 │
-├── scenarios/                             the public dev Scenario Pack
+├── scenarios/                             the public dev Scenario Packs
 │   ├── manifest.json
-│   └── dev/
-│       ├── recall/        4      ├── skill/       3
-│       ├── time/          4      ├── causal/      3
-│       ├── epistemic/     4      └── cross/       3
-│       └── experience/    3
+│   ├── dev/                               MIB-Core Public Dev, 24 Templates
+│   │   ├── recall/        4      ├── skill/       3
+│   │   ├── time/          4      ├── causal/      3
+│   │   ├── epistemic/     4      └── cross/       3
+│   │   └── experience/    3
+│   └── transfer/                          transfer diagnostics, 6 Templates
+│                                          (kept outside dev/ so the MIB-Core
+│                                          pack stays exactly 24)
+│
+├── reality/                               MIB-R prototype Reality Packs
 │
 ├── src/mib_runner/                        reference Runner, evaluators,
 │                                          adapters, calibration, service,
@@ -727,6 +743,55 @@ docs/MIB-Scoring.md
 ```
 
 for the protocol and evaluation semantics.
+
+---
+
+## Transfer Intelligence and MIB-R
+
+MIB-Core answers *which part of the past participated correctly in this future
+computation*. It answers it behaviorally, which means a failed transfer looks
+the same whether the system never compiled a usable procedure, compiled one and
+never retrieved it, or retrieved the right one and could not execute it.
+
+Two supplemental layers separate those cases.
+
+**Transfer Intelligence** (`docs/MIB-Transfer-Intelligence.md`) makes the
+evaluator's latent hypothesis explicit — which past Experience supports which
+future Probe, through which Ability, under which applicability boundary — and
+then decomposes the outcome:
+
+```text
+Experience → Formation → Skill → Routing → Applicability → Uptake → Behavior
+```
+
+It reports Formation Efficiency, Routing Efficiency, an uptake ceiling, and a
+Transfer Profile across the positive distance ladder `D0`–`D3`, alongside the
+two controls a purely positive-transfer benchmark cannot express: a near-match
+trap the learned procedure must be withheld from, and an unsupported task where
+memory must stay neutral. Three of the four diagnostic cells run against an
+ordinary black-box Agent.
+
+**MIB-R** (`docs/MIB-R-Reality-Track.md`) asks whether the same memory
+intelligence survives in a realistic external task environment, by running
+acquisition and held-out transfer under paired memory conditions where only
+memory state varies.
+
+Both layers are supplemental. No metric either one defines enters the MIB
+Score, the Causal Score, or Coverage. A pack whose Templates carry no transfer
+annotation produces a report byte-identical to one produced before the
+extension existed. MIB-R is a prototype with its own result family and no
+official score; it is never ranked against MIB-Core.
+
+```bash
+mib benchmark scenarios/transfer \
+  --profile profiles/MIB-Transfer-0.1-Dev.json \
+  --schema schemas/mib-scenario.schema.json \
+  --transfer-diagnostics
+
+mib reality-benchmark reality/MIB-R-Demo-LedgerCodes/pack.json \
+  --profile profiles/MIB-R-0.1-Dev.json \
+  --agent mib_runner.agents.reality_fixtures:RuleLearningRealityAgent
+```
 
 ---
 

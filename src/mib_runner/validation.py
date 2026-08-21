@@ -7,6 +7,13 @@ from typing import Any
 
 import jsonschema
 
+from .transfer import (
+    TRANSFER_EXTENSION,
+    TransferAnnotationError,
+    parse_transfer_support,
+    validate_transfer_support,
+)
+
 
 @dataclass(slots=True)
 class ValidationResult:
@@ -19,7 +26,13 @@ def load_json(path: str | Path) -> dict[str, Any]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-def validate_scenario(scenario: dict[str, Any], schema: dict[str, Any]) -> ValidationResult:
+def validate_scenario(
+    scenario: dict[str, Any],
+    schema: dict[str, Any],
+    *,
+    transfer_schema: dict[str, Any] | None = None,
+    require_transfer_annotations: bool = False,
+) -> ValidationResult:
     errors: list[str] = []
     warnings: list[str] = []
 
@@ -142,4 +155,47 @@ def validate_scenario(scenario: dict[str, Any], schema: dict[str, Any]) -> Valid
     if weights and abs(sum(float(v) for v in weights.values()) - 1.0) > 1e-6:
         errors.append("semantic: dimension_weights must sum to 1")
 
+    # Transfer Support Annotation.  A Scenario that carries none is validated
+    # exactly as before: legacy v0.1 content must not acquire new findings just
+    # because the diagnostic extension exists.
+    _validate_transfer_extension(
+        scenario,
+        errors,
+        warnings,
+        transfer_schema=transfer_schema,
+        require_transfer_annotations=require_transfer_annotations,
+    )
+
     return ValidationResult(not errors, errors, warnings)
+
+
+def _validate_transfer_extension(
+    scenario: dict[str, Any],
+    errors: list[str],
+    warnings: list[str],
+    *,
+    transfer_schema: dict[str, Any] | None,
+    require_transfer_annotations: bool,
+) -> None:
+    try:
+        support = parse_transfer_support(scenario)
+    except TransferAnnotationError as exc:
+        errors.append(f"transfer:{TRANSFER_EXTENSION}: {exc}")
+        return
+
+    if support is None:
+        if require_transfer_annotations:
+            errors.append(
+                f"transfer: profile requires a {TRANSFER_EXTENSION} annotation, but the Scenario declares none"
+            )
+        return
+
+    if transfer_schema is not None:
+        validator = jsonschema.Draft202012Validator(transfer_schema)
+        for err in sorted(validator.iter_errors(support.raw), key=lambda e: list(e.path)):
+            where = "/".join(str(x) for x in err.path)
+            errors.append(f"transfer-schema:{where or '$'}: {err.message}")
+
+    for finding in validate_transfer_support(scenario, support):
+        line = f"transfer:{finding['code']}: {finding['message']}"
+        (errors if finding["severity"] == "error" else warnings).append(line)

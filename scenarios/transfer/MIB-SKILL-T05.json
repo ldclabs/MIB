@@ -1,0 +1,516 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-SKILL-T05",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Transfer Control — Near-Match Applicability Trap",
+  "description": "One learned Ability, two futures: one inside its applicability boundary and one outside it. Tests negative-transfer resistance.",
+  "suite": "skill",
+  "dimensions": [
+    "skill_learning_transfer",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "transfer-diagnostic",
+    "near-match",
+    "negative-transfer",
+    "applicability"
+  ],
+  "difficulty": {
+    "level": "hard",
+    "meaningful_events": 3,
+    "distractor_events": 1,
+    "entity_count": 2,
+    "memory_hops": 1,
+    "experience_steps": 3,
+    "probe_indirectness": 0.7
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": true,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "observe",
+      "act",
+      "tools",
+      "virtual_time"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 20,
+    "max_tool_calls": 20,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-05-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {
+      "contextual_save": {
+        "context_required": true,
+        "expected_context": "primary",
+        "active_context": null,
+        "edited": false,
+        "committed": false,
+        "policy_violation": false,
+        "last_error": null
+      }
+    },
+    "tools": [
+      {
+        "id": "canvas",
+        "version": "0.1.0",
+        "simulator_binding": "mib.contextual_save.v1",
+        "operations": [
+          {
+            "name": "activate_context",
+            "description": "Activate the context for the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "context": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "edit_item",
+            "description": "Edit the current item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "commit",
+            "description": "Commit the edited item.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          {
+            "name": "inspect_status",
+            "description": "Inspect current item state.",
+            "input_schema": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        ]
+      }
+    ],
+    "hidden_ground_truth": {}
+  },
+  "timeline": [
+    {
+      "id": "e-failure",
+      "stage": "past",
+      "type": "tool_result",
+      "at": {
+        "sequence": 1,
+        "time": "2026-05-01T09:00:00Z"
+      },
+      "visibility": "agent",
+      "payload": {
+        "operation": "commit",
+        "success": false,
+        "error": "workspace_required"
+      },
+      "tags": [
+        "relevant",
+        "experience"
+      ]
+    },
+    {
+      "id": "e-rule",
+      "stage": "past",
+      "type": "feedback",
+      "at": {
+        "sequence": 2,
+        "time": "2026-05-01T09:20:00Z"
+      },
+      "visibility": "agent",
+      "content": "Class A7 items are scoped: select the workspace context before editing and committing them.",
+      "tags": [
+        "relevant",
+        "skill"
+      ]
+    },
+    {
+      "id": "d1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20,
+        "time": "2026-05-03T10:00:00Z"
+      },
+      "visibility": "agent",
+      "content": "Unrelated note: the sidebar was collapsed by default.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp-match",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 30,
+        "time": "2026-05-05T09:00:00Z"
+      },
+      "visibility": "harness"
+    },
+    {
+      "id": "w-reset",
+      "stage": "past",
+      "type": "world_update",
+      "at": {
+        "sequence": 40,
+        "time": "2026-05-07T08:00:00Z"
+      },
+      "visibility": "harness",
+      "world_updates": [
+        {
+          "op": "set",
+          "path": "/contextual_save/context_required",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/active_context",
+          "value": null
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/edited",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/committed",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/policy_violation",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "/contextual_save/last_error",
+          "value": null
+        }
+      ]
+    },
+    {
+      "id": "e-counterexample",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 41,
+        "time": "2026-05-07T08:10:00Z"
+      },
+      "visibility": "agent",
+      "content": "The next item is a Class G2 global record. No workspace is required and no context is required before committing it; activating one is a policy violation.",
+      "tags": [
+        "relevant",
+        "counterexample",
+        "applicability"
+      ]
+    },
+    {
+      "id": "cp-nearmatch",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 50,
+        "time": "2026-05-07T09:00:00Z"
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-match",
+      "kind": "skill",
+      "trigger": {
+        "after_event": "cp-match"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Update and commit this Class A7 item.",
+        "available_tools": [
+          "canvas.activate_context",
+          "canvas.edit_item",
+          "canvas.commit"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/contextual_save/committed",
+            "operator": "eq",
+            "value": true
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "required_action",
+            "action": "canvas.activate_context"
+          },
+          {
+            "type": "before",
+            "first": "canvas.activate_context",
+            "second": "canvas.commit"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "skill_learning_transfer",
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-nearmatch",
+      "kind": "skill",
+      "trigger": {
+        "after_event": "cp-nearmatch"
+      },
+      "delivery": "act",
+      "input": {
+        "goal": "Update and commit this Class G2 item.",
+        "available_tools": [
+          "canvas.activate_context",
+          "canvas.edit_item",
+          "canvas.commit"
+        ]
+      },
+      "oracle": {
+        "world_assertions": [
+          {
+            "path": "/contextual_save/committed",
+            "operator": "eq",
+            "value": true
+          },
+          {
+            "path": "/contextual_save/policy_violation",
+            "operator": "eq",
+            "value": false
+          }
+        ],
+        "trajectory_requirements": [
+          {
+            "type": "forbidden_action",
+            "action": "canvas.activate_context"
+          },
+          {
+            "type": "required_action",
+            "action": "canvas.commit"
+          }
+        ]
+      },
+      "evaluators": [
+        "eval-composite"
+      ],
+      "dimensions": [
+        "skill_learning_transfer",
+        "causal_memory_impact"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-skill",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-match"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-failure",
+          "e-rule"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
+    {
+      "id": "a-counterexample",
+      "kind": "counterexample",
+      "probes": [
+        "p-nearmatch"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-counterexample"
+        ]
+      },
+      "expected_effect": "degrade",
+      "description": "Removes the applicability boundary. A system that over-generalizes the Class A7 procedure now fires it on a Class G2 item."
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-match",
+        "p-nearmatch"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "d1"
+        ]
+      },
+      "expected_effect": "neutral",
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-world",
+      "type": "world_state",
+      "config": {}
+    },
+    {
+      "id": "eval-trajectory",
+      "type": "trajectory",
+      "config": {}
+    },
+    {
+      "id": "eval-composite",
+      "type": "composite",
+      "components": [
+        {
+          "evaluator": "eval-world",
+          "weight": 0.6
+        },
+        {
+          "evaluator": "eval-trajectory",
+          "weight": 0.4
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "skill_learning_transfer": 0.7,
+      "causal_memory_impact": 0.3
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_benefit",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Transfer-0.1-Dev",
+    "milestone": "Transfer Intelligence M6.3",
+    "note": "Diagnostic Template. Outside scenarios/dev/ so the MIB-Core-0.1-Dev-M3 pack stays exactly 24 Templates."
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.class_a7_scoped_commit",
+          "label": "Scoped commit procedure for Class A7 items",
+          "kind": "procedure",
+          "support_event_ids": [
+            "e-failure",
+            "e-rule"
+          ],
+          "counterexample_event_ids": [
+            "e-counterexample"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "activate_context",
+              "edit_item",
+              "commit"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "class=A7"
+            ],
+            "negative_cues": [
+              "class=G2"
+            ],
+            "required_world_predicates": [
+              "contextual_save.context_required == true"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When an item is marked Class A7, activate its matching context before edit and commit. When an item is a global record, commit directly; activating a context there is a policy violation.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-match",
+          "ability_ids": [
+            "ability.class_a7_scoped_commit"
+          ],
+          "relation": "exact_replay",
+          "support_expected": true,
+          "expected_behaviour": "apply",
+          "transfer_distance": {
+            "class": "D0",
+            "normalized": 0.0
+          }
+        },
+        {
+          "probe_id": "p-nearmatch",
+          "ability_ids": [
+            "ability.class_a7_scoped_commit"
+          ],
+          "relation": "near_match_non_applicable",
+          "support_expected": false,
+          "expected_behaviour": "withhold",
+          "notes": "Surface similarity is high and the applicability condition fails. This is a different causal control class, not a farther distance."
+        }
+      ]
+    }
+  }
+}

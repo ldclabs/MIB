@@ -6,7 +6,10 @@ from typing import Any, Iterable
 
 from .agents.reference_memory import ReferenceMemoryAgent
 from . import __version__
+from .transfer import RECALL_PREFIX
 from .types import ActStep, AgentOutput, Observation
+
+_RECALL_MARKER = RECALL_PREFIX.casefold()
 
 WORD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+.-]*")
 CODE_RE = re.compile(r"\b[A-Z][A-Z0-9]{1,15}-\d{1,5}\b")
@@ -24,6 +27,14 @@ STOP = {
     "answer", "exactly", "only", "did", "does", "do", "my", "me", "i", "it", "this", "that", "before",
     "after", "under", "from", "has", "have", "had", "into", "its", "we", "our", "you", "your",
 }
+
+
+def _split_routed(text: str) -> tuple[str, str]:
+    """Split remembered text into situation evidence and routed procedures."""
+    situation, routed = [], []
+    for line in text.splitlines():
+        (routed if _RECALL_MARKER in line else situation).append(line)
+    return "\n".join(situation), "\n".join(routed)
 
 
 def _tokens(text: str) -> list[str]:
@@ -146,10 +157,14 @@ class CalibrationReasonerAgent(ReferenceMemoryAgent):
             state["memory_snapshot_observations"] = list(self.observations)
         mem_obs: list[Observation] = state["memory_snapshot_observations"]
         mem = "\n".join(_obs_text(o) for o in mem_obs).casefold()
+        # A routed memory artifact carries procedural content, not a fact about
+        # the current situation.  Without routing both halves are the whole
+        # memory, so ordinary calibration runs are unchanged.
+        situation_mem, routed_mem = _split_routed(mem)
         phase = int(state["phase"])
 
         if any(n.startswith("deployment.") for n in names):
-            learned_inspect = any(k in mem for k in [
+            learned_inspect = ("inspect" in routed_mem and "target" in routed_mem) or any(k in situation_mem for k in [
                 "missing_column", "wrong target", "wrong_target", "target mismatch", "target alignment",
                 "inspect actual target", "inspect the actual target", "inspected the actual target",
                 "verify the actual target", "unverified target", "inspect and select", "diagnosed the target",
@@ -184,7 +199,7 @@ class CalibrationReasonerAgent(ReferenceMemoryAgent):
             return emit(ActStep(type="final", content="Deployment attempt complete."))
 
         if any(n.startswith("workspace.") for n in names):
-            learned = any(k in mem for k in [
+            learned = ("workspace" in routed_mem) or any(k in situation_mem for k in [
                 "workspace_required", "select the workspace", "selected the workspace", "workspace before",
                 "workspace first", "operational context before committing",
             ])
@@ -208,13 +223,13 @@ class CalibrationReasonerAgent(ReferenceMemoryAgent):
             return emit(ActStep(type="final", content="Save attempt complete."))
 
         if any(n.startswith("canvas.") for n in names):
-            mode = self._latest_current_mode(mem_obs)
+            mode = self._latest_current_mode([o for o in mem_obs if _RECALL_MARKER not in _obs_text(o).casefold()])
             goal_l = str(state.get("goal") or "").casefold()
             if "contextual" in goal_l:
                 mode = "contextual"
             elif "global" in goal_l or "export record" in goal_l:
                 mode = "global"
-            learned_context = any(k in mem for k in [
+            learned_context = ("context" in routed_mem or "scope" in routed_mem) or any(k in situation_mem for k in [
                 "context_required", "activate context", "context activation", "context first",
                 "required operational context", "context before", "contextual",
             ])

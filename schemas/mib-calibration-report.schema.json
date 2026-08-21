@@ -126,6 +126,11 @@
       "items": {
         "$ref": "#/$defs/TemplateCard"
       }
+    },
+    "transfer_calibration": {
+      "type": "object",
+      "description": "Structural gates for Transfer Support Annotations (M6.3). Present only when at least one Template in the pack is annotated. These gates supplement, and never replace, FC/NM/MDI and causal sensitivity.",
+      "additionalProperties": true
     }
   },
   "$defs": {
@@ -185,6 +190,11 @@
             "null"
           ],
           "additionalProperties": true
+        },
+        "independent_n": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of independent Scenario Instances behind the interval, as opposed to the raw row count."
         }
       }
     },

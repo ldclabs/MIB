@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from .materialize import materialize
+from .transfer import TRANSFER_DIAGNOSTICS_EXTENSION, TRANSFER_EXTENSION, transfer_support_digest
+from .transfer_diagnostics import redact_transfer_diagnostics
 from .validation import validate_scenario
 
 
@@ -117,6 +119,26 @@ class HiddenEvalStore:
                 instances.append(inst)
         return templates, instances, aliases
 
+    def transfer_digest(self) -> str | None:
+        """Digest binding every private Transfer Support Annotation in the store.
+
+        Changing Ability support, an oracle artifact, or a transfer relation
+        changes this digest and therefore invalidates a signed evaluation
+        cycle, so an evaluator-side edit after job creation cannot pass
+        unnoticed.  ``None`` when no Template in the store is annotated.
+        """
+        rows: list[dict[str, str]] = []
+        for entry in self.entries():
+            raw = json.loads(entry.path.read_text(encoding="utf-8"))
+            annotation = (raw.get("extensions") or {}).get(TRANSFER_EXTENSION)
+            if annotation is None:
+                continue
+            rows.append({"public_id": entry.public_id, "digest": transfer_support_digest(annotation)})
+        if not rows:
+            return None
+        payload = json.dumps(sorted(rows, key=lambda r: r["public_id"]), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
     def public_manifest(self) -> dict[str, Any]:
         suites: dict[str, int] = {}
         hidden = []
@@ -188,6 +210,19 @@ def redact_report_for_public(report: dict[str, Any], *, aliases: dict[str, str],
             m["template_id"] = aliases[m["template_id"]]
         if m.get("scenario_instance_id"):
             m["scenario_instance_id"] = alias_value("inst", m["scenario_instance_id"])
+
+    # Transfer diagnostics: aggregates and aliases only.  A public surface must
+    # never let a participant reconstruct which hidden past supports which
+    # hidden future, or repeated submissions become an oracle-probing channel.
+    extensions = out.get("extensions") or {}
+    body = extensions.get(TRANSFER_DIAGNOSTICS_EXTENSION)
+    if body is not None:
+        extensions[TRANSFER_DIAGNOSTICS_EXTENSION] = redact_transfer_diagnostics(
+            body, aliases=aliases, redaction_key=redaction_key
+        )
+    extensions.pop(TRANSFER_EXTENSION, None)
+    if extensions:
+        out["extensions"] = extensions
 
     out.setdefault("provenance", {})["verification_status"] = "verified"
     out["provenance"]["notes"] = "Evaluator-only Scenario identifiers and seeds were redacted; aggregate score evidence remains recomputable."

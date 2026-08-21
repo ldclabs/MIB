@@ -325,5 +325,59 @@
     "visibility": "public_dev",
     "profile": "MIB-Core-0.1-Dev-M3",
     "milestone": "Reference Runner M2"
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.select_workspace_before_save",
+          "label": "Select the workspace before saving",
+          "kind": "procedure",
+          "support_event_ids": [
+            "e1",
+            "e2",
+            "e3",
+            "e4"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "select_workspace",
+              "edit_record",
+              "save"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "the store rejects a save with no workspace selected"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When a store rejects a write because a scope was never established, select or activate the required scope first, then edit, then save or commit.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-action",
+          "ability_ids": [
+            "ability.select_workspace_before_save"
+          ],
+          "relation": "surface_shift",
+          "support_expected": true,
+          "transfer_distance": {
+            "class": "D1",
+            "normalized": 0.33
+          },
+          "expected_behaviour": "apply",
+          "notes": "A new record-edit task in the same environment; the hidden precondition is unchanged."
+        }
+      ]
+    }
   }
 }

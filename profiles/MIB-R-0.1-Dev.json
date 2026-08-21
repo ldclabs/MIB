@@ -1,0 +1,72 @@
+{
+  "id": "MIB-R-0.1-Dev",
+  "version": "0.1.0",
+  "description": "MIB-R prototype profile — Memory Intelligence Benchmark, Reality Track. Realistic external-task transfer under paired memory interventions. Prototype only: there is deliberately no official MIB-R Score, and MIB-R results are never ranked against MIB-Core.",
+  "result_family": "reality",
+  "official": false,
+  "track": "integrated_agent",
+  "reality_pack": {
+    "id": "MIB-R-Demo-LedgerCodes",
+    "version": "0.1.0"
+  },
+  "conditions": [
+    "no_memory",
+    "natural_memory",
+    "relevant_ability_ablated",
+    "irrelevant_ability_ablated",
+    "wrong_ability_injected",
+    "oracle_skill",
+    "oracle_routing"
+  ],
+  "paired_on": [
+    "target_task",
+    "source_task_set",
+    "environment_revision",
+    "agent",
+    "model",
+    "tools",
+    "timeout",
+    "task_seed",
+    "verifier"
+  ],
+  "required_relations": {
+    "exact_replay": 1,
+    "surface_shift": 2,
+    "structural_transfer": 1,
+    "compositional_transfer": 2,
+    "near_match_non_applicable": 2,
+    "unsupported_novel": 2
+  },
+  "minimum_task_counts": {
+    "train_tasks": 20,
+    "test_tasks": 10
+  },
+  "calibration": {
+    "oracle_transfer_gain_min": 0.2,
+    "note": "An annotated Reality transfer edge is admissible only when an oracle Skill under oracle routing measurably improves the target task. A curator-labelled Ability is not useful merely because it sounds plausible."
+  },
+  "reporting": {
+    "immediate_public": [
+      "domain_score",
+      "aggregate_transfer_metrics",
+      "aggregate_distance_profile",
+      "attestation"
+    ],
+    "withheld": [
+      "per_task_score",
+      "per_ability_score",
+      "specific_support_relation",
+      "specific_wrong_skill_failure"
+    ],
+    "note": "Transfer graphs are especially vulnerable to adaptive reverse engineering across repeated submissions, so per-task feedback is not part of the immediate public surface."
+  },
+  "task_seeds": [
+    101
+  ],
+  "repetitions": 1,
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_method": "paired_task_bootstrap_percentile",
+    "bootstrap_resamples": 2000
+  }
+}

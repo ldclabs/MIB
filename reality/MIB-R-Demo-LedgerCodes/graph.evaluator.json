@@ -1,0 +1,531 @@
+{
+  "mib": "0.1",
+  "kind": "MIBRealityTransferGraph",
+  "id": "MIB-R-Demo-LedgerCodes",
+  "version": "0.1.0",
+  "visibility": "evaluator_only",
+  "statement": "Evaluator-private. A published MIB-R pack carries only this graph's digest and a private reference resolved inside the evaluator environment (MIB_REALITY_GRAPH_ROOT). It is shipped here because the demo pack exists to make the methodology reproducible in the open repository.",
+  "abilities": [
+    {
+      "id": "ability.mod97_for_standard_family",
+      "label": "Standard-family modulo 97 convention",
+      "kind": "decision_rule",
+      "support_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "oracle_artifact": {
+        "artifact_type": "rule",
+        "content": "For a standard-family record, reduce the identifier value modulo 97 when forming the transfer code.",
+        "format": "natural_language_procedure"
+      }
+    },
+    {
+      "id": "ability.normalize_identifier",
+      "label": "Normalize the identifier before computing",
+      "kind": "procedure",
+      "support_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04"
+      ],
+      "oracle_artifact": {
+        "artifact_type": "rule",
+        "content": "Before computing a transfer code, normalize the identifier: uppercase it and remove every separator.",
+        "format": "natural_language_procedure"
+      }
+    },
+    {
+      "id": "ability.drop_ck_prefix",
+      "label": "Drop a leading CK check marker",
+      "kind": "procedure",
+      "support_task_ids": [
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "oracle_artifact": {
+        "artifact_type": "rule",
+        "content": "A leading CK on an identifier is a check marker. Drop it before computing the value.",
+        "format": "natural_language_procedure"
+      }
+    },
+    {
+      "id": "ability.legacy_family_keeps_mod100",
+      "label": "Legacy family keeps modulo 100",
+      "kind": "decision_rule",
+      "support_task_ids": [
+        "train-legacy-01",
+        "train-legacy-02",
+        "train-legacy-03",
+        "train-legacy-04"
+      ],
+      "oracle_artifact": {
+        "artifact_type": "rule",
+        "content": "The legacy family keeps modulo 100. The standard-family modulo 97 convention does not apply to it.",
+        "format": "natural_language_procedure"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "target_task_id": "test-07",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "exact_replay",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Same identifier as an acquisition task; procedural recall floor."
+    },
+    {
+      "target_task_id": "test-01",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "surface_shift",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Same single convention, a different record."
+    },
+    {
+      "target_task_id": "test-02",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "surface_shift",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Same single convention, a class letter never seen in acquisition."
+    },
+    {
+      "target_task_id": "test-06",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "structural_transfer",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Batch reconciliation reframes the task; the latent convention is unchanged."
+    },
+    {
+      "target_task_id": "test-03",
+      "ability_ids": [
+        "ability.normalize_identifier",
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "compositional_transfer",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Two conventions learned in separate acquisition episodes must compose."
+    },
+    {
+      "target_task_id": "test-12",
+      "ability_ids": [
+        "ability.normalize_identifier",
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "compositional_transfer",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "note": "Separator normalization composed with the modulus rule."
+    },
+    {
+      "target_task_id": "test-04",
+      "ability_ids": [
+        "ability.drop_ck_prefix",
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "compositional_transfer",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05"
+      ],
+      "causal_task_ids": [
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05"
+      ],
+      "note": "Check-marker removal composed with the modulus rule."
+    },
+    {
+      "target_task_id": "test-05",
+      "ability_ids": [
+        "ability.normalize_identifier",
+        "ability.drop_ck_prefix",
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "compositional_transfer",
+      "support_expected": true,
+      "source_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06"
+      ],
+      "causal_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04",
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06"
+      ],
+      "note": "Three conventions compose in one record."
+    },
+    {
+      "target_task_id": "test-08",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "near_match_non_applicable",
+      "support_expected": false,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-legacy-01",
+        "train-legacy-02",
+        "train-legacy-03",
+        "train-legacy-04"
+      ],
+      "note": "Surface-identical to a standard record; the modulo 97 convention must be withheld."
+    },
+    {
+      "target_task_id": "test-09",
+      "ability_ids": [
+        "ability.mod97_for_standard_family"
+      ],
+      "relation": "near_match_non_applicable",
+      "support_expected": false,
+      "source_task_ids": [
+        "train-mod97-01",
+        "train-mod97-02",
+        "train-mod97-03",
+        "train-mod97-04",
+        "train-mod97-05",
+        "train-mod97-06",
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-prefix-01",
+        "train-prefix-02",
+        "train-prefix-03",
+        "train-prefix-04"
+      ],
+      "causal_task_ids": [
+        "train-normalize-01",
+        "train-normalize-02",
+        "train-normalize-03",
+        "train-normalize-04",
+        "train-normalize-05",
+        "train-legacy-04",
+        "train-legacy-01",
+        "train-legacy-02",
+        "train-legacy-03"
+      ],
+      "note": "Legacy record that still needs normalization; the modulus convention must be withheld."
+    },
+    {
+      "target_task_id": "test-10",
+      "ability_ids": [],
+      "relation": "unsupported_novel",
+      "support_expected": false,
+      "source_task_ids": [],
+      "causal_task_ids": [],
+      "note": "Provisional family: no acquired convention covers it. Withhold and say so."
+    },
+    {
+      "target_task_id": "test-11",
+      "ability_ids": [],
+      "relation": "unsupported_novel",
+      "support_expected": false,
+      "source_task_ids": [],
+      "causal_task_ids": [],
+      "note": "Provisional family, second record."
+    }
+  ]
+}

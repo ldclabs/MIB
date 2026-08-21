@@ -99,9 +99,20 @@ def run_condition(
     ablation: dict[str, Any] | None = None,
     repetition: int = 0,
     agent_seed: int | str | None = None,
+    excluded_event_ids: set[str] | None = None,
+    probe_ids: set[str] | None = None,
+    past_injections: list[tuple[str, str]] | None = None,
+    pre_probe_injections: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
-    if condition != "full" and not ablation:
-        raise RunnerError("non-full condition requires ablation")
+    """Execute one condition of a Scenario Instance.
+
+    ``excluded_event_ids``, ``probe_ids``, ``past_injections``, and
+    ``pre_probe_injections`` exist for evaluator-only transfer diagnostic cells
+    (M6.2).  They are not reachable from Scenario content, and the ordinary
+    ``full`` and Ablation paths never set them, so core execution is unchanged.
+    """
+    if condition != "full" and not ablation and excluded_event_ids is None and probe_ids is None:
+        raise RunnerError("non-full condition requires an ablation or an explicit diagnostic cell")
 
     run_id = _opaque("run")
     started = utc_now()
@@ -116,8 +127,13 @@ def run_condition(
     seed = agent_seed if agent_seed is not None else repetition
     agent.reset(run_id=run_id, seed=seed, virtual_time=virtual_time)
 
-    removed_ids: set[str] = set()
-    selected_probe_ids: set[str] | None = None
+    removed_ids: set[str] = set(excluded_event_ids or ())
+    selected_probe_ids: set[str] | None = set(probe_ids) if probe_ids is not None else None
+    injections_by_anchor: dict[str, list[str]] = {}
+    for anchor, content in past_injections or ():
+        injections_by_anchor.setdefault(str(anchor), []).append(content)
+    pre_probe_injections = pre_probe_injections or {}
+    injection_counter = 0
     ablation_id = None
     ablation_method = None
     if ablation:
@@ -125,7 +141,7 @@ def run_condition(
         ablation_method = ablation.get("method")
         if ablation_method != "replay_excluding_events":
             raise NotImplementedError(f"reference Runner implements replay_excluding_events only, got {ablation_method!r}")
-        removed_ids = set((ablation.get("targets") or {}).get("event_ids", []))
+        removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
         selected_probe_ids = set(ablation.get("probes", []))
 
     probes_by_trigger: dict[str, list[dict[str, Any]]] = {}
@@ -149,6 +165,23 @@ def run_condition(
 
     def deliver_observation(obs: Observation) -> None:
         agent.observe(run_id=run_id, request_id=req_id(), observation=obs)
+
+    def deliver_injection(content: str) -> None:
+        """Deliver an evaluator-supplied memory artifact through the ordinary
+        observation channel.
+
+        Routing an artifact means surfacing it, the way a memory system surfaces
+        a recalled Skill.  Using the same channel for every system keeps the
+        AA/OA/OO cells paired between black-box and decomposable Agents.
+        """
+        nonlocal injection_counter
+        injection_counter += 1
+        deliver_observation(Observation(
+            observation_id=f"obs_injected_{injection_counter:04d}",
+            type="environment_event",
+            virtual_time=virtual_time,
+            content=content,
+        ))
 
     def append_probe_result(p: dict[str, Any], output: AgentOutput, score: float, eval_results: list[dict[str, Any]], latency_ms: float, action_trace: list[dict[str, Any]] | None = None) -> None:
         failures = sorted({fc for e in eval_results for fc in e.get("failure_codes", [])})
@@ -298,7 +331,11 @@ def run_condition(
             if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
                 if event["type"] not in {"checkpoint", "world_update"}:
                     deliver_observation(_project_observation(event, actor_by_id, virtual_time))
+            for content in injections_by_anchor.get(str(event["id"]), ()):
+                deliver_injection(content)
             for p in probes_by_trigger.get(event["id"], []):
+                for content in pre_probe_injections.get(p["id"], ()):
+                    deliver_injection(content)
                 execute_probe(p)
 
         expected_probe_ids = {p["id"] for p in scenario.get("probes", []) if selected_probe_ids is None or p["id"] in selected_probe_ids}

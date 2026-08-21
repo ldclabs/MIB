@@ -2742,3 +2742,32 @@ After the Scenario Model and machine-readable schema:
 ```
 
 The next highest-value document is `MIB-Agent-Adapter.md`, because once Scenario semantics and transport boundaries are fixed, the Runner can be implemented without coupling itself to any specific memory architecture.
+
+---
+
+# Appendix D — Transfer Support Annotation
+
+A Scenario may carry an evaluator-private annotation making the author's latent transfer hypothesis explicit: which past Experience supports which future Probe, through which reusable Ability, under which applicability boundary.
+
+It is carried under the Scenario `extensions` key, not as a top-level v0.1 property:
+
+```json
+{
+  "extensions": {
+    "mib.transfer_support.v1": { "...": "..." }
+  }
+}
+```
+
+so that every existing Scenario file stays valid, every existing v0.1 parser can ignore it, and Hidden packs can adopt it gradually. Its shape is defined by `schemas/mib-transfer-support.schema.json`, and its semantics by `MIB-Transfer-Intelligence.md`.
+
+The annotation is diagnostic metadata, never task content. The Runner projects Timeline events and Probe inputs into Agent requests; it never projects Scenario extensions. Ability identity, support-event IDs, applicability cues, oracle Skill text, and distance class MUST NOT reach the Agent, a public report, or a leaderboard response.
+
+Two related, non-identical concepts:
+
+```text
+Transfer annotation   these events support this Ability
+Causal ablation       remove this information set and observe behavior
+```
+
+A well-formed Skill Scenario usually aligns them. Redundant support and negative controls break the alignment, which is why both are declared separately.

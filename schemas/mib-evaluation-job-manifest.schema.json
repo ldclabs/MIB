@@ -85,6 +85,30 @@
     "nonce": {
       "type": "string",
       "minLength": 16
+    },
+    "transfer_support_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of every evaluator-private Transfer Support Annotation in the cycle store. Present only when the cycle carries transfer annotations."
+    },
+    "transfer_graph_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of the evaluator-private Reality Transfer Graph, for MIB-R cycles."
+    },
+    "reality_pack_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Digest of the MIB-R Reality Pack manifest, for MIB-R cycles."
+    },
+    "result_family": {
+      "type": "string",
+      "enum": [
+        "core",
+        "transfer_diagnostic",
+        "reality"
+      ],
+      "description": "Result family this job belongs to. Families are never cross-ranked."
     }
   }
 }

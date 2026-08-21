@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.1:schema:transfer-support",
+  "title": "MIB Transfer Support Annotation",
+  "description": "Evaluator-private annotation carried under the Scenario extension key 'mib.transfer_support.v1'. It makes explicit which past Experience supports which future Probe, through which reusable Ability, under which applicability boundary. This content is diagnostic metadata and MUST NOT reach the Agent.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "abilities",
+    "probe_relations"
+  ],
+  "properties": {
+    "version": {
+      "$ref": "#/$defs/SemVer",
+      "description": "Annotation format version."
+    },
+    "abilities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Ability"
+      }
+    },
+    "probe_relations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/ProbeRelation"
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 4000
+    }
+  },
+  "$defs": {
+    "SemVer": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "EventIdList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/Identifier"
+      }
+    },
+    "Ability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "support_event_ids"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Identifier",
+          "description": "Evaluator-private Ability identifier. Never published in a participant-visible surface."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "procedure",
+            "decision_rule",
+            "verification_rule",
+            "recovery_rule",
+            "tool_strategy",
+            "epistemic_rule",
+            "composite",
+            "custom"
+          ]
+        },
+        "support_event_ids": {
+          "$ref": "#/$defs/EventIdList",
+          "description": "Timeline event IDs that jointly encode the Ability. A causal information set is not necessarily a single memory record."
+        },
+        "counterexample_event_ids": {
+          "$ref": "#/$defs/EventIdList",
+          "description": "Timeline event IDs that refine the applicability boundary by showing where the Ability must not fire."
+        },
+        "causal_information_sets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/EventIdList"
+          },
+          "description": "Alternative redundant support sets. Ablating one set may not degrade behaviour when another survives."
+        },
+        "minimum_sets_required": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "How many causal information sets must survive for the Ability to remain supported."
+        },
+        "procedure": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ordered_steps": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "description": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          }
+        },
+        "applicability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "positive_cues": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "negative_cues": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "required_world_predicates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "oracle_artifact": {
+          "$ref": "#/$defs/OracleArtifact"
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "author_defined",
+                "curator_defined",
+                "empirically_calibrated",
+                "derived"
+              ]
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          }
+        }
+      }
+    },
+    "OracleArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "content"
+      ],
+      "description": "Canonical Skill content used by the OA/OO diagnostic cells. It states a reusable procedure and its trigger; it MUST NOT contain task-specific hidden answers, hidden entity values, verifier internals, or future Probe wording.",
+      "properties": {
+        "artifact_type": {
+          "type": "string",
+          "enum": [
+            "skill",
+            "procedure",
+            "rule",
+            "case",
+            "summary",
+            "custom"
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "natural_language_procedure",
+            "structured_steps",
+            "instruction_patch",
+            "custom"
+          ],
+          "default": "natural_language_procedure"
+        }
+      }
+    },
+    "TransferDistance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class"
+      ],
+      "description": "Positive-transfer distance only. Negative controls are a different causal class, not a farther distance.",
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": [
+            "D0",
+            "D1",
+            "D2",
+            "D3"
+          ]
+        },
+        "normalized": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "ProbeRelation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "probe_id",
+        "relation",
+        "support_expected"
+      ],
+      "properties": {
+        "probe_id": {
+          "$ref": "#/$defs/Identifier"
+        },
+        "ability_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Identifier"
+          }
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "exact_replay",
+            "supported_transfer",
+            "surface_shift",
+            "structural_transfer",
+            "compositional_transfer",
+            "near_match_non_applicable",
+            "unsupported_novel",
+            "stale_support",
+            "harmful_support",
+            "historical_only",
+            "custom"
+          ],
+          "description": "Qualitative support relation. Not the same field as transfer distance."
+        },
+        "support_expected": {
+          "type": "boolean"
+        },
+        "minimum_required_ability_count": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "transfer_distance": {
+          "$ref": "#/$defs/TransferDistance"
+        },
+        "expected_behaviour": {
+          "type": "string",
+          "enum": [
+            "apply",
+            "withhold"
+          ],
+          "description": "Evaluator applicability label. 'apply' expects the Ability to control behaviour; 'withhold' expects it to be suppressed."
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

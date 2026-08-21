@@ -4602,3 +4602,34 @@ Score semantics
 ```
 
 and needs one machine-readable artifact that records all three.
+
+---
+
+# Appendix E — Supplemental Transfer Diagnostics
+
+`MIB-Transfer-Intelligence.md` defines a diagnostic layer that decomposes a transfer outcome into Formation, Routing, and Uptake, and reports how far a transfer had to reach.
+
+Nothing in that layer is part of this specification's score semantics. Specifically, no transfer metric enters:
+
+```text
+Probe score
+Scenario full-condition score
+Template score
+Dimension score
+Causal Score
+MIB Base Score
+MIB Score
+Coverage
+```
+
+A pack whose Templates carry no Transfer Support Annotation produces a report byte-identical to one produced before the extension existed. Diagnostics travel as the report extension `mib.transfer_diagnostics.v1` and, for MIB-R, `mib.reality.v1`.
+
+Two naming rules matter for anyone reading both documents:
+
+`Negative Transfer Rate`
+: A transfer diagnostic. It is the share of annotated Probes whose natural score falls below their memory-removed baseline. It is **not** the standardized `negative_transfer` causal metric defined in §63 of this document, whose control semantics are stricter. Do not map one onto the other. For transfer diagnostics use the explicit terms Near-Match Harm, Wrong-Ability Harm, Unsupported Memory Delta, and Stale-Skill Harm.
+
+`Near-Match Resistance`
+: An outcome measure, not applicability precision. A correct answer is not evidence that memory was withheld. Applicability Precision and Recall may be computed only where a Scenario or a decomposable Memory Adapter provides direct observable evidence that memory was applied.
+
+Undefined diagnostics are reported as `eligible: false` with a reason, never as `0`, following the same epistemic semantics this document applies to unsupported and non-evaluated evidence.

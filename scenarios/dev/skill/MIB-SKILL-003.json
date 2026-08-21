@@ -297,5 +297,58 @@
     "visibility": "public_dev",
     "profile": "MIB-Core-0.1-Dev-M3",
     "milestone": "Reference Runner M2"
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.establish_scope_before_commit",
+          "label": "Establish the required scope before committing",
+          "kind": "procedure",
+          "support_event_ids": [
+            "e-old-skill"
+          ],
+          "counterexample_event_ids": [
+            "e-current"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "activate_context",
+              "edit_item",
+              "commit"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "the write target declares a required scope"
+            ],
+            "negative_cues": [
+              "the record is global and declares no required scope"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When a store rejects a write because a scope was never established, select or activate the required scope first, then edit, then save or commit.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-action",
+          "ability_ids": [
+            "ability.establish_scope_before_commit"
+          ],
+          "relation": "near_match_non_applicable",
+          "support_expected": false,
+          "expected_behaviour": "withhold",
+          "notes": "Surface similarity is high and the applicability condition fails; the learned procedure must be withheld."
+        }
+      ]
+    }
   }
 }

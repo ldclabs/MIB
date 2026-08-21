@@ -14,10 +14,19 @@ from .materialize import materialize
 from .model_clients import build_model_client, DeterministicStubModelClient
 from .runner import run_condition, run_scenario
 from .same_model_agent import InvocationRecorder, SameModelAgent, load_prompt
+from .transfer import oracle_artifact_bundle_digest
+from .transfer_diagnostics import DEFAULT_EPSILON, build_transfer_diagnostics
+from .transfer_matrix import eligible_transfer_templates, run_transfer_matrix
 from .validation import load_json, validate_scenario
 
 
 CONDITIONS = ["B0", "B1", "B2", "B3"]
+
+#: Optional transfer diagnostic cells. ``AO`` needs a decomposable Memory
+#: Adapter, which the Same-Model Agent does not expose, so a Same-Model run
+#: yields Routing Efficiency and the uptake ceiling but not Formation
+#: Efficiency. That is reported, not silently omitted.
+TRANSFER_CELLS = ["B", "OA", "OO"]
 _KIND_TO_CONDITION = {
     "relevant_memory": "relevant_ablation",
     "irrelevant_memory": "irrelevant_ablation",
@@ -117,8 +126,39 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
         },
         "allowed_condition_differences": ["memory_policy", "memory_selection", "memory_context_content"],
     }
+    transfer = _transfer_lock_section(cfg, paths)
+    if transfer:
+        # Only bound when the experiment opts in, so an experiment that runs no
+        # transfer cells keeps the lock it already had.
+        lock["transfer_diagnostics"] = transfer
     lock["digest"] = "sha256:" + canonical_digest(lock)
     return lock
+
+
+def _transfer_lock_section(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[str, Any] | None:
+    """Bind the transfer diagnostic configuration into the Experiment Lock.
+
+    An oracle artifact edited after the experiment was locked would silently
+    change the ceiling every efficiency ratio is measured against, so the
+    artifact bundle is bound by digest alongside the routing policy and the
+    cell set.
+    """
+    spec = dict((cfg.get("calibration") or {}).get("transfer_diagnostics") or {})
+    if not spec.get("enabled"):
+        return None
+    templates = load_private_templates(paths["pack"])
+    eligible = eligible_transfer_templates(templates)
+    return {
+        "enabled": True,
+        "cells": list(spec.get("cells") or TRANSFER_CELLS),
+        "epsilon": float(spec.get("epsilon", DEFAULT_EPSILON)),
+        "routing_policy": "evaluator_ability_match_v1",
+        "baseline_condition": "B3",
+        # Counted, never named: a lock may travel with a calibration report and
+        # must not disclose which private Templates carry which annotation.
+        "eligible_template_count": len(eligible),
+        "oracle_artifact_bundle_sha256": oracle_artifact_bundle_digest(eligible),
+    }
 
 
 def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) -> dict[str, Any]:
@@ -314,6 +354,43 @@ def _run_causal_from_paired_b3(
                 validate_causal_pairs(runs)
                 causal[tid].append(build_instance_aggregate(instance, runs))
     return causal
+
+
+def _run_transfer_cells(
+    *, templates: list[dict[str, Any]], schema: dict[str, Any], factory: Callable[[], Any],
+    seeds: list[int | str], repetitions: int, full_runs: dict[tuple[Any, ...], dict[str, Any]],
+    cells: tuple[str, ...],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    """Run the optional T cells for eligible Templates only.
+
+    T-AA reuses the paired B3 Full run wherever one exists, so a transfer cell
+    never re-measures the natural condition against a different model call than
+    the causal analysis used.
+    """
+    eligible = eligible_transfer_templates(templates)
+    aa_runs: list[dict[str, Any]] = []
+    diagnostic_runs: list[dict[str, Any]] = []
+    for t in eligible:
+        tid = t["id"]
+        for seed in seeds:
+            instance = materialize(t, seed)
+            vr = validate_scenario(instance, schema)
+            if not vr.valid:
+                raise ValueError(f"Instance {tid}:{seed} invalid: {vr.errors}")
+            for rep in range(repetitions):
+                agent_seed = f"same-model:{seed}:{rep}"
+                full = full_runs.get((tid, str(seed), rep, "B3"))
+                if full is None:
+                    full = run_condition(
+                        scenario=instance, agent=factory(), condition="full",
+                        repetition=rep, agent_seed=agent_seed,
+                    )
+                aa_runs.append(full)
+                diagnostic_runs.extend(run_transfer_matrix(
+                    scenario=instance, agent_factory=factory, repetition=rep,
+                    agent_seed=agent_seed, cells=cells,
+                ))
+    return eligible, aa_runs, diagnostic_runs
 
 
 def _aggregate_calibration(
@@ -513,6 +590,41 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             templates=templates, schema=schema, factory=factories["B3"], seeds=cseeds,
             repetitions=creps, full_runs=full_runs,
         )
+        transfer_spec = dict(cal_cfg.get("transfer_diagnostics") or {})
+        transfer_body = None
+        transfer_summary = {"enabled": False}
+        if transfer_spec.get("enabled"):
+            cells = tuple(transfer_spec.get("cells") or TRANSFER_CELLS)
+            tseeds = list(transfer_spec.get("instance_seeds") or cseeds)
+            treps = int(transfer_spec.get("repetitions", creps))
+            eligible, aa_runs, diagnostic_runs = _run_transfer_cells(
+                templates=templates, schema=schema, factory=factories["B3"],
+                seeds=tseeds, repetitions=treps, full_runs=full_runs, cells=cells,
+            )
+            transfer_body = build_transfer_diagnostics(
+                templates=eligible, runs=aa_runs, diagnostic_runs=diagnostic_runs,
+                epsilon=float(transfer_spec.get("epsilon", DEFAULT_EPSILON)),
+                bootstrap_resamples=int(transfer_spec.get("bootstrap_resamples", 0)),
+                bootstrap_seed=cal_cfg.get("bootstrap_seed", "mib-same-model-0.1"),
+            )
+            transfer_summary = {
+                "enabled": True,
+                "cells": list(cells),
+                "baseline_condition": "B3",
+                "eligible_template_count": len(eligible),
+                "instance_seeds": tseeds,
+                "repetitions": treps,
+                "formation_efficiency_available": "AO" in cells,
+                "note": (
+                    "The AO cell is configured, so Formation Efficiency is measurable for any Agent "
+                    "that exposes a decomposable Memory Adapter."
+                    if "AO" in cells else
+                    "The Same-Model Agent exposes no decomposable Memory Adapter, so the AO cell is "
+                    "not run and Formation Efficiency is unavailable. Routing Efficiency and the "
+                    "uptake ceiling remain measurable."
+                ),
+            }
+
         base_report = _aggregate_calibration(
             templates=templates, profile=profile, raw=raw, causal=causal, factories=factories,
             thresholds=thresholds,
@@ -648,6 +760,12 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             ],
         },
         "calibration": base_report,
+        # Supplemental. Transfer diagnostics never enter a calibration gate or
+        # the release-eligibility decision.
+        "transfer_diagnostics": {
+            **transfer_summary,
+            **({"result": transfer_body} if transfer_body else {}),
+        },
     }
 
 

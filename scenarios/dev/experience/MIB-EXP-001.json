@@ -360,5 +360,59 @@
     "visibility": "public_dev",
     "profile": "MIB-Core-0.1-Dev-M3",
     "milestone": "Reference Runner M2"
+  },
+  "extensions": {
+    "mib.transfer_support.v1": {
+      "version": "1.0.0",
+      "abilities": [
+        {
+          "id": "ability.diagnose_before_repeating",
+          "label": "Inspect the actual target before repeating a failed action",
+          "kind": "recovery_rule",
+          "support_event_ids": [
+            "e-failure",
+            "e-diagnosis",
+            "e-recovery"
+          ],
+          "procedure": {
+            "ordered_steps": [
+              "inspect_target",
+              "select_target",
+              "run_migration",
+              "restart_service"
+            ]
+          },
+          "applicability": {
+            "positive_cues": [
+              "a startup failure followed an action run against an assumed target"
+            ]
+          },
+          "oracle_artifact": {
+            "artifact_type": "skill",
+            "content": "When an action failed because it ran against an assumed destination, inspect the actual target and select what the inspection reports before repeating the action, then restart the service.",
+            "format": "natural_language_procedure"
+          },
+          "provenance": {
+            "mode": "author_defined"
+          }
+        }
+      ],
+      "probe_relations": [
+        {
+          "probe_id": "p-action",
+          "ability_ids": [
+            "ability.diagnose_before_repeating"
+          ],
+          "relation": "surface_shift",
+          "support_expected": true,
+          "transfer_distance": {
+            "class": "D1",
+            "normalized": 0.33
+          },
+          "expected_behaviour": "apply",
+          "notes": "Failure, diagnosis, and recovery jointly encode one Ability; no single event carries it."
+        }
+      ]
+    }
   }
 }

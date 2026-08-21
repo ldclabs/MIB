@@ -16,7 +16,7 @@ from . import __version__
 from .benchmark import run_materialized_pack
 from .capability import render_capability_card
 from .hidden import HiddenEvalStore, redact_report_for_public
-from .leaderboard import leaderboard as build_leaderboard, compare_results
+from .leaderboard import compare_results, leaderboard as build_leaderboard, result_family
 from .report import validate_report, verify_score
 from .service_db import ServiceDB, utc_now
 from .service_signing import derive_key, derive_ed25519_private_key, digest_json, sha256_hex, sign_json_ed25519, verify_json_ed25519, public_key_b64, key_id_from_public_b64
@@ -144,7 +144,8 @@ class EvaluationService:
     def register_cycle(self, cycle_id: str, *, store_path: str|Path, profile_path: str|Path, activate: bool=False) -> dict[str,Any]:
         store_path=Path(store_path).resolve(); profile_path=Path(profile_path).resolve(); store=HiddenEvalStore(store_path); profile=load_json(profile_path)
         row={"id":cycle_id,"profile_id":profile["id"],"store_path":str(store_path),"profile_path":str(profile_path),
-             "store_digest":tree_digest(store_path),"profile_digest":file_digest(profile_path),"public_manifest":store.public_manifest(),"status":"registered"}
+             "store_digest":tree_digest(store_path),"profile_digest":file_digest(profile_path),"public_manifest":store.public_manifest(),"status":"registered",
+             "transfer_digest":store.transfer_digest()}
         self.db.upsert_cycle(row)
         if activate:self.db.activate_cycle(cycle_id)
         return self.db.cycle(cycle_id)
@@ -152,11 +153,24 @@ class EvaluationService:
     def activate_cycle(self, cycle_id:str)->dict[str,Any]: self.db.activate_cycle(cycle_id); return self.db.cycle(cycle_id)
 
     def _job_manifest(self, *, job_id:str, submission:dict[str,Any], cycle:dict[str,Any], backend:str)->dict[str,Any]:
-        return {"mib":"0.1","kind":"MIBEvaluationJobManifest","version":"0.1.0","job_id":job_id,"submission_id":submission["id"],
+        manifest={"mib":"0.1","kind":"MIBEvaluationJobManifest","version":"0.1.0","job_id":job_id,"submission_id":submission["id"],
                 "submission_spec_digest":submission["spec_digest"],"cycle_id":cycle["id"],"profile_id":cycle["profile_id"],
                 "private_store_digest":cycle["store_digest"],"profile_digest":cycle["profile_digest"],"scenario_schema_digest":file_digest(self.config.scenario_schema),
                 "report_schema_digest":file_digest(self.config.report_schema),"backend":backend,"runner_version":__version__,"created_at":utc_now(),
                 "nonce":secrets.token_hex(16)}
+        # Result family is never inferred at read time: it is signed into the
+        # manifest, so a job can never be re-filed under a family it did not run.
+        # The key matches `benchmark.result_family` in every report and
+        # attestation; `diagnostic_mode` means something else entirely in
+        # `mib.transfer_diagnostics.v1`.
+        manifest["result_family"]=result_family(cycle["profile_id"])
+        # Bind the evaluator-private transfer metadata by digest, never by value.
+        # A silent post-enqueue edit to Ability support, an oracle artifact, or a
+        # transfer relation then breaks manifest verification.
+        transfer=cycle.get("transfer_digest")
+        if transfer:
+            manifest["transfer_support_digest"]=transfer
+        return manifest
 
     def enqueue(self, submission_id:str, *, cycle_id:str|None=None, backend:str|None=None)->dict[str,Any]:
         sub=self.db.submission(submission_id)
