@@ -567,6 +567,15 @@ MIB v0.1 当前完成情况：
 
 ✓ 同模型经验校准工具
 
+✓ 迁移智能诊断（Transfer Intelligence）
+  形成 / 路由 / 采纳分解，迁移距离 D0–D3，
+  近似匹配与无支撑两类负向对照
+  仅为补充诊断：不改变任何 MIB Score
+
+○ MIB-R 现实赛道（原型阶段）
+  独立结果族，暂无官方分数，
+  绝不与 MIB-Core 同榜排名
+
 ○ 真实固定模型经验校准（进行中）
 
 ○ MIB v0.1 官方榜单数据包冻结（等待经验校准完成）
@@ -586,6 +595,8 @@ MIB/
 │   ├── MIB-Agent-Adapter.md
 │   ├── MIB-Scoring.md
 │   ├── MIB-Leaderboard-Evaluation-Service.md
+│   ├── MIB-Transfer-Intelligence.md
+│   ├── MIB-R-Reality-Track.md
 │   ├── MIB-v0.1-Test-Plan.md
 │   └── harness/                           校准、同模型、隐藏评测与评测服务工程笔记
 │
@@ -597,11 +608,16 @@ MIB/
 │
 ├── scenarios/                             公开 Dev 场景包
 │   ├── manifest.json
-│   └── dev/
-│       ├── recall/        4 篇    ├── skill/       3 篇
-│       ├── time/          4 篇    ├── causal/      3 篇
-│       ├── epistemic/     4 篇    └── cross/       3 篇
-│       └── experience/    3 篇
+│   ├── dev/                               MIB-Core 公开 Dev 包，24 篇
+│   │   ├── recall/        4 篇    ├── skill/       3 篇
+│   │   ├── time/          4 篇    ├── causal/      3 篇
+│   │   ├── epistemic/     4 篇    └── cross/       3 篇
+│   │   └── experience/    3 篇
+│   └── transfer/                          迁移诊断包，6 篇
+│                                          （刻意放在 dev/ 之外，
+│                                          以保证 MIB-Core 包恰好 24 篇）
+│
+├── reality/                               MIB-R 原型 Reality Pack
 │
 ├── src/mib_runner/                        参考 Runner、评测器、适配器、
 │                                          校准工具、评测服务、排行榜
@@ -687,6 +703,49 @@ HTTP
 docs/cn/MIB-Agent-Adapter.md
 docs/cn/MIB-Scenario-Model.md
 docs/cn/MIB-Scoring.md
+```
+
+---
+
+## 迁移智能与 MIB-R
+
+MIB-Core 回答的是"过去的哪一部分正确地参与了这次未来计算"。它以行为方式回答，
+这意味着一次失败的迁移看上去都一样——无论系统是根本没有编译出可用的程序、
+编译出来却没有检索到、还是检索到了正确的程序却无法执行。
+
+两个补充层用来区分这三种情况。
+
+**迁移智能**（`docs/MIB-Transfer-Intelligence.md`）把评测方的隐含假设显式化——
+哪些过去经验、通过哪一项 Ability、在什么适用边界内支撑哪一个未来 Probe——
+然后对结果进行分解：
+
+```text
+经验 → 形成 → 技能 → 路由 → 适用性判断 → 采纳 → 未来行为
+```
+
+它报告形成效率（Formation Efficiency）、路由效率（Routing Efficiency）、
+采纳上限（uptake ceiling），以及覆盖正向距离阶梯 `D0`–`D3` 的迁移剖面
+（Transfer Profile），同时给出纯正向迁移基准无法表达的两类对照：
+学到的程序**必须被抑制**的近似匹配陷阱，以及记忆**必须保持中性**的无支撑任务。
+四个诊断单元中有三个可以直接在黑盒 Agent 上运行。
+
+**MIB-R**（`docs/MIB-R-Reality-Track.md`）追问同一种记忆智能能否在真实外部任务
+环境中存活：在只有记忆状态变化、其余全部配对固定的条件下，执行经验获取与
+留出集迁移。
+
+两层都是补充性的。二者定义的任何指标都不会进入 MIB Score、因果分数或覆盖率。
+若某个评测包的模板不带迁移标注，其报告与该扩展存在之前逐字节一致。
+MIB-R 处于原型阶段，属于独立结果族且没有官方分数，绝不与 MIB-Core 同榜排名。
+
+```bash
+mib benchmark scenarios/transfer \
+  --profile profiles/MIB-Transfer-0.1-Dev.json \
+  --schema schemas/mib-scenario.schema.json \
+  --transfer-diagnostics
+
+mib reality-benchmark reality/MIB-R-Demo-LedgerCodes/pack.json \
+  --profile profiles/MIB-R-0.1-Dev.json \
+  --agent mib_runner.agents.reality_fixtures:RuleLearningRealityAgent
 ```
 
 ---
