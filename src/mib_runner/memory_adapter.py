@@ -128,7 +128,11 @@ def select_artifact_for_ability(
     reference = _tokens(ability_reference_text(ability))
     support = {str(x) for x in getattr(ability, "support_event_ids", ()) or ()}
     best: dict[str, Any] | None = None
-    best_score = -1.0
+    # 0.0 is the floor, not a sentinel: an artifact that shares nothing with the
+    # evaluator's description of the Ability was not routed, and reporting it as
+    # a match would make "formed nothing usable" indistinguishable from
+    # "formed something and the router picked it".
+    best_score = 0.0
     for artifact in artifacts:
         candidate = _tokens(artifact.get("content", ""))
         if not reference or not candidate:

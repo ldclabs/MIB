@@ -101,7 +101,7 @@
       "pattern": "^sha256:[0-9a-f]{64}$",
       "description": "Digest of the MIB-R Reality Pack manifest, for MIB-R cycles."
     },
-    "diagnostic_mode": {
+    "result_family": {
       "type": "string",
       "enum": [
         "core",

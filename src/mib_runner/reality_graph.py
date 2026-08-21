@@ -144,7 +144,10 @@ def resolve_graph_path(pack_path: str | Path, private_ref: str) -> Path:
 def load_reality_graph(pack_path: str | Path, pack: dict[str, Any]) -> RealityTransferGraph:
     spec = pack.get("transfer_graph") or {}
     if "edges" in spec:
-        graph = parse_reality_graph(spec)
+        # The manifest fields that *carry* the reference are not part of the
+        # graph body.  Hashing them together with the graph would make the
+        # declared digest self-referential and impossible to satisfy.
+        graph = parse_reality_graph({k: v for k, v in spec.items() if k not in {"digest", "private_ref"}})
     else:
         private_ref = spec.get("private_ref")
         if not private_ref:

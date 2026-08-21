@@ -160,7 +160,10 @@ class EvaluationService:
                 "nonce":secrets.token_hex(16)}
         # Result family is never inferred at read time: it is signed into the
         # manifest, so a job can never be re-filed under a family it did not run.
-        manifest["diagnostic_mode"]=result_family(cycle["profile_id"])
+        # The key matches `benchmark.result_family` in every report and
+        # attestation; `diagnostic_mode` means something else entirely in
+        # `mib.transfer_diagnostics.v1`.
+        manifest["result_family"]=result_family(cycle["profile_id"])
         # Bind the evaluator-private transfer metadata by digest, never by value.
         # A silent post-enqueue edit to Ability support, an oracle artifact, or a
         # transfer relation then breaks manifest verification.

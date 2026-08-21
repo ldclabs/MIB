@@ -93,6 +93,15 @@ class RealityTaskAdapter(Protocol):
 
     def collect_trajectory(self, result: dict[str, Any]) -> list[dict[str, Any]]: ...
 
+    def feedback(self, task: dict[str, Any], result: dict[str, Any], *, score: float) -> list[str]:
+        """Verifier verdict, plus any reviewer correction, as observation lines.
+
+        Phase A delivers these back to the Agent, which is what makes the
+        acquisition an Experience rather than a document dump.  It is part of
+        the contract, not an optional extra.
+        """
+        ...
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -199,10 +208,26 @@ def run_reality_pair(
     started = utc_now()
     agent.reset(run_id=run_id, seed=seed, virtual_time=None)
 
+    allowed_set = set(allowed)
+    contents = _oracle_contents(graph, target_id) if condition in {"oracle_skill", "oracle_routing"} else []
+    # Oracle content must occupy the temporal slot of the Experience it replaces:
+    # the acquisition tasks that followed that Experience have to follow it here
+    # too, or the retention interval changes as well.  Emitting it after Phase A
+    # instead would make oracle_skill and oracle_routing byte-identical streams
+    # and the Routing axis would not be isolated at all.
+    withheld_ids = [t for t in train_ids if t not in allowed_set]
+    pool_anchor = withheld_ids[-1] if (condition == "oracle_skill" and withheld_ids) else None
+
     acquisition: list[dict[str, Any]] = []
     try:
         # --- Phase A: experience acquisition ---------------------------
-        for task_id in allowed:
+        for task_id in train_ids:
+            if task_id not in allowed_set:
+                if task_id == pool_anchor:
+                    # Perfect content in the pool; the system's own routing decides.
+                    for content in contents:
+                        _observe(agent, run_id, counter, content)
+                continue
             task = train_tasks[task_id]
             counter[0] += 1
             result = adapter.run_task(task, agent, seed=seed, request_id=f"req_{counter[0]:06d}")
@@ -211,18 +236,16 @@ def run_reality_pair(
             for line in adapter.feedback(task, result, score=score):
                 _observe(agent, run_id, counter, line, obs_type="feedback")
 
-        if condition in {"oracle_skill", "oracle_routing"}:
-            contents = _oracle_contents(graph, target_id)
-            if condition == "oracle_skill":
-                # Perfect content in the pool; the system's own routing decides.
-                for content in contents:
-                    _observe(agent, run_id, counter, content)
+        if condition == "oracle_skill" and pool_anchor is None:
+            # Nothing was withheld, so there is no earlier slot to occupy.
+            for content in contents:
+                _observe(agent, run_id, counter, content)
         if condition == "wrong_ability_injected":
             _observe(agent, run_id, counter, WRONG_ABILITY_TEXT)
 
         # --- Phase B: held-out transfer --------------------------------
         if condition == "oracle_routing":
-            for content in _oracle_contents(graph, target_id):
+            for content in contents:
                 _observe(agent, run_id, counter, content)
 
         counter[0] += 1
@@ -493,8 +516,16 @@ def reality_bootstrap(
     draws: dict[str, list[float]] = defaultdict(list)
     for _ in range(resamples):
         sample: list[dict[str, Any]] = []
-        for _ in task_ids:
-            sample.extend(by_task[task_ids[rng.randrange(len(task_ids))]])
+        # Each draw gets its own target id.  ``_paired_delta`` and the per-task
+        # rows key on ``target_task_id``, so a task drawn twice under its own id
+        # would collapse into one observation and every replicate would be a
+        # random subsample rather than a bootstrap resample.
+        for draw, _ in enumerate(task_ids):
+            picked = task_ids[rng.randrange(len(task_ids))]
+            sample.extend(
+                {**row, "target_task_id": f"{row['target_task_id']}#{draw}"}
+                for row in by_task[picked]
+            )
         for name, value in reality_metrics(sample)["overall"].items():
             if isinstance(value, (int, float)):
                 draws[name].append(float(value))

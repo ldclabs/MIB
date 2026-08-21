@@ -625,7 +625,6 @@ def calibrate_transfer(
                 "baseline_score": relation.get("baseline_score"),
                 "natural_transfer_gain": (relation.get("natural_transfer_gain") or {}).get("value"),
                 "oracle_routed_score": (relation.get("oracle_routed_score") or {}).get("value"),
-                "relevant_ablation_delta": (relation.get("natural_transfer_gain") or {}).get("value"),
             }
             if relation["relation"] in POSITIVE_RELATIONS:
                 oracle = entry["oracle_routed_score"]

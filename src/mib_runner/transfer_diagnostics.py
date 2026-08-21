@@ -244,7 +244,11 @@ def _relation_row(
             row["unsupported_memory_delta"] = {"value": aa - b}
             row["unsupported_memory_neutrality"] = {"value": max(0.0, 1.0 - abs(aa - b))}
 
-    if oo is not None:
+    if oo is not None and relation.support_expected:
+        # The uptake ceiling is only a ceiling where transfer is expected.  On a
+        # negative control the OO cell force-routes the very procedure that must
+        # be withheld, so a correctly resisting system scores low there; folding
+        # that into the ceiling would report boundary respect as uptake failure.
         row["oracle_routed_score"] = {"value": oo}
         if b is not None:
             row["oracle_routed_gain"] = {"value": oo - b}
@@ -444,16 +448,18 @@ def transfer_diagnostic_aggregates(template_rows: list[dict[str, Any]]) -> dict[
 
     # Negative Transfer Rate is deliberately its own name.  It is not the
     # standardized MIB `negative_transfer` causal metric, whose control
-    # semantics come from MIB-Scoring.md.
-    scored = [
-        r
-        for entry in template_rows
-        for r in entry["relations"]
-        if "natural_transfer_gain" in r
-    ]
-    if scored:
+    # semantics come from MIB-Scoring.md.  Like every other aggregate here it is
+    # Template-first: pooling Probe rows would let one Template with many
+    # annotated Probes dominate the benchmark number.
+    per_template_rates: list[float] = []
+    for entry in template_rows:
+        scored = [r for r in entry["relations"] if "natural_transfer_gain" in r]
+        if not scored:
+            continue
         worse = sum(1 for r in scored if float(r["natural_transfer_gain"]["value"]) < -1e-9)
-        out["negative_transfer_rate"] = worse / len(scored)
+        per_template_rates.append(worse / len(scored))
+    if per_template_rates:
+        out["negative_transfer_rate"] = math.fsum(per_template_rates) / len(per_template_rates)
 
     for name in ("formation_efficiency", "routing_efficiency", "natural_transfer_efficiency"):
         values = [float(e[name]["value"]) for e in template_rows if e.get(name, {}).get("eligible")]

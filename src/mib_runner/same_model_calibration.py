@@ -616,6 +616,9 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
                 "repetitions": treps,
                 "formation_efficiency_available": "AO" in cells,
                 "note": (
+                    "The AO cell is configured, so Formation Efficiency is measurable for any Agent "
+                    "that exposes a decomposable Memory Adapter."
+                    if "AO" in cells else
                     "The Same-Model Agent exposes no decomposable Memory Adapter, so the AO cell is "
                     "not run and Formation Efficiency is unavailable. Routing Efficiency and the "
                     "uptake ceiling remain measurable."
