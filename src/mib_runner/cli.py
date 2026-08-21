@@ -14,6 +14,7 @@ from .hidden import HiddenEvalStore, redact_report_for_public
 from .submission import build_submission_runtime, load_submission_spec
 from .report import build_basic_report, validate_report, verify_score
 from .runner import run_scenario
+from .transfer import inspect_transfer
 from .validation import load_json, validate_scenario
 
 
@@ -40,9 +41,27 @@ def _parse_seeds(value: str):
 def cmd_validate(args) -> int:
     schema = load_json(args.schema)
     scenario = load_json(args.scenario)
-    result = validate_scenario(scenario, schema)
+    result = validate_scenario(
+        scenario,
+        schema,
+        transfer_schema=load_json(args.transfer_support_schema) if args.transfer_support_schema else None,
+        require_transfer_annotations=args.require_transfer_annotations,
+    )
     print(json.dumps({"valid": result.valid, "errors": result.errors, "warnings": result.warnings}, indent=2, ensure_ascii=False))
     return 0 if result.valid else 2
+
+
+def cmd_inspect_transfer(args) -> int:
+    scenario = load_json(args.scenario)
+    schema = load_json(args.transfer_support_schema) if args.transfer_support_schema else None
+    out = inspect_transfer(scenario, schema=schema)
+    text = json.dumps(out, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
+    return 0 if not out["errors"] else 2
 
 
 def _load_materialized(path: str, schema_path: str, seed: str | int):
@@ -312,7 +331,17 @@ def build_parser() -> argparse.ArgumentParser:
     v = sub.add_parser("validate", help="Validate one MIB Scenario")
     v.add_argument("scenario")
     v.add_argument("--schema", required=True)
+    v.add_argument("--transfer-support-schema",
+                   help="Also validate a mib.transfer_support.v1 annotation against this schema")
+    v.add_argument("--require-transfer-annotations", action="store_true",
+                   help="Fail when the Scenario carries no Transfer Support Annotation")
     v.set_defaults(func=cmd_validate)
+
+    it = sub.add_parser("inspect-transfer", help="Summarize the Transfer Support Annotation of one Scenario (evaluator-internal)")
+    it.add_argument("scenario")
+    it.add_argument("--transfer-support-schema")
+    it.add_argument("--output")
+    it.set_defaults(func=cmd_inspect_transfer)
 
     r = sub.add_parser("run", help="Run one Scenario/Template")
     r.add_argument("scenario")
