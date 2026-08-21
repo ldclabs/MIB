@@ -24,6 +24,7 @@ from .transfer_diagnostics import (
     transfer_distance_aggregates,
     transfer_relation_aggregates,
 )
+from .transfer_matrix import run_transfer_matrix_pack
 from .validation import validate_scenario
 
 CAUSAL_DIM = "causal_memory_impact"
@@ -727,6 +728,7 @@ def run_benchmark_pack(
     bootstrap_resamples: int = 0,
     bootstrap_seed: int | str = 20260819,
     transfer_diagnostics: bool = True,
+    transfer_matrix: bool = False,
     transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     all_instances: list[dict[str, Any]] = []
@@ -774,6 +776,15 @@ def run_benchmark_pack(
             confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
         )
 
+    # The 2x2 diagnostic cells stay in their own list.  Merging them into
+    # all_runs would move condition_scores, causal pair sets, and execution
+    # counts, and a supplemental diagnostic must never do that.
+    diagnostic_runs = run_transfer_matrix_pack(
+        instances=all_instances,
+        agent_factory=agent_factory,
+        repetitions=repetitions,
+    ) if (transfer_diagnostics and transfer_matrix) else []
+
     report = build_pack_report(
         templates=templates,
         instances=all_instances,
@@ -784,6 +795,7 @@ def run_benchmark_pack(
         transfer_diagnostics=build_transfer_diagnostics(
             templates=templates,
             runs=all_runs,
+            diagnostic_runs=diagnostic_runs,
             epsilon=transfer_epsilon,
             bootstrap_resamples=bootstrap_resamples,
             bootstrap_seed=bootstrap_seed,
@@ -801,6 +813,7 @@ def run_benchmark_pack(
         "coverage": report["coverage"]["overall"],
         "dimensions": {d["dimension"]: d["score"] for d in report["aggregates"]["dimensions"]},
         "causal_metrics": {m["name"]: m["value"] for m in report.get("causal_metrics", [])},
+        **({"transfer_diagnostic_run_count": len(diagnostic_runs)} if diagnostic_runs else {}),
     }
     return report, summary
 
@@ -818,6 +831,7 @@ def run_materialized_pack(
     bootstrap_resamples: int = 0,
     bootstrap_seed: int | str = 20260819,
     transfer_diagnostics: bool = True,
+    transfer_matrix: bool = False,
     transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Execute evaluator-materialized instances without exposing generation seeds to the submission."""
@@ -862,6 +876,12 @@ def run_materialized_pack(
             seed=bootstrap_seed,
             confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
         )
+    diagnostic_runs = run_transfer_matrix_pack(
+        instances=instances,
+        agent_factory=agent_factory,
+        repetitions=repetitions,
+    ) if (transfer_diagnostics and transfer_matrix) else []
+
     report = build_pack_report(
         templates=templates,
         instances=instances,
@@ -872,6 +892,7 @@ def run_materialized_pack(
         transfer_diagnostics=build_transfer_diagnostics(
             templates=templates,
             runs=all_runs,
+            diagnostic_runs=diagnostic_runs,
             epsilon=transfer_epsilon,
             bootstrap_resamples=bootstrap_resamples,
             bootstrap_seed=bootstrap_seed,
@@ -888,6 +909,7 @@ def run_materialized_pack(
         "coverage": report["coverage"]["overall"],
         "dimensions": {d["dimension"]: d["score"] for d in report["aggregates"]["dimensions"]},
         "causal_metrics": {m["name"]: m["value"] for m in report.get("causal_metrics", [])},
+        **({"transfer_diagnostic_run_count": len(diagnostic_runs)} if diagnostic_runs else {}),
     }
     return report, summary
 

@@ -10,11 +10,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from .agents.transfer_fixtures import OverTransferAgent
 from .benchmark import build_instance_aggregate, validate_causal_pairs
 from .calibration_baselines import BASELINE_FACTORIES
 from .materialize import materialize
 from .runner import run_scenario
 from .scoring import mean as _mean
+from .transfer import POSITIVE_RELATIONS, parse_transfer_support
+from .transfer_diagnostics import transfer_relation_aggregates
+from .transfer_matrix import run_transfer_matrix
 from .validation import validate_scenario
 
 
@@ -247,6 +251,8 @@ def calibrate_pack(
     causal_repetitions: int = 1,
     thresholds: dict[str, float] | None = None,
     baseline_factories: dict[str, Callable[[], Any]] | None = None,
+    transfer_calibration: bool = True,
+    transfer_thresholds: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     factories = dict(BASELINE_FACTORIES)
     if baseline_factories:
@@ -345,6 +351,12 @@ def calibrate_pack(
         card["causal_risks"] = causal_risks
         cards.append(card)
 
+    transfer_block = calibrate_transfer(
+        templates=templates, schema=schema, seeds=causal_seeds,
+        repetitions=causal_repetitions, baseline_id=causal_baseline_id or "B3",
+        baseline_factories=baseline_factories, thresholds=transfer_thresholds,
+    ) if transfer_calibration else None
+
     # Dimension-level baseline score surfaces: Template-first, using declared dimension evidence weights.
     dimension_matrix = []
     for d, spec in (profile.get("dimensions") or {}).items():
@@ -441,6 +453,9 @@ def calibrate_pack(
         },
         "dimension_matrix": dimension_matrix,
         "templates": sorted(cards, key=lambda x: x["template_id"]),
+        # Additional gates for annotated Templates.  FC, NM, MDI, and causal
+        # sensitivity above remain the primary structural gates.
+        **({"transfer_calibration": transfer_block} if transfer_block else {}),
     }
 
 
@@ -489,3 +504,200 @@ def write_calibration_markdown(report: dict[str, Any]) -> str:
         "A `provisional_pass` means the scenario passes the fixture gate. It does **not** mean the scenario has completed release-grade empirical calibration.",
     ]
     return "\n".join(lines) + "\n"
+
+
+# --- Transfer calibration (M6.3) -------------------------------------------
+
+DEFAULT_TRANSFER_THRESHOLDS = {
+    # An oracle Skill under oracle routing must actually solve the future task,
+    # or the annotated transfer edge is not empirically supported and must not
+    # be used as a positive-transfer benchmark case.
+    "oracle_routed_min": 0.80,
+    # ... and it must actually improve on the memory-removed baseline.  A
+    # curator-labelled Ability is not useful merely because it sounds plausible.
+    "oracle_transfer_gain_min": 0.20,
+    # Below this, the calibration baseline showed no natural transfer.  That is
+    # a finding about the baseline, not a Template defect, so it is reported as
+    # a note rather than as an admission gate.
+    "natural_transfer_gain_min": 0.10,
+    # An unsupported Probe must stay put whether or not a past exists.
+    "unsupported_memory_delta_max": 0.10,
+    # A near-match trap only measures resistance if an over-transferring system
+    # can actually fail it.
+    "near_match_trap_min": 0.20,
+}
+
+
+def _transfer_rows(
+    *,
+    templates: list[dict[str, Any]],
+    schema: dict[str, Any],
+    factory: Callable[[], Any],
+    seeds: list[int | str],
+    repetitions: int,
+    seed_prefix: str,
+) -> dict[str, dict[str, Any]]:
+    """Diagnostic rows for annotated Templates, keyed by Template id."""
+    runs: list[dict[str, Any]] = []
+    diagnostic: list[dict[str, Any]] = []
+    for template in templates:
+        if parse_transfer_support(template) is None:
+            continue
+        for seed in seeds:
+            instance = materialize(template, seed)
+            vr = validate_scenario(instance, schema)
+            if not vr.valid:
+                raise ValueError(f"Instance {template['id']}:{seed} invalid: {vr.errors}")
+            for rep in range(repetitions):
+                agent_seed = f"{seed_prefix}:{seed}:{rep}"
+                runs.extend(run_scenario(
+                    scenario=instance, agent_factory=factory,
+                    include_ablations=True, repetition=rep, agent_seed=agent_seed,
+                ))
+                diagnostic.extend(run_transfer_matrix(
+                    scenario=instance, agent_factory=factory,
+                    repetition=rep, agent_seed=agent_seed,
+                ))
+    rows = transfer_relation_aggregates(templates, runs, diagnostic_runs=diagnostic)
+    return {row["template_id"]: row for row in rows}
+
+
+def calibrate_transfer(
+    *,
+    templates: list[dict[str, Any]],
+    schema: dict[str, Any],
+    seeds: list[int | str],
+    repetitions: int = 1,
+    baseline_id: str = "B3",
+    baseline_factories: dict[str, Callable[[], Any]] | None = None,
+    thresholds: dict[str, float] | None = None,
+) -> dict[str, Any] | None:
+    """Structural gates for Transfer Support Annotations.
+
+    These are additional gates.  They do not replace FC, NM, MDI, or causal
+    sensitivity, which remain the primary structural admission gates.
+
+    A curator-labelled Ability is not useful merely because it sounds
+    plausible: an annotated edge is only admissible when an oracle Skill under
+    oracle routing measurably improves the target Probe.
+    """
+    annotated = [t for t in templates if parse_transfer_support(t) is not None]
+    if not annotated:
+        return None
+    factories = dict(BASELINE_FACTORIES)
+    if baseline_factories:
+        factories.update(baseline_factories)
+    if baseline_id not in factories:
+        raise ValueError(f"unknown baseline id: {baseline_id}")
+    thresholds = {**DEFAULT_TRANSFER_THRESHOLDS, **(thresholds or {})}
+
+    baseline_rows = _transfer_rows(
+        templates=annotated, schema=schema, factory=factories[baseline_id],
+        seeds=seeds, repetitions=repetitions, seed_prefix="xfer",
+    )
+    # The trap fixture deliberately ignores applicability boundaries.  If it
+    # cannot fail a near-match Probe, that Probe is not a trap.
+    trap_rows = _transfer_rows(
+        templates=annotated, schema=schema, factory=OverTransferAgent,
+        seeds=seeds, repetitions=repetitions, seed_prefix="xfer-trap",
+    )
+
+    cards = []
+    for template in annotated:
+        tid = template["id"]
+        row = baseline_rows.get(tid) or {"relations": []}
+        trap = {r["probe_id"]: r for r in (trap_rows.get(tid) or {"relations": []})["relations"]}
+        probes = []
+        gates = {
+            "oracle_skill_solvable": True,
+            "oracle_artifact_declared": True,
+            "unsupported_memory_neutral": True,
+            "near_match_trap_fires": True,
+        }
+        risks: list[str] = []
+        notes: list[str] = []
+        for relation in row["relations"]:
+            entry = {
+                "probe_id": relation["probe_id"],
+                "relation": relation["relation"],
+                "distance_class": relation.get("distance_class"),
+                "natural_score": relation.get("natural_score"),
+                "baseline_score": relation.get("baseline_score"),
+                "natural_transfer_gain": (relation.get("natural_transfer_gain") or {}).get("value"),
+                "oracle_routed_score": (relation.get("oracle_routed_score") or {}).get("value"),
+                "relevant_ablation_delta": (relation.get("natural_transfer_gain") or {}).get("value"),
+            }
+            if relation["relation"] in POSITIVE_RELATIONS:
+                oracle = entry["oracle_routed_score"]
+                baseline = entry["baseline_score"]
+                entry["oracle_routed_gain"] = (
+                    None if oracle is None or baseline is None else float(oracle) - float(baseline)
+                )
+                if oracle is None:
+                    gates["oracle_artifact_declared"] = False
+                    risks.append(f"{relation['probe_id']}:no_oracle_artifact")
+                elif oracle < thresholds["oracle_routed_min"]:
+                    gates["oracle_skill_solvable"] = False
+                    risks.append(f"{relation['probe_id']}:oracle_skill_does_not_solve_task")
+                elif (
+                    entry["oracle_routed_gain"] is not None
+                    and entry["oracle_routed_gain"] < thresholds["oracle_transfer_gain_min"]
+                ):
+                    gates["oracle_skill_solvable"] = False
+                    risks.append(f"{relation['probe_id']}:oracle_skill_does_not_improve_task")
+                gain = entry["natural_transfer_gain"]
+                if gain is not None and gain < thresholds["natural_transfer_gain_min"]:
+                    # The oracle edge holds; this baseline simply did not transfer.
+                    notes.append(f"{relation['probe_id']}:baseline_shows_no_natural_transfer")
+            if relation["relation"] == "unsupported_novel":
+                delta = (relation.get("unsupported_memory_delta") or {}).get("value")
+                entry["unsupported_memory_delta"] = delta
+                if delta is not None and abs(delta) > thresholds["unsupported_memory_delta_max"]:
+                    gates["unsupported_memory_neutral"] = False
+                    risks.append(f"{relation['probe_id']}:unsupported_task_not_neutral")
+            if relation["relation"] == "near_match_non_applicable":
+                trap_row = trap.get(relation["probe_id"])
+                trap_score = trap_row.get("natural_score") if trap_row else None
+                entry["trap_fixture_score"] = trap_score
+                entry["near_match_harm"] = (
+                    None if trap_score is None or relation.get("natural_score") is None
+                    else max(0.0, float(relation["natural_score"]) - float(trap_score))
+                )
+                if entry["near_match_harm"] is None or entry["near_match_harm"] < thresholds["near_match_trap_min"]:
+                    gates["near_match_trap_fires"] = False
+                    risks.append(f"{relation['probe_id']}:near_match_trap_does_not_discriminate")
+            probes.append(entry)
+        cards.append({
+            "template_id": tid,
+            "suite": template.get("suite"),
+            "relations": probes,
+            "gates": gates,
+            "risks": risks,
+            "baseline_notes": notes,
+            "recommendation": "provisional_pass" if not risks else "revise_transfer_annotation",
+        })
+
+    distance_matrix: dict[str, list[float]] = defaultdict(list)
+    for card in cards:
+        for entry in card["relations"]:
+            cls = entry.get("distance_class")
+            if cls and entry.get("natural_score") is not None:
+                distance_matrix[cls].append(float(entry["natural_score"]))
+
+    gate_counts: dict[str, int] = defaultdict(int)
+    for card in cards:
+        for gate, ok in card["gates"].items():
+            if ok:
+                gate_counts[gate] += 1
+    return {
+        "enabled": True,
+        "baseline_id": baseline_id,
+        "trap_fixture": "OverTransferAgent",
+        "thresholds": thresholds,
+        "annotated_template_count": len(cards),
+        "distance_class_baseline": {
+            cls: _mean(vals) for cls, vals in sorted(distance_matrix.items())
+        },
+        "gate_pass_counts": {k: gate_counts[k] for k in sorted(gate_counts)},
+        "templates": sorted(cards, key=lambda c: c["template_id"]),
+    }

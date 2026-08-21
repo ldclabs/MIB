@@ -161,6 +161,7 @@ def cmd_benchmark(args) -> int:
         include_ablations=not args.full_only,
         bootstrap_resamples=boot,
         bootstrap_seed=args.bootstrap_seed,
+        transfer_matrix=args.transfer_diagnostics,
     )
     if report_schema:
         validate_report(report, report_schema)
@@ -374,6 +375,8 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--bootstrap-resamples", type=int)
     b.add_argument("--bootstrap-seed", default="20260819")
     b.add_argument("--full-only", action="store_true")
+    b.add_argument("--transfer-diagnostics", action="store_true",
+                   help="Also run the AA/AO/OA/OO transfer diagnostic cells for annotated Templates")
     b.add_argument("--output-report")
     b.add_argument("--output-summary")
     b.add_argument("--card")

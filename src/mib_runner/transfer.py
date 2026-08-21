@@ -24,6 +24,11 @@ from typing import Any
 TRANSFER_EXTENSION = "mib.transfer_support.v1"
 TRANSFER_DIAGNOSTICS_EXTENSION = "mib.transfer_diagnostics.v1"
 
+#: How the Runner surfaces a routed memory artifact, framed the way a memory
+#: system surfaces a recalled Skill.  The Agent is told a procedure was
+#: recalled, never the answer.
+RECALL_PREFIX = "Reusable procedure recalled from earlier work: "
+
 #: Qualitative support relations.  A relation is *not* a distance: negative
 #: controls are a different causal class, not farther positive transfer.
 RELATIONS = (

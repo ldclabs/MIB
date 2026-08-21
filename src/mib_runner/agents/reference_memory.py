@@ -3,13 +3,24 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..transfer import RECALL_PREFIX
 from ..types import ActStep, AgentOutput, Observation
+
+_RECALL_MARKER = RECALL_PREFIX.casefold()
 
 
 _TIME = re.compile(r"\b(?:[01]?\d|2[0-3]):[0-5]\d\b")
 _UTC = re.compile(r"\bUTC[+-]\d{1,2}\b", re.I)
 _CODE = re.compile(r"\b[A-Z]{2,12}-\d{1,4}\b")
 _DATE = re.compile(r"\b(?:May|June|April)\s+\d{1,2}\b", re.I)
+
+
+def _split_routed(text: str) -> tuple[str, str]:
+    """Split remembered text into situation evidence and routed procedures."""
+    situation, routed = [], []
+    for line in text.splitlines():
+        (routed if _RECALL_MARKER in line else situation).append(line)
+    return "\n".join(situation), "\n".join(routed)
 
 
 class ReferenceMemoryAgent:
@@ -147,14 +158,20 @@ class ReferenceMemoryAgent:
         if "memory_snapshot" not in state:
             state["memory_snapshot"] = mem
         task_mem = state["memory_snapshot"]
+        # A routed memory artifact is evaluator-surfaced procedural content, not
+        # a fact about the current situation.  Split the two so an applicability
+        # cue is never read out of a procedure's own description of its
+        # boundary.  With no routing in play both halves are the whole memory,
+        # so ordinary conditions are unchanged.
+        situation_mem, routed_mem = _split_routed(task_mem)
         goal_text = str(state.get("goal") or "").casefold()
 
         # Deployment domain. A learned failure/recovery episode causes inspect-first behavior.
         if any(n.startswith("deployment.") for n in names):
-            learned_inspect = any(k in task_mem for k in [
+            learned_inspect = any(k in situation_mem for k in [
                 "missing_column", "wrong target", "wrong_target",
                 "inspect the actual target", "inspected the actual target", "checked the target", "target mismatch"
-            ])
+            ]) or ("inspect" in routed_mem and "target" in routed_mem)
             phase = state["phase"]
             last = state["results"][-1] if state["results"] else None
 
@@ -188,7 +205,7 @@ class ReferenceMemoryAgent:
 
         # Workspace domain: learn select-before-save from prior failure.
         if any(n.startswith("workspace.") for n in names):
-            learned = any(k in task_mem for k in ["workspace_required", "select the workspace", "selected the workspace", "workspace before saving"])
+            learned = any(k in situation_mem for k in ["workspace_required", "select the workspace", "selected the workspace", "workspace before saving"]) or ("workspace" in routed_mem)
             phase = state["phase"]
             ws = "primary"
             if learned:
@@ -212,8 +229,8 @@ class ReferenceMemoryAgent:
 
         # Surface-changed contextual-save domain.
         if any(n.startswith("canvas.") for n in names):
-            learned_context = any(k in task_mem for k in ["workspace_required", "select the workspace", "context before commit", "context_required"])
-            nonmatching = any(k in task_mem for k in ["global record", "no workspace is required", "no context is required"])
+            learned_context = any(k in situation_mem for k in ["workspace_required", "select the workspace", "context before commit", "context_required"]) or ("context" in routed_mem or "scope" in routed_mem)
+            nonmatching = any(k in situation_mem for k in ["global record", "no workspace is required", "no context is required"])
             phase = state["phase"]
             if learned_context and not nonmatching:
                 if phase == 0:

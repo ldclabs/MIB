@@ -332,7 +332,13 @@ def transfer_relation_aggregates(
             "template_id": template["id"],
             "template_alias": _alias(None, "xfer", template["id"]),
             "relations": rows,
-            "diagnostic_mode": "decomposable_adapter" if any("formation_efficiency" in r for r in rows) else "behavioral",
+            # Only an executed AO cell means the evaluator reached into the
+            # system's own formed content; an ineligible placeholder does not.
+            "diagnostic_mode": (
+                "decomposable_adapter"
+                if any("oracle_routed_automatic_content_score" in r for r in rows)
+                else "behavioral"
+            ),
         }
         gains = [r["natural_transfer_gain"]["value"] for r in rows if "natural_transfer_gain" in r]
         if gains:
