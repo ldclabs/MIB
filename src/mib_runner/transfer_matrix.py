@@ -255,15 +255,18 @@ def _run_ao_cell(
     selection at task time in a second, paired run.
     """
     formation_agent = agent_factory()
+    formation_run_id: str | None = None
     try:
-        run_condition(
+        formation_run = run_condition(
             scenario=scenario,
             agent=formation_agent,
             condition=CELL_CONDITIONS["AO"],
             repetition=repetition,
             agent_seed=agent_seed,
             probe_ids=set(),
+            close_agent_on_complete=False,
         )
+        formation_run_id = formation_run["run_id"]
         contents_by_probe: dict[str, list[str]] = {}
         evidence: list[dict[str, Any]] = []
         for probe_id in probe_ids:
@@ -272,12 +275,15 @@ def _run_ao_cell(
             if contents:
                 contents_by_probe[probe_id] = _prefixed(contents)
     finally:
+        # ``run_condition`` deliberately left the Agent open so its formed
+        # artifacts could be read.  Close it exactly the way the Runner would,
+        # so a transport-backed Adapter still receives close(run_id).
         close = getattr(formation_agent, "close", None)
         if callable(close):
             try:
-                close()
+                close(run_id=formation_run_id)
             except TypeError:
-                pass
+                close()
 
     run = run_condition(
         scenario=scenario,

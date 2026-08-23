@@ -25,6 +25,12 @@ def render_capability_card(report: dict[str, Any]) -> str:
     score = report["aggregates"]["mib_score"]
     ci = score.get("ci")
     agent = report.get("system", {}).get("agent", {})
+    if score.get("official"):
+        score_status = "Official Hidden Eval leaderboard score."
+    elif score.get("partial"):
+        score_status = "Partial profile score — not an official leaderboard score."
+    else:
+        score_status = "Development profile — not an official Hidden Eval leaderboard score."
     lines = [
         "# MIB Capability Card",
         "",
@@ -66,7 +72,7 @@ def render_capability_card(report: dict[str, Any]) -> str:
         f"Coverage  {100*report['coverage']['overall']:.1f}%",
         f"Execution Failure Rate  {100*report['execution'].get('execution_failure_rate', 0.0):.2f}%",
         "",
-        "Development profile — not an official Hidden Eval leaderboard score.",
+        score_status,
         "```",
         "",
     ]

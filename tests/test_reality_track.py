@@ -44,6 +44,7 @@ from mib_runner.reality_graph import (
     redact_reality_graph,
     validate_reality_graph,
 )
+from mib_runner.types import AgentOutput
 
 from paths import BASE, PROFILES, SCHEMAS
 
@@ -165,6 +166,37 @@ def test_conditions_are_paired_on_everything_but_memory(pack, graph):
     # The oracle conditions stand in for the same withheld Experience.
     assert withheld["oracle_skill"] == withheld["relevant_ability_ablated"]
     assert withheld["oracle_routing"] == withheld["relevant_ability_ablated"]
+
+
+def test_reality_adapter_uses_the_run_id_that_was_reset(pack, graph):
+    adapter = load_adapter(pack)
+    train = {r["task_id"]: adapter.load_task(r) for r in pack["train_tasks"]}
+    target = adapter.load_task(pack["test_tasks"][0])
+
+    class StrictRunAgent:
+        def reset(self, *, run_id, **_):
+            self.run_id = run_id
+            return {"accepted": True}
+
+        def observe(self, *, run_id, **_):
+            assert run_id == self.run_id
+            return {"accepted": True}
+
+        def respond(self, *, run_id, **_):
+            assert run_id == self.run_id
+            return AgentOutput(type="message", content="unknown")
+
+    row = run_reality_pair(
+        adapter=adapter,
+        graph=graph,
+        agent_factory=StrictRunAgent,
+        train_tasks=train,
+        test_task=target,
+        condition="no_memory",
+        seed=101,
+        repetition=0,
+    )
+    assert row["condition"] == "no_memory"
 
 
 def test_irrelevant_ablation_never_removes_load_bearing_experience(pack, graph):

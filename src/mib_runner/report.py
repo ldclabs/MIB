@@ -28,7 +28,8 @@ def _probe_map(run: dict[str, Any]) -> dict[str, float]:
     return {
         p["probe_id"]: float(p.get("score", 0.0))
         for p in run.get("probe_results", [])
-        if p.get("outcome") == "scored"
+        if p.get("outcome") in {"scored", "execution_failure"}
+        and float(p.get("weight", 1.0)) > 0
     }
 
 
@@ -56,11 +57,19 @@ def _causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, float] | N
     harm_resistance: list[float] = []
     negative_transfers: list[float] = []
 
+    relevant_probe_ids = {
+        pid
+        for run in runs if run.get("condition") == "relevant_ablation"
+        for pid in _probe_map(run)
+    }
+
     for run in runs:
         condition = run["condition"]
         if condition == "full":
             continue
         probe_scores = _probe_map(run)
+        if condition == "no_memory":
+            probe_scores = {pid: score for pid, score in probe_scores.items() if pid not in relevant_probe_ids}
         probe_ids = set(probe_scores)
         if not probe_ids:
             continue

@@ -66,7 +66,11 @@ def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]
 
 
 def _scenario_score(probe_results: list[dict[str, Any]]) -> float:
-    scored = [p for p in probe_results if p.get("outcome") == "scored"]
+    # ``fail_probe`` is the reference execution policy.  An infrastructure
+    # failure therefore remains a zero-score Probe with its original weight;
+    # dropping it would let a partially failing Agent average only its successful
+    # attempts and inflate both Scenario and Dimension scores.
+    scored = [p for p in probe_results if p.get("outcome") in {"scored", "execution_failure"}]
     if not scored:
         return 0.0
     total_w = math.fsum(float(p.get("weight", 1.0)) for p in scored)
@@ -103,13 +107,15 @@ def run_condition(
     probe_ids: set[str] | None = None,
     past_injections: list[tuple[str, str]] | None = None,
     pre_probe_injections: dict[str, list[str]] | None = None,
+    close_agent_on_complete: bool = True,
 ) -> dict[str, Any]:
     """Execute one condition of a Scenario Instance.
 
-    ``excluded_event_ids``, ``probe_ids``, ``past_injections``, and
-    ``pre_probe_injections`` exist for evaluator-only transfer diagnostic cells
-    (M6.2).  They are not reachable from Scenario content, and the ordinary
-    ``full`` and Ablation paths never set them, so core execution is unchanged.
+    ``excluded_event_ids``, ``probe_ids``, ``past_injections``,
+    ``pre_probe_injections``, and ``close_agent_on_complete`` exist for
+    evaluator-only transfer diagnostic cells (M6.2).  They are not reachable
+    from Scenario content, and the ordinary ``full`` and Ablation paths never
+    set them, so core execution is unchanged.
     """
     if condition != "full" and not ablation and excluded_event_ids is None and probe_ids is None:
         raise RunnerError("non-full condition requires an ablation or an explicit diagnostic cell")
@@ -128,7 +134,12 @@ def run_condition(
     agent.reset(run_id=run_id, seed=seed, virtual_time=virtual_time)
 
     removed_ids: set[str] = set(excluded_event_ids or ())
-    selected_probe_ids: set[str] | None = set(probe_ids) if probe_ids is not None else None
+    # Diagnostic callers may explicitly choose which Probes exist in the run.
+    # Ordinary Ablations, however, must execute the same complete future Probe
+    # program as Full so earlier Probe questions/actions cannot become a hidden
+    # second intervention.  Only their declared Probe subset is scored.
+    execution_probe_ids: set[str] | None = set(probe_ids) if probe_ids is not None else None
+    scored_probe_ids: set[str] | None = set(probe_ids) if probe_ids is not None else None
     injections_by_anchor: dict[str, list[str]] = {}
     for anchor, content in past_injections or ():
         injections_by_anchor.setdefault(str(anchor), []).append(content)
@@ -136,17 +147,24 @@ def run_condition(
     injection_counter = 0
     ablation_id = None
     ablation_method = None
+    scenario_injections: list[dict[str, Any]] = []
+    scenario_injection_ids: set[str] = set()
     if ablation:
         ablation_id = ablation["id"]
         ablation_method = ablation.get("method")
-        if ablation_method != "replay_excluding_events":
-            raise NotImplementedError(f"reference Runner implements replay_excluding_events only, got {ablation_method!r}")
+        if ablation_method not in {"replay_excluding_events", "replay_with_injections"}:
+            raise NotImplementedError(
+                "reference Runner implements replay_excluding_events and "
+                f"replay_with_injections only, got {ablation_method!r}"
+            )
         removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
-        selected_probe_ids = set(ablation.get("probes", []))
+        scored_probe_ids = set(ablation.get("probes", []))
+        scenario_injections = copy.deepcopy(ablation.get("injections") or [])
+        scenario_injection_ids = {str(injection["id"]) for injection in scenario_injections}
 
     probes_by_trigger: dict[str, list[dict[str, Any]]] = {}
     for p in scenario.get("probes", []):
-        if selected_probe_ids is not None and p["id"] not in selected_probe_ids:
+        if execution_probe_ids is not None and p["id"] not in execution_probe_ids:
             continue
         trigger = p.get("trigger") or {}
         if "after_event" not in trigger:
@@ -186,7 +204,7 @@ def run_condition(
     def append_probe_result(p: dict[str, Any], output: AgentOutput, score: float, eval_results: list[dict[str, Any]], latency_ms: float, action_trace: list[dict[str, Any]] | None = None) -> None:
         failures = sorted({fc for e in eval_results for fc in e.get("failure_codes", [])})
         payload = asdict(output)
-        probe_results.append({
+        row = {
             "probe_id": p["id"],
             "probe_kind": p.get("kind"),
             "condition": condition,
@@ -200,7 +218,10 @@ def run_condition(
             "latency_ms": latency_ms,
             "output_digest": hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest(),
             **({"extensions": {"mib.runner.action_trace": copy.deepcopy(action_trace)}} if action_trace is not None else {}),
-        })
+        }
+        if scored_probe_ids is not None and p["id"] not in scored_probe_ids:
+            row = {**row, "weight": 0.0}
+        probe_results.append(row)
 
     def execute_respond_probe(p: dict[str, Any]) -> None:
         started_ns = time.perf_counter_ns()
@@ -295,7 +316,7 @@ def run_condition(
             else:
                 raise NotImplementedError(f"reference Runner implements respond/act Probes, got {sampled.get('delivery')!r}")
         except Exception as exc:
-            probe_results.append({
+            row = {
                 "probe_id": sampled["id"],
                 "probe_kind": sampled.get("kind"),
                 "condition": condition,
@@ -309,7 +330,10 @@ def run_condition(
                 "evaluator_results": [],
                 "output_digest": hashlib.sha256(repr(exc).encode()).hexdigest(),
                 "extensions": {"mib.runner.error": repr(exc)},
-            })
+            }
+            if scored_probe_ids is not None and sampled["id"] not in scored_probe_ids:
+                row = {**row, "weight": 0.0}
+            probe_results.append(row)
 
     def close_agent() -> None:
         # A transport-backed Adapter may own one subprocess per condition.  It
@@ -323,14 +347,71 @@ def run_condition(
         except TypeError:
             close()
 
-    try:
-        for event in scenario.get("timeline", []):
-            virtual_time = _virtual_time_for_event(event, virtual_time)
+    def merged_timeline() -> tuple[list[dict[str, Any]], dict[str, list[dict[str, Any]]]]:
+        """Merge evaluator-controlled Ablation injections into replay order.
+
+        ``at.after_event`` injections run after the named event but before a
+        Probe triggered by that event.  Sequence/time injections are inserted
+        before the first later base event.  Injections are memory-like
+        observations only: changing hidden world state would violate the causal
+        invariant that memory is the treatment variable.
+        """
+        base = copy.deepcopy(scenario.get("timeline", []))
+        after: dict[str, list[dict[str, Any]]] = {}
+        floating: list[dict[str, Any]] = []
+        known_ids = {str(e["id"]) for e in base}
+        injection_ids: set[str] = set()
+        for injection in scenario_injections:
+            iid = str(injection["id"])
+            if iid in known_ids or iid in injection_ids:
+                raise RunnerError(f"duplicate Ablation injection event id: {iid}")
+            injection_ids.add(iid)
+            if injection.get("world_updates"):
+                raise RunnerError(f"Ablation injection {iid} may not mutate world state")
+            anchor = (injection.get("at") or {}).get("after_event")
+            if anchor is not None:
+                if str(anchor) not in known_ids:
+                    raise RunnerError(f"Ablation injection {iid} references unknown anchor: {anchor}")
+                after.setdefault(str(anchor), []).append(injection)
+            else:
+                floating.append(injection)
+
+        for injection in floating:
+            at = injection.get("at") or {}
+            inserted = False
+            for index, event in enumerate(base):
+                event_at = event.get("at") or {}
+                if isinstance(at.get("sequence"), int) and isinstance(event_at.get("sequence"), int):
+                    if at["sequence"] < event_at["sequence"]:
+                        base.insert(index, injection)
+                        inserted = True
+                        break
+                elif at.get("time") is not None and event_at.get("time") is not None:
+                    if str(at["time"]) < str(event_at["time"]):
+                        base.insert(index, injection)
+                        inserted = True
+                        break
+            if not inserted:
+                base.append(injection)
+        return base, after
+
+    def process_event(event: dict[str, Any], *, injected: bool = False) -> None:
+        nonlocal virtual_time
+        virtual_time = _virtual_time_for_event(event, virtual_time)
+        if not injected:
             for update in event.get("world_updates", []):
                 world.apply(update)
-            if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
-                if event["type"] not in {"checkpoint", "world_update"}:
-                    deliver_observation(_project_observation(event, actor_by_id, virtual_time))
+        if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
+            if event["type"] not in {"checkpoint", "world_update"}:
+                deliver_observation(_project_observation(event, actor_by_id, virtual_time))
+
+    try:
+        timeline, injected_after = merged_timeline()
+        for event in timeline:
+            is_scenario_injection = str(event["id"]) in scenario_injection_ids
+            process_event(event, injected=is_scenario_injection)
+            for injection in injected_after.get(str(event["id"]), ()):
+                process_event(injection, injected=True)
             for content in injections_by_anchor.get(str(event["id"]), ()):
                 deliver_injection(content)
             for p in probes_by_trigger.get(event["id"], []):
@@ -338,8 +419,14 @@ def run_condition(
                     deliver_injection(content)
                 execute_probe(p)
 
-        expected_probe_ids = {p["id"] for p in scenario.get("probes", []) if selected_probe_ids is None or p["id"] in selected_probe_ids}
-        executed_probe_ids = {p["probe_id"] for p in probe_results}
+        expected_probe_ids = {
+            p["id"] for p in scenario.get("probes", [])
+            if scored_probe_ids is None or p["id"] in scored_probe_ids
+        }
+        executed_probe_ids = {
+            p["probe_id"] for p in probe_results
+            if scored_probe_ids is None or p["probe_id"] in scored_probe_ids
+        }
         missing = expected_probe_ids - executed_probe_ids
         if missing:
             raise RunnerError(f"untriggered probes: {sorted(missing)}")
@@ -348,6 +435,8 @@ def run_condition(
         raise
 
     completed = utc_now()
+    # Every executed Probe has a row here; the unscored ones only carry weight 0.
+    # An infrastructure failure on any of them is still a failed run.
     status = "failed" if any(p["outcome"] == "execution_failure" for p in probe_results) else "succeeded"
     instance = scenario.get("instantiation") or {}
     result = {
@@ -375,7 +464,8 @@ def run_condition(
         },
     }
     # Closed only after all observations, Probes, and result traces complete.
-    close_agent()
+    if close_agent_on_complete:
+        close_agent()
     return result
 
 
@@ -391,7 +481,7 @@ def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: 
             "counterexample": "counterexample",
         }
         for a in scenario.get("ablations", []):
-            if a.get("method") != "replay_excluding_events":
+            if a.get("method") not in {"replay_excluding_events", "replay_with_injections"}:
                 continue
             runs.append(run_condition(
                 scenario=scenario,

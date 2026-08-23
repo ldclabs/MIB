@@ -75,22 +75,31 @@ class SandboxProcess:
     warnings: list[str]
 
     def terminate(self) -> None:
-        if self.process.poll() is not None:
-            return
         try:
-            os.killpg(self.process.pid, signal.SIGTERM)
-        except Exception:
-            try:
-                self.process.terminate()
-            except Exception:
-                pass
-        try:
-            self.process.wait(timeout=2)
-        except Exception:
-            try:
-                os.killpg(self.process.pid, signal.SIGKILL)
-            except Exception:
-                pass
+            if self.process.poll() is None:
+                try:
+                    os.killpg(self.process.pid, signal.SIGTERM)
+                except Exception:
+                    try:
+                        self.process.terminate()
+                    except Exception:
+                        pass
+                try:
+                    self.process.wait(timeout=2)
+                except Exception:
+                    try:
+                        os.killpg(self.process.pid, signal.SIGKILL)
+                    except Exception:
+                        pass
+                    try:
+                        self.process.wait(timeout=2)
+                    except Exception:
+                        pass
+        finally:
+            # One process is created per causal condition in hosted evaluation.
+            # Always remove its staged/generated files, including when the child
+            # exited by itself before ``terminate`` was called.
+            shutil.rmtree(self.workdir, ignore_errors=True)
 
 
 def _mb(n) -> int:
@@ -216,46 +225,50 @@ def spawn_sandboxed_stdio(
     policy = policy or SandboxPolicy()
     warnings: list[str] = []
     workdir = tempfile.mkdtemp(prefix="mib-submission-")
-    _stage(workdir, stage, policy)
+    try:
+        _stage(workdir, stage, policy)
 
-    use_ns = policy.network in {"disabled_best_effort", "disabled_strict"} and _namespace_supported()
-    if policy.network == "disabled_strict" and not use_ns:
-        raise SandboxPolicyError("strict user/mount/network namespace isolation unavailable")
-    if policy.network == "inherit":
-        warnings.append(
-            "Sandbox policy inherits host network and filesystem visibility; "
-            "this must never be used for untrusted submissions."
+        use_ns = policy.network in {"disabled_best_effort", "disabled_strict"} and _namespace_supported()
+        if policy.network == "disabled_strict" and not use_ns:
+            raise SandboxPolicyError("strict user/mount/network namespace isolation unavailable")
+        if policy.network == "inherit":
+            warnings.append(
+                "Sandbox policy inherits host network and filesystem visibility; "
+                "this must never be used for untrusted submissions."
+            )
+
+        cmd = list(command)
+        fs_isolated = False
+        if use_ns:
+            hides = [p for p in policy.hide_paths if Path(p).exists()]
+            mount_cmds = "; ".join(
+                f"mount -t tmpfs tmpfs {shlex.quote(str(Path(p).resolve()))}" for p in hides
+            )
+            script = "mount --make-rprivate /"
+            if mount_cmds:
+                script += "; " + mount_cmds
+            script += '; exec "$@"'
+            cmd = ["unshare", "--user", "--map-root-user", "--mount", "--net", "sh", "-c", script, "mib-sandbox", *cmd]
+            fs_isolated = bool(hides)
+            if policy.hide_paths and not hides:
+                warnings.append("No hide_paths existed on disk; no evaluator path was masked.")
+        elif policy.network == "disabled_best_effort":
+            warnings.append("User/mount/network namespace unavailable; using resource/environment isolation only.")
+        if not sys.platform.startswith("linux"):
+            warnings.append(f"Address-space limit not enforced on {sys.platform}; memory_mb is advisory.")
+
+        proc = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            cwd=workdir,
+            env=_clean_env(policy, env),
+            preexec_fn=_preexec(policy) if os.name == "posix" else None,
         )
-
-    cmd = list(command)
-    fs_isolated = False
-    if use_ns:
-        hides = [p for p in policy.hide_paths if Path(p).exists()]
-        mount_cmds = "; ".join(
-            f"mount -t tmpfs tmpfs {shlex.quote(str(Path(p).resolve()))}" for p in hides
-        )
-        script = "mount --make-rprivate /"
-        if mount_cmds:
-            script += "; " + mount_cmds
-        script += '; exec "$@"'
-        cmd = ["unshare", "--user", "--map-root-user", "--mount", "--net", "sh", "-c", script, "mib-sandbox", *cmd]
-        fs_isolated = bool(hides)
-        if policy.hide_paths and not hides:
-            warnings.append("No hide_paths existed on disk; no evaluator path was masked.")
-    elif policy.network == "disabled_best_effort":
-        warnings.append("User/mount/network namespace unavailable; using resource/environment isolation only.")
-    if not sys.platform.startswith("linux"):
-        warnings.append(f"Address-space limit not enforced on {sys.platform}; memory_mb is advisory.")
-
-    proc = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-        cwd=workdir,
-        env=_clean_env(policy, env),
-        preexec_fn=_preexec(policy) if os.name == "posix" else None,
-    )
-    return SandboxProcess(proc, workdir, use_ns, fs_isolated, warnings)
+        return SandboxProcess(proc, workdir, use_ns, fs_isolated, warnings)
+    except BaseException:
+        shutil.rmtree(workdir, ignore_errors=True)
+        raise

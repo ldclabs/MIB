@@ -15,7 +15,7 @@ from mib_runner.report import validate_report, verify_score
 from mib_runner.runner import run_scenario
 from mib_runner.server import make_http_handler
 from mib_runner.submission import build_submission_runtime, load_submission_spec
-from mib_runner.transports import HttpAgentAdapter
+from mib_runner.transports import AgentTransportError, HttpAgentAdapter, _check_response
 from mib_runner.submission import MAX_MEMORY_MB, sandbox_policy_for
 from mib_runner.sandbox import SandboxPolicy, SandboxPolicyError, _stage, spawn_sandboxed_stdio
 
@@ -46,6 +46,35 @@ def test_sandbox_availability_gate_uses_runtime_probe(monkeypatch):
     paths = runpy.run_path(str(Path(__file__).with_name("paths.py")))
 
     assert paths["SANDBOX_AVAILABLE"] is False
+
+
+def test_transport_rejects_a_response_for_another_request():
+    request = {
+        "mib": "0.1",
+        "protocol": "mib-agent/0.1",
+        "request_id": "req-current",
+        "run_id": "run-current",
+    }
+    response = {
+        **request,
+        "request_id": "req-stale",
+        "status": "ok",
+        "body": {"output": {}},
+    }
+    with pytest.raises(AgentTransportError, match="request_id mismatch"):
+        _check_response(response, request)
+
+
+def test_sandbox_terminate_removes_workdir_even_after_child_exit():
+    box = spawn_sandboxed_stdio(
+        [sys.executable, "-c", "pass"],
+        policy=SandboxPolicy(network="inherit"),
+    )
+    workdir = Path(box.workdir)
+    assert workdir.exists()
+    box.process.wait(timeout=5)
+    box.terminate()
+    assert not workdir.exists()
 
 
 def test_hidden_store_hmac_materialization_is_deterministic_and_cycle_scoped():

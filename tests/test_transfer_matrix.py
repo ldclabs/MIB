@@ -114,6 +114,36 @@ def test_bad_uptake_shows_a_low_ceiling_and_no_eligible_ratio():
                 assert row["formation_efficiency"]["value"] is None
 
 
+def test_ao_exports_formed_artifacts_before_closing_the_formation_agent():
+    class CloseSensitiveAgent(PerfectFormationPerfectRoutingAgent):
+        def __init__(self):
+            super().__init__()
+            self.closed = False
+
+        def reset(self, **kwargs):
+            self.closed = False
+            return super().reset(**kwargs)
+
+        def export_artifacts(self, request):
+            assert not self.closed, "artifacts exported after close"
+            return super().export_artifacts(request)
+
+        def close(self, **_):
+            self.closed = True
+
+    template = _templates(["MIB-SKILL-T01"])[0]
+    scenario = materialize(template, 101)
+    runs = run_transfer_matrix(
+        scenario=scenario,
+        agent_factory=CloseSensitiveAgent,
+        repetition=0,
+        agent_seed=101,
+        cells=("AO",),
+    )
+    assert len(runs) == 1
+    assert runs[0]["condition"] == "transfer_ao"
+
+
 def test_over_transfer_scores_positive_transfer_well_and_fails_the_boundary():
     over, _, _ = _diagnose(OverTransferAgent)
     perfect, _, _ = _diagnose(PerfectFormationPerfectRoutingAgent)

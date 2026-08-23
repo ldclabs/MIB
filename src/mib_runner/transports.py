@@ -32,11 +32,43 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
         raise AgentTransportError(f"Agent endpoint attempted a redirect to {newurl!r}; refusing to follow")
 
 
-def _check_response(resp: dict[str, Any]) -> dict[str, Any]:
+# Correlation fields the Runner actually transmits.  A binding that carries no
+# request envelope (the HTTP ``GET /describe`` profile) can only be checked on
+# the protocol identity, because the Agent was never told a request_id/run_id.
+IDENTITY_FIELDS = ("mib", "protocol", "request_id", "run_id")
+PROTOCOL_IDENTITY_FIELDS = ("mib", "protocol")
+
+
+def _check_response(
+    resp: dict[str, Any],
+    request: dict[str, Any],
+    identity_fields: tuple[str, ...] = IDENTITY_FIELDS,
+) -> dict[str, Any]:
+    if not isinstance(resp, dict):
+        raise AgentTransportError("Agent response must be a JSON object")
+    for field in identity_fields:
+        if resp.get(field) != request.get(field):
+            raise AgentTransportError(
+                f"Agent response {field} mismatch: expected {request.get(field)!r}, "
+                f"got {resp.get(field)!r}{_reported_error(resp)}"
+            )
     if resp.get("status") != "ok":
         err = resp.get("error") or {}
         raise AgentTransportError(f"{err.get('code', 'error')}: {err.get('message', resp)!s}")
     return resp.get("body") or {}
+
+
+def _reported_error(resp: dict[str, Any]) -> str:
+    """Keep the Agent's own error visible when the envelope also fails to correlate.
+
+    An Adapter that could not parse the request answers with ``request_id:
+    "unknown"``.  Reporting only the mismatch would hide the error that actually
+    explains the failure.
+    """
+    err = resp.get("error")
+    if resp.get("status") == "error" and isinstance(err, dict):
+        return f" (Agent reported {err.get('code', 'error')}: {err.get('message')})"
+    return ""
 
 
 class StdioAgentAdapter:
@@ -102,6 +134,10 @@ class StdioAgentAdapter:
         if hasattr(self.proc.stdout, "fileno"):
             ready, _, _ = select.select([self.proc.stdout], [], [], self.timeout_seconds)
             if not ready:
+                # A response may still arrive after the timeout.  Reusing this
+                # JSONL stream would let the next request consume that stale line
+                # as its own response, so a timed-out channel is no longer safe.
+                self.sandbox.terminate()
                 raise TimeoutError(f"stdio Agent timed out after {self.timeout_seconds}s")
         # Bounded read: an untrusted Agent must not be able to OOM the Runner
         # with a single unterminated line.
@@ -116,7 +152,7 @@ class StdioAgentAdapter:
 
     def describe(self) -> dict[str, Any]:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": "describe", "run_id": "descriptor", "operation": "describe", "body": {}}
-        body = _check_response(self._rpc(req))
+        body = _check_response(self._rpc(req), req)
         # Surface sandbox enforcement facts in descriptor diagnostics.
         body = dict(body)
         body.setdefault("extensions", {})["mib.sandbox"] = {
@@ -130,20 +166,20 @@ class StdioAgentAdapter:
     def reset(self, *, run_id: str, seed, virtual_time: str | None) -> dict[str, Any]:
         rid = self._reset_request_ids.setdefault(run_id, f"reset:{run_id}")
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": rid, "run_id": run_id, "operation": "reset", "virtual_time": virtual_time, "body": {"mode": "fresh", "seed": seed, "virtual_time": virtual_time}}
-        return _check_response(self._rpc(req))
+        return _check_response(self._rpc(req), req)
 
     def observe(self, *, run_id: str, request_id: str, observation: Observation) -> dict[str, Any]:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "observe", "virtual_time": observation.virtual_time, "body": {"observation": asdict(observation)}}
-        return _check_response(self._rpc(req))
+        return _check_response(self._rpc(req), req)
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "respond", "virtual_time": virtual_time, "body": {"interaction_id": interaction_id, "input": input_data}}
-        body = _check_response(self._rpc(req))
+        body = _check_response(self._rpc(req), req)
         return AgentOutput(**body["output"])
 
     def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str], tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "act", "virtual_time": virtual_time, "body": {"task_id": task_id, "goal": goal, "constraints": constraints, "tools": tools, "continuation": continuation}}
-        body = _check_response(self._rpc(req))
+        body = _check_response(self._rpc(req), req)
         return ActStep(**body["result"])
 
     def close(self, *, run_id: str | None = None) -> None:
@@ -185,24 +221,29 @@ class HttpAgentAdapter:
             raise AgentTransportError(f"HTTP {exc.code}: {body}") from exc
 
     def describe(self) -> dict[str, Any]:
-        return _check_response(self._request("describe", method="GET"))
+        # ``GET /describe`` carries no request envelope, so the Agent cannot echo
+        # a request_id/run_id it was never sent.
+        req = {"mib": "0.1", "protocol": "mib-agent/0.1", "operation": "describe", "body": {}}
+        return _check_response(
+            self._request("describe", method="GET"), req, PROTOCOL_IDENTITY_FIELDS
+        )
 
     def reset(self, *, run_id: str, seed, virtual_time: str | None) -> dict[str, Any]:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": f"reset:{run_id}", "run_id": run_id, "operation": "reset", "virtual_time": virtual_time, "body": {"mode": "fresh", "seed": seed, "virtual_time": virtual_time}}
-        return _check_response(self._request("reset", req))
+        return _check_response(self._request("reset", req), req)
 
     def observe(self, *, run_id: str, request_id: str, observation: Observation) -> dict[str, Any]:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "observe", "virtual_time": observation.virtual_time, "body": {"observation": asdict(observation)}}
-        return _check_response(self._request("observe", req))
+        return _check_response(self._request("observe", req), req)
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "respond", "virtual_time": virtual_time, "body": {"interaction_id": interaction_id, "input": input_data}}
-        body = _check_response(self._request("respond", req))
+        body = _check_response(self._request("respond", req), req)
         return AgentOutput(**body["output"])
 
     def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str], tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "act", "virtual_time": virtual_time, "body": {"task_id": task_id, "goal": goal, "constraints": constraints, "tools": tools, "continuation": continuation}}
-        body = _check_response(self._request("act", req))
+        body = _check_response(self._request("act", req), req)
         return ActStep(**body["result"])
 
     def close(self, *, run_id: str | None = None) -> None:
@@ -210,6 +251,6 @@ class HttpAgentAdapter:
             return
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": f"close:{run_id}", "run_id": run_id, "operation": "close", "body": {"reason": "run_complete"}}
         try:
-            _check_response(self._request("close", req))
+            _check_response(self._request("close", req), req)
         except Exception:
             pass

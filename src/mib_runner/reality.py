@@ -87,7 +87,15 @@ class RealityTaskAdapter(Protocol):
 
     def load_task(self, task_ref: dict[str, Any]) -> dict[str, Any]: ...
 
-    def run_task(self, task: dict[str, Any], agent: Any, *, seed: int | str, request_id: str) -> dict[str, Any]: ...
+    def run_task(
+        self,
+        task: dict[str, Any],
+        agent: Any,
+        *,
+        run_id: str,
+        seed: int | str,
+        request_id: str,
+    ) -> dict[str, Any]: ...
 
     def normalize_score(self, result: dict[str, Any]) -> float: ...
 
@@ -230,7 +238,13 @@ def run_reality_pair(
                 continue
             task = train_tasks[task_id]
             counter[0] += 1
-            result = adapter.run_task(task, agent, seed=seed, request_id=f"req_{counter[0]:06d}")
+            result = adapter.run_task(
+                task,
+                agent,
+                run_id=run_id,
+                seed=seed,
+                request_id=f"req_{counter[0]:06d}",
+            )
             score = adapter.normalize_score(result)
             acquisition.append({"task_id": task_id, "score": score})
             for line in adapter.feedback(task, result, score=score):
@@ -249,7 +263,13 @@ def run_reality_pair(
                 _observe(agent, run_id, counter, content)
 
         counter[0] += 1
-        result = adapter.run_task(test_task, agent, seed=seed, request_id=f"req_{counter[0]:06d}")
+        result = adapter.run_task(
+            test_task,
+            agent,
+            run_id=run_id,
+            seed=seed,
+            request_id=f"req_{counter[0]:06d}",
+        )
         score = adapter.normalize_score(result)
         trajectory = adapter.collect_trajectory(result)
     finally:

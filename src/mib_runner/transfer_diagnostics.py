@@ -69,7 +69,8 @@ def _probe_scores(run: dict[str, Any]) -> dict[str, float]:
     return {
         str(p["probe_id"]): float(p.get("score", 0.0))
         for p in run.get("probe_results", [])
-        if p.get("outcome") == "scored"
+        if p.get("outcome") in {"scored", "execution_failure"}
+        and float(p.get("weight", 1.0)) > 0
     }
 
 
@@ -82,6 +83,11 @@ def _probe_usage(run: dict[str, Any]) -> dict[str, tuple[float, float]]:
     out: dict[str, tuple[float, float]] = {}
     for p in run.get("probe_results", []):
         if p.get("outcome") != "scored":
+            continue
+        # An Ablation executes the whole Probe program but scores only its own
+        # declared subset (weight 0 elsewhere).  Cost must cover exactly the
+        # Probes whose scores populate the same cell.
+        if float(p.get("weight", 1.0)) <= 0:
             continue
         trace = (p.get("extensions") or {}).get("mib.runner.action_trace") or []
         calls = float(sum(1 for step in trace if step.get("kind") == "tool_call"))

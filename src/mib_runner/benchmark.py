@@ -68,7 +68,7 @@ def ci_percentile(values: list[float], level: float, method: str, resamples: int
 def weighted_probe_score(run: dict[str, Any], dimension: str | None = None, probe_ids: set[str] | None = None) -> float | None:
     rows = []
     for p in run.get("probe_results", []):
-        if p.get("outcome") != "scored":
+        if p.get("outcome") not in {"scored", "execution_failure"}:
             continue
         if probe_ids is not None and p["probe_id"] not in probe_ids:
             continue
@@ -140,6 +140,23 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
     hrs: list[float] = []
     negative_transfer: list[float] = []
 
+    # Relevant-memory Ablation is the primary causal reference.  No-memory is a
+    # fallback only for Probes that have no relevant Ablation in the same paired
+    # repetition; averaging both would double-count the same causal unit and
+    # change MB/HMB according to how many controls a Scenario happens to declare.
+    relevant_probe_ids_by_rep: dict[int, set[str]] = defaultdict(set)
+    for variant in runs:
+        if variant.get("condition") != "relevant_ablation":
+            continue
+        if not variant.get("validity", {}).get("causal_pair_valid", True):
+            continue
+        relevant_probe_ids_by_rep[int(variant["repetition"])].update(
+            str(p["probe_id"])
+            for p in variant.get("probe_results", [])
+            if p.get("outcome") in {"scored", "execution_failure"}
+            and float(p.get("weight", 1.0)) > 0
+        )
+
     for variant in runs:
         cond = variant.get("condition")
         if cond == "full" or not variant.get("validity", {}).get("causal_pair_valid", True):
@@ -147,7 +164,13 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         full = full_by_rep.get(int(variant["repetition"]))
         if not full:
             continue
-        probe_ids = {p["probe_id"] for p in variant.get("probe_results", []) if p.get("outcome") == "scored"}
+        probe_ids = {
+            p["probe_id"] for p in variant.get("probe_results", [])
+            if p.get("outcome") in {"scored", "execution_failure"}
+            and float(p.get("weight", 1.0)) > 0
+        }
+        if cond == "no_memory":
+            probe_ids -= relevant_probe_ids_by_rep.get(int(variant["repetition"]), set())
         if not probe_ids:
             continue
         f = weighted_probe_score(full, probe_ids=probe_ids)
@@ -836,10 +859,22 @@ def run_materialized_pack(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Execute evaluator-materialized instances without exposing generation seeds to the submission."""
     templates_by_id = {t["id"]: t for t in templates}
+    expected_ids = set(profile.get("required_templates") or templates_by_id)
+    missing_templates = sorted(expected_ids - set(templates_by_id))
+    if missing_templates:
+        raise ValueError(f"profile requires missing Templates: {missing_templates}")
     for t in templates:
         vr = validate_scenario(t, schema)
         if not vr.valid:
             raise ValueError(f"Template {t['id']} invalid: {vr.errors}")
+    instance_template_ids = {
+        (instance.get("instantiation") or {}).get("template_id", instance.get("id"))
+        for instance in instances
+    }
+    missing_instances = sorted(expected_ids - instance_template_ids)
+    if missing_instances:
+        raise ValueError(f"profile requires Templates with no materialized Instances: {missing_instances}")
+
     all_runs: list[dict[str, Any]] = []
     for instance in instances:
         vr = validate_scenario(instance, schema)

@@ -101,8 +101,24 @@ def validate_scenario(
         for eid in (a.get("targets") or {}).get("event_ids", []):
             if eid not in timeline_ids:
                 errors.append(f"semantic:{a.get('id')}: unresolved event {eid}")
-        if a.get("method") != "replay_excluding_events":
+        if a.get("method") not in {"replay_excluding_events", "replay_with_injections"}:
             warnings.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
+        injection_ids: set[str] = set()
+        for injection in a.get("injections", []):
+            iid = str(injection.get("id"))
+            if iid in timeline_ids or iid in injection_ids:
+                errors.append(f"semantic:{a.get('id')}: duplicate injection event id {iid}")
+            injection_ids.add(iid)
+            if injection.get("actor") and injection["actor"] not in actor_ids:
+                errors.append(f"semantic:{a.get('id')}: injection {iid} has unresolved actor {injection['actor']}")
+            anchor = (injection.get("at") or {}).get("after_event")
+            if anchor and anchor not in timeline_ids:
+                errors.append(f"semantic:{a.get('id')}: injection {iid} has unresolved anchor {anchor}")
+            if injection.get("world_updates"):
+                errors.append(
+                    f"semantic:{a.get('id')}: injection {iid} may not mutate world state; "
+                    "memory must remain the treatment variable"
+                )
 
     # A relevant_memory Ablation is only meaningful if removing its target events
     # actually removes the answer.  When the Oracle value still appears verbatim

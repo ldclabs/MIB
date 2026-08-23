@@ -347,9 +347,17 @@ class LedgerCodesAdapter:
             )
         return dict(task)
 
-    def run_task(self, task: dict[str, Any], agent: Any, *, seed: int | str, request_id: str) -> dict[str, Any]:
+    def run_task(
+        self,
+        task: dict[str, Any],
+        agent: Any,
+        *,
+        run_id: str,
+        seed: int | str,
+        request_id: str,
+    ) -> dict[str, Any]:
         output = agent.respond(
-            run_id=str(seed),
+            run_id=run_id,
             request_id=request_id,
             interaction_id=f"reality_{task['task_id']}",
             input_data={"content": task["prompt"]},
