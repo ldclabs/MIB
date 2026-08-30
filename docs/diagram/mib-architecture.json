@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MIB Memory Intelligence Benchmark · Reference Architecture",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1300,
+      650
+    ],
+    "repository": {
+      "url": "https://github.com/ldclabs/MIB",
+      "revision": "1f4e137e16b3426ff802aafe594f60e514f06b43"
+    },
+    "views": [
+      {
+        "id": "main-loop",
+        "label": "Execution path",
+        "focus": [
+          "registry",
+          "driver",
+          "adapter",
+          "agent",
+          "world"
+        ],
+        "note": "Load the pack, replay the past along the timeline; the agent only ever reaches the world through the adapter."
+      },
+      {
+        "id": "causal",
+        "label": "Causal ablation",
+        "focus": [
+          "driver",
+          "ablation",
+          "evaluators",
+          "scoring"
+        ],
+        "note": "One scenario, paired memory conditions. The delta is the evidence, not the retrieval hit rate."
+      },
+      {
+        "id": "publish",
+        "label": "Evaluation service",
+        "focus": [
+          "hidden",
+          "service",
+          "report",
+          "leaderboard"
+        ],
+        "note": "Hidden templates, signed jobs and signed results form the leaderboard integrity chain."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "hidden",
+      "type": "database",
+      "label": "Hidden Eval Store",
+      "sublabel": "hidden.py · MIB_OFFICIAL_PACK",
+      "tag": "30 hidden + 6 holdout",
+      "pos": [
+        48,
+        84
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/hidden.py",
+          "line": 42,
+          "label": "HiddenEvalStore"
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "cloud",
+      "label": "Evaluation Service",
+      "sublabel": "evaluation_service.py",
+      "tag": "Ed25519 signed jobs",
+      "pos": [
+        300,
+        84
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/evaluation_service.py",
+          "line": 87,
+          "label": "EvaluationService"
+        }
+      ]
+    },
+    {
+      "id": "leaderboard",
+      "type": "frontend",
+      "label": "Leaderboard",
+      "sublabel": "leaderboard.py",
+      "tag": "paired comparison",
+      "pos": [
+        1056,
+        84
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/leaderboard.py",
+          "line": 92,
+          "label": "paired_compare_reports"
+        }
+      ]
+    },
+    {
+      "id": "registry",
+      "type": "database",
+      "label": "Scenario Registry",
+      "sublabel": "scenarios/ · pack manifest",
+      "tag": "24 public templates",
+      "pos": [
+        48,
+        286
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "scenarios/manifest.json",
+          "line": 1,
+          "label": "PublicDevScenarioPack"
+        }
+      ]
+    },
+    {
+      "id": "driver",
+      "type": "backend",
+      "label": "Benchmark Driver",
+      "sublabel": "runner.py · benchmark.py",
+      "tag": "timeline replay",
+      "pos": [
+        300,
+        286
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/runner.py",
+          "line": 98,
+          "label": "run_condition"
+        },
+        {
+          "path": "src/mib_runner/benchmark.py",
+          "line": 742,
+          "label": "run_benchmark_pack"
+        }
+      ]
+    },
+    {
+      "id": "adapter",
+      "type": "backend",
+      "label": "Agent Adapter",
+      "sublabel": "transports.py · stdio / HTTP",
+      "tag": "MIBAgent protocol",
+      "pos": [
+        552,
+        286
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/transports.py",
+          "line": 74,
+          "label": "StdioAgentAdapter"
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "external",
+      "label": "Agent + Memory System",
+      "sublabel": "participant-supplied",
+      "tag": "architecture-neutral",
+      "pos": [
+        804,
+        286
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "examples/agents/stdio_reference_agent.py",
+          "line": 1,
+          "label": "reference stdio agent"
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "type": "database",
+      "label": "Report · Capability Card",
+      "sublabel": "report.py · capability.py",
+      "tag": "mib-report.schema",
+      "pos": [
+        1056,
+        286
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/capability.py",
+          "line": 23,
+          "label": "render_capability_card"
+        }
+      ]
+    },
+    {
+      "id": "ablation",
+      "type": "backend",
+      "label": "Ablation Controller",
+      "sublabel": "relevant / irrelevant / harmful",
+      "tag": "replay_excluding_events",
+      "pos": [
+        300,
+        488
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/runner.py",
+          "line": 472,
+          "label": "run_scenario"
+        }
+      ]
+    },
+    {
+      "id": "world",
+      "type": "backend",
+      "label": "World Simulator",
+      "sublabel": "world.py · WorldState",
+      "tag": "virtual clock · hidden truth",
+      "pos": [
+        552,
+        488
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/world.py",
+          "line": 63,
+          "label": "WorldState"
+        }
+      ]
+    },
+    {
+      "id": "evaluators",
+      "type": "backend",
+      "label": "Evaluators",
+      "sublabel": "evaluator.py",
+      "tag": "answer · world state · trajectory",
+      "pos": [
+        804,
+        488
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/evaluator.py",
+          "line": 217,
+          "label": "evaluate_probe"
+        }
+      ]
+    },
+    {
+      "id": "scoring",
+      "type": "backend",
+      "label": "Scoring Engine",
+      "sublabel": "scoring.py · benchmark.py",
+      "tag": "hierarchical bootstrap",
+      "pos": [
+        1056,
+        488
+      ],
+      "size": [
+        184,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/mib_runner/benchmark.py",
+          "line": 128,
+          "label": "paired_causal_metrics"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Submission sandbox sandbox.py · resource caps · network off",
+      "wraps": [
+        "agent"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "hidden-to-service",
+      "from": "hidden",
+      "to": "service",
+      "label": "hidden templates",
+      "variant": "dashed",
+      "labelDy": -31
+    },
+    {
+      "id": "service-to-driver",
+      "from": "service",
+      "to": "driver",
+      "label": "signed job · sandboxed run",
+      "variant": "security",
+      "labelDy": 72
+    },
+    {
+      "id": "registry-to-driver",
+      "from": "registry",
+      "to": "driver",
+      "label": "load scenario pack",
+      "labelDy": -30
+    },
+    {
+      "id": "driver-to-adapter",
+      "from": "driver",
+      "to": "adapter",
+      "label": "observation · future probe",
+      "labelDy": -30
+    },
+    {
+      "id": "adapter-to-agent",
+      "from": "adapter",
+      "to": "agent",
+      "label": "observe / respond / act",
+      "variant": "emphasis",
+      "labelDy": 61
+    },
+    {
+      "id": "driver-to-ablation",
+      "from": "driver",
+      "to": "ablation",
+      "label": "paired condition replay",
+      "labelDy": 30
+    },
+    {
+      "id": "driver-to-world",
+      "from": "driver",
+      "to": "world",
+      "label": "tool call · advance virtual time"
+    },
+    {
+      "id": "world-to-evaluators",
+      "from": "world",
+      "to": "evaluators",
+      "label": "final world state",
+      "labelDy": 72
+    },
+    {
+      "id": "agent-to-evaluators",
+      "from": "agent",
+      "to": "evaluators",
+      "label": "answer · action trajectory",
+      "variant": "emphasis",
+      "labelDy": 84
+    },
+    {
+      "id": "evaluators-to-scoring",
+      "from": "evaluators",
+      "to": "scoring",
+      "label": "dimension scores",
+      "labelDy": 72
+    },
+    {
+      "id": "scoring-to-report",
+      "from": "scoring",
+      "to": "report",
+      "label": "MIB Score · capability card"
+    },
+    {
+      "id": "report-to-leaderboard",
+      "from": "report",
+      "to": "leaderboard",
+      "label": "signed result"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Execution path",
+      "items": [
+        "Driver replays the timeline; future probes never leak into formation",
+        "World Simulator owns hidden truth, the virtual clock and the seed",
+        "The agent never writes world state — it observes tool-call outcomes"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Causal evidence",
+      "items": [
+        "One scenario, paired conditions: relevant / irrelevant / harmful",
+        "Paired deltas yield Memory Benefit, Stability, Harm Resistance",
+        "Evaluators judge answer, final world state and action trajectory"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Integrity and publication",
+      "items": [
+        "60 templates: 24 public / 30 hidden / 6 holdout; the last two stay private",
+        "Job manifests and result attestations are Ed25519 signed",
+        "Track A and Track B are ranked separately, never one list"
+      ]
+    }
+  ]
+}
