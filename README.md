@@ -592,6 +592,12 @@ MIB v0.1 currently includes:
 
 ---
 
+## Reference Architecture
+
+![MIB reference architecture](docs/diagram/mib-architecture.svg)
+
+---
+
 ## Repository Overview
 
 The project is organized around a small set of normative and executable artifacts.
@@ -608,8 +614,10 @@ MIB/
 │   ├── MIB-Transfer-Intelligence.md
 │   ├── MIB-R-Reality-Track.md
 │   ├── MIB-v0.1-Test-Plan.md
-│   └── harness/                           calibration, same-model, hidden-eval,
-│                                          and evaluation-service harness notes
+│   ├── harness/                           calibration, same-model, hidden-eval,
+│   │                                      and evaluation-service harness notes
+│   └── diagram/                           reference architecture diagram
+│                                          (JSON specification, SVG, interactive HTML)
 │
 ├── schemas/                               JSON Schemas (scenario, report,
 │                                          submission, job manifest, attestation,

@@ -583,6 +583,12 @@ MIB v0.1 当前完成情况：
 
 ---
 
+## 参考实现架构
+
+![MIB 参考实现架构](docs/diagram/mib-architecture.svg)
+
+---
+
 ## 仓库结构导航
 
 项目围绕一组规范文档与可执行产物组织，每个文件均有明确的定位：
@@ -598,7 +604,9 @@ MIB/
 │   ├── MIB-Transfer-Intelligence.md
 │   ├── MIB-R-Reality-Track.md
 │   ├── MIB-v0.1-Test-Plan.md
-│   └── harness/                           校准、同模型、隐藏评测与评测服务工程笔记
+│   ├── harness/                           校准、同模型、隐藏评测与评测服务工程笔记
+│   └── diagram/                           参考实现架构图
+│                                          （JSON 规格、SVG、交互式 HTML）
 │
 ├── docs/cn/                               规范文档（中文版）
 │
