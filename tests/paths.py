@@ -28,6 +28,9 @@ DEV_PACK = BASE / "scenarios" / "dev"
 # MIB-Core-0.1-Dev-M3 pack must stay exactly its 24 Templates so that installing
 # the transfer extension cannot move a MIB-Core score.
 TRANSFER_PACK = BASE / "scenarios" / "transfer"
+# The adversarial interrogation-installation lane follows the same rule: its
+# Templates stay outside scenarios/dev/ so the MIB-Core dev score is unaffected.
+ADVERSARIAL_PACK = BASE / "scenarios" / "adversarial"
 PROFILES = BASE / "profiles"
 EXAMPLES = BASE / "examples"
 PRIVATE_EVAL_STORE_DEMO = BASE / "fixtures" / "private-eval-store-demo"

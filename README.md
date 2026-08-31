@@ -199,6 +199,8 @@ Harmful or Stale Memory Condition
 
 A capable memory system should resist avoidable memory-induced errors.
 
+The adversarial scenario family (`MIB-ADV-*`) pushes the harmful memory condition to its purest form: the injected events consist **solely of questions** that presuppose an unestablished habit, date, or procedure. Because questions assert nothing, oracle answers remain identical across both conditions — any paired performance drop reveals that questioning alone installed unverified facts into memory, measured directly via the standard Memory Harm and Harm Resistance metrics.
+
 This produces metrics such as:
 
 ```text

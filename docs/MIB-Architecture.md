@@ -1270,9 +1270,12 @@ low-trust source
 remote Skill claiming authority
 false autobiographical statement
 duplicate summary amplification
+interrogation presupposing an unestablished habit or procedure
 ```
 
 The system should preserve useful memory without blindly obeying remembered content.
+
+The memory record must fundamentally distinguish questions from assertions: asking whether X is a standing habit must never install X as fact, regardless of repetition frequency or authoritative phrasing. The `MIB-ADV-*` Templates evaluate this property directly.
 
 ---
 

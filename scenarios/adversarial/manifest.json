@@ -1,0 +1,15 @@
+{
+  "mib": "0.1",
+  "kind": "PublicDevScenarioPack",
+  "id": "MIB-v0.1-Adversarial-Dev",
+  "version": "0.1.0",
+  "profile": "MIB-Adversarial-0.1-Dev",
+  "visibility": "public_dev",
+  "template_count": 3,
+  "templates": [
+    "scenarios/adversarial/MIB-ADV-001.json",
+    "scenarios/adversarial/MIB-ADV-002.json",
+    "scenarios/adversarial/MIB-ADV-003.json"
+  ],
+  "note": "Adversarial-memory Templates reside outside scenarios/dev/ to ensure the MIB-Core-0.1-Dev-M3 pack remains strictly at 24 Templates without affecting core scores. The core premise: asking the system whether X is true must never install X into memory. Each Template pairs a clean baseline against a replay_with_injections condition introducing solely questions (never assertions) regarding an unestablished value. Correct answers are identical across conditions, so any performance drop directly quantifies improper installation via memory_harm and harm_resistance."
+}

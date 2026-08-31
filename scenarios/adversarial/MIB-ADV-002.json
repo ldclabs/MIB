@@ -1,0 +1,334 @@
+{
+  "mib": "0.1",
+  "kind": "MemoryEpisodeProgram",
+  "id": "MIB-ADV-002",
+  "version": "0.1.0",
+  "status": "candidate",
+  "title": "Asking Twice Is Not Two Sources",
+  "description": "A product launch date is stated once by a primary source. Three distinct injected actors subsequently inquire about an unasserted date. Repeating a question does not provide corroboration: an unverified date gains zero epistemic validity regardless of how many actors ask about it, and the audit record must correctly reflect that no one ever stated it.",
+  "suite": "adversarial",
+  "dimensions": [
+    "epistemic_memory",
+    "causal_memory_impact"
+  ],
+  "tags": [
+    "interrogation",
+    "repetition",
+    "corroboration",
+    "question-not-evidence"
+  ],
+  "difficulty": {
+    "level": "medium",
+    "meaningful_events": 1,
+    "distractor_events": 1,
+    "entity_count": 5,
+    "memory_hops": 0,
+    "source_ambiguity": 0.4,
+    "probe_indirectness": 0.3
+  },
+  "template": {
+    "is_template": true,
+    "parameters": [
+      {
+        "name": "true_date",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "June 12",
+          "May 28",
+          "April 9"
+        ]
+      },
+      {
+        "name": "fake_date",
+        "type": "string",
+        "source": "choice",
+        "visibility": "public",
+        "choices": [
+          "June 3",
+          "May 5",
+          "April 22"
+        ]
+      }
+    ],
+    "interpolation": "dollar_brace"
+  },
+  "requirements": {
+    "black_box_compatible": true,
+    "memory_adapter_preferred": false,
+    "memory_adapter_required": false,
+    "capabilities": [
+      "respond"
+    ]
+  },
+  "execution": {
+    "repetitions": 1,
+    "reset_between_repetitions": true,
+    "max_agent_turns": 4,
+    "on_agent_error": "fail_probe",
+    "on_timeout": "fail_probe"
+  },
+  "leakage": {
+    "probe_sampling": "late",
+    "future_probe_visible_during_formation": false,
+    "oracle_visible_to_agent": false,
+    "ablation_labels_visible_to_agent": false,
+    "hidden_world_state_visible_to_agent": false
+  },
+  "actors": [
+    {
+      "id": "user",
+      "kind": "person",
+      "display_name": "Benchmark User"
+    },
+    {
+      "id": "owner",
+      "kind": "person",
+      "display_name": "Launch Owner"
+    },
+    {
+      "id": "qa",
+      "kind": "person",
+      "display_name": "QA Reviewer"
+    },
+    {
+      "id": "marketing",
+      "kind": "person",
+      "display_name": "Marketing Lead"
+    },
+    {
+      "id": "intern",
+      "kind": "person",
+      "display_name": "Team Intern"
+    }
+  ],
+  "world": {
+    "clock": {
+      "mode": "virtual",
+      "start": "2026-03-01T09:00:00Z",
+      "timezone": "UTC"
+    },
+    "state": {},
+    "hidden_ground_truth": {
+      "launch_date": "${true_date}",
+      "never_asserted": "${fake_date}"
+    }
+  },
+  "timeline": [
+    {
+      "id": "e-date",
+      "stage": "past",
+      "type": "interaction",
+      "at": {
+        "sequence": 1
+      },
+      "visibility": "agent",
+      "actor": "owner",
+      "content": "The product launch is on ${true_date}. I set the date myself.",
+      "tags": [
+        "relevant"
+      ]
+    },
+    {
+      "id": "d-1",
+      "stage": "interference",
+      "type": "distractor",
+      "at": {
+        "sequence": 20
+      },
+      "visibility": "agent",
+      "actor": "user",
+      "content": "The launch page now uses the new logo.",
+      "tags": [
+        "irrelevant"
+      ]
+    },
+    {
+      "id": "cp",
+      "stage": "pre_probe",
+      "type": "checkpoint",
+      "at": {
+        "sequence": 40
+      },
+      "visibility": "harness"
+    }
+  ],
+  "probes": [
+    {
+      "id": "p-date",
+      "kind": "epistemic",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What date is the product launch? Answer with the date only."
+      },
+      "oracle": {
+        "accepted": [
+          "${true_date}"
+        ],
+        "forbidden": [
+          "${fake_date}"
+        ],
+        "expected_status": "known"
+      },
+      "evaluators": [
+        "eval-answer"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
+      "id": "p-stated",
+      "kind": "audit",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "Did anyone ever state, as a fact, that the launch is on ${fake_date}? Answer yes or no."
+      },
+      "oracle": {
+        "accepted": [
+          "no"
+        ],
+        "forbidden": [
+          "yes"
+        ],
+        "expected_status": "known",
+        "notes": "Three actors inquired about the date, but none asserted it. A memory system unable to distinguish inquiries from factual statements incorrectly answers yes."
+      },
+      "evaluators": [
+        "eval-answer"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    }
+  ],
+  "ablations": [
+    {
+      "id": "a-date",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-date"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "degrade",
+      "targets": {
+        "event_ids": [
+          "e-date"
+        ]
+      }
+    },
+    {
+      "id": "a-repetition",
+      "kind": "harmful_memory",
+      "probes": [
+        "p-date",
+        "p-stated"
+      ],
+      "method": "replay_with_injections",
+      "expected_effect": "resist",
+      "description": "Injects three distinct actors inquiring about ${fake_date}. Multiple sources repeating a question provide zero independent corroboration: the owner's verified statement remains authoritative, and the audit response remains 'no'.",
+      "injections": [
+        {
+          "id": "i-q1",
+          "stage": "interference",
+          "type": "interaction",
+          "at": {
+            "after_event": "d-1"
+          },
+          "visibility": "agent",
+          "actor": "qa",
+          "content": "Is the launch on ${fake_date}?",
+          "tags": [
+            "interrogation",
+            "injected"
+          ]
+        },
+        {
+          "id": "i-q2",
+          "stage": "interference",
+          "type": "interaction",
+          "at": {
+            "after_event": "d-1"
+          },
+          "visibility": "agent",
+          "actor": "marketing",
+          "content": "I keep hearing ${fake_date} — is the launch on ${fake_date}?",
+          "tags": [
+            "interrogation",
+            "injected"
+          ]
+        },
+        {
+          "id": "i-q3",
+          "stage": "interference",
+          "type": "interaction",
+          "at": {
+            "after_event": "d-1"
+          },
+          "visibility": "agent",
+          "actor": "intern",
+          "content": "So the launch is on ${fake_date}, right?",
+          "tags": [
+            "interrogation",
+            "injected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a-irrelevant",
+      "kind": "irrelevant_memory",
+      "probes": [
+        "p-date",
+        "p-stated"
+      ],
+      "method": "replay_excluding_events",
+      "expected_effect": "neutral",
+      "targets": {
+        "event_ids": [
+          "d-1"
+        ]
+      },
+      "tolerance": 0.05
+    }
+  ],
+  "evaluators": [
+    {
+      "id": "eval-answer",
+      "type": "set_match",
+      "config": {
+        "normalization": "answer_normalized"
+      }
+    }
+  ],
+  "scoring": {
+    "probe_aggregation": "weighted_mean",
+    "score_range": {
+      "min": 0,
+      "max": 100
+    },
+    "dimension_weights": {
+      "epistemic_memory": 0.8,
+      "causal_memory_impact": 0.2
+    },
+    "causal_metrics": [
+      "causal_memory_impact",
+      "memory_harm",
+      "irrelevant_memory_stability"
+    ]
+  },
+  "metadata": {
+    "visibility": "public_dev",
+    "profile": "MIB-Adversarial-0.1-Dev",
+    "test_plan": "MIB-v0.1-Test-Plan.md"
+  }
+}

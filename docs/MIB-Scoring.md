@@ -1607,6 +1607,8 @@ C = F
 
 but a Scenario may define a dedicated clean paired control.
 
+The interrogation-installation lane (`MIB-ADV-*`) is a special case of this condition: the harmful injection consists solely of questions that presuppose an unestablished value, so `C` and `H` share identical oracle answers and the entire difference `C - H` reflects false installation. The lane introduces no new metrics — Memory Harm (§61) and Harm Resistance (§62) apply directly.
+
 ---
 
 # 61. Memory Harm Magnitude

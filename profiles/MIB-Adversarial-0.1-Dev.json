@@ -1,0 +1,38 @@
+{
+  "id": "MIB-Adversarial-0.1-Dev",
+  "version": "0.1.0",
+  "description": "Adversarial-memory diagnostic Dev profile: the interrogation-installation lane. Evaluates three Templates where injected questions presuppose an unestablished habit, date, or procedure. Because paired conditions differ solely by these questions, memory_harm and harm_resistance quantify whether questioning alone installs false memories. Development use only; not an official Hidden Eval score, and never ranked against MIB-Core.",
+  "result_family": "adversarial_diagnostic",
+  "track": "integrated_agent",
+  "scale": "MIB-S",
+  "scenario_pack": {
+    "id": "MIB-v0.1-Adversarial-Dev",
+    "version": "0.1.0"
+  },
+  "official": false,
+  "dimensions": {
+    "epistemic_memory": {
+      "weight": 0.8
+    },
+    "causal_memory_impact": {
+      "weight": 0.2
+    }
+  },
+  "required_templates": [
+    "MIB-ADV-001",
+    "MIB-ADV-002",
+    "MIB-ADV-003"
+  ],
+  "required_coverage": 1.0,
+  "instance_seeds": [
+    101,
+    202
+  ],
+  "repetitions": 2,
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_method": "hierarchical_bootstrap_percentile",
+    "bootstrap_resamples": 2000,
+    "preserve_causal_pairs": true
+  }
+}

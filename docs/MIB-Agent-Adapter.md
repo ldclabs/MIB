@@ -2050,6 +2050,8 @@ Remembered content may contain instructions.
 
 MIB adversarial suites may intentionally test whether the Agent blindly follows stale or malicious remembered instructions.
 
+The injection surface is not limited to instructions: the interrogation lane (`MIB-ADV-*`) injects bare questions that presuppose an unestablished value. The Adapter delivers them as ordinary interactions; whether the Agent's memory erroneously elevates questions into verified facts is precisely what the paired condition measures.
+
 The Adapter must deliver visible content faithfully.
 
 It should not secretly sanitize benchmark challenge content unless the track policy specifies a safety layer.
