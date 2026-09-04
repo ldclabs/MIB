@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+from .util import utc_now  # noqa: E402
 
 
 DDL = """

@@ -3,18 +3,18 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import math
 import time
 import uuid
 
 import jsonschema
 from dataclasses import asdict
-from datetime import datetime, timezone
 from typing import Any
 
 from .evaluator import evaluate_probe
 from .late_sampling import sample_probe_for_delivery
+from .scoring import scenario_score_from_probes
 from .types import AgentAdapter, AgentOutput, Observation, ActStep
+from .util import advance_iso_time, utc_now
 from .world import WorldState
 
 _EVENT_TYPE_MAP = {
@@ -35,8 +35,18 @@ class RunnerError(RuntimeError):
     pass
 
 
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+class AgentBehaviourError(RunnerError):
+    """The Agent violated the task or protocol contract.
+
+    This is a cognitive failure, scored 0 with a failure code; it is not an
+    infrastructure ``execution_failure`` (MIB-Specification §5.4).  A looping or
+    protocol-breaking Agent must not raise the execution failure rate that
+    gates leaderboard eligibility.
+    """
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 def _opaque(prefix: str) -> str:
@@ -65,23 +75,16 @@ def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]
     )
 
 
-def _scenario_score(probe_results: list[dict[str, Any]]) -> float:
-    # ``fail_probe`` is the reference execution policy.  An infrastructure
-    # failure therefore remains a zero-score Probe with its original weight;
-    # dropping it would let a partially failing Agent average only its successful
-    # attempts and inflate both Scenario and Dimension scores.
-    scored = [p for p in probe_results if p.get("outcome") in {"scored", "execution_failure"}]
-    if not scored:
-        return 0.0
-    total_w = math.fsum(float(p.get("weight", 1.0)) for p in scored)
-    if total_w <= 0:
-        return 0.0
-    return math.fsum(float(p["score"]) * float(p.get("weight", 1.0)) for p in scored) / total_w
-
-
 def _virtual_time_for_event(event: dict[str, Any], current: str | None) -> str | None:
+    """Absolute ``at.time`` wins.  A ``time_advance`` event may instead carry a
+    relative ``payload.duration`` (ISO 8601) that moves the Runner-owned clock."""
     at = event.get("at") or {}
-    return at.get("time") or current
+    if at.get("time"):
+        return at["time"]
+    payload = event.get("payload")
+    if event.get("type") == "time_advance" and isinstance(payload, dict) and payload.get("duration") and current:
+        return advance_iso_time(current, str(payload["duration"]))
+    return current
 
 
 def _tool_result_observation(call_id: str, tool: str, payload: dict[str, Any], virtual_time: str | None) -> Observation:
@@ -131,7 +134,6 @@ def run_condition(
     max_tool_calls = int(execution.get("max_tool_calls", 20))
 
     seed = agent_seed if agent_seed is not None else repetition
-    agent.reset(run_id=run_id, seed=seed, virtual_time=virtual_time)
 
     removed_ids: set[str] = set(excluded_event_ids or ())
     # Diagnostic callers may explicitly choose which Probes exist in the run.
@@ -265,16 +267,21 @@ def run_condition(
             )
             if step.type == "tool_call":
                 if not step.tool or not step.tool_call_id:
-                    raise RunnerError("tool_call requires tool and tool_call_id")
+                    raise AgentBehaviourError("agent_protocol_violation", "tool_call requires tool and tool_call_id")
                 if step.tool not in available_names:
-                    raise RunnerError(f"Agent called unavailable benchmark tool: {step.tool}")
+                    raise AgentBehaviourError("agent_protocol_violation", f"Agent called unavailable benchmark tool: {step.tool}")
                 if step.tool_call_id in seen_calls:
-                    raise RunnerError(f"duplicate tool_call_id: {step.tool_call_id}")
+                    raise AgentBehaviourError("agent_protocol_violation", f"duplicate tool_call_id: {step.tool_call_id}")
                 seen_calls.add(step.tool_call_id)
                 if len(seen_calls) > max_tool_calls:
-                    raise RunnerError("max_tool_calls exceeded")
+                    raise AgentBehaviourError("trajectory_collapse", "max_tool_calls exceeded")
                 tool_spec = next(t for t in tool_defs if t["name"] == step.tool)
-                jsonschema.Draft202012Validator(tool_spec.get("input_schema") or {}).validate(step.arguments or {})
+                try:
+                    jsonschema.Draft202012Validator(tool_spec.get("input_schema") or {}).validate(step.arguments or {})
+                except jsonschema.ValidationError as exc:
+                    raise AgentBehaviourError(
+                        "agent_protocol_violation", f"tool arguments rejected by input_schema: {exc.message}"
+                    ) from exc
                 execution_result = world.execute_tool(step.tool, step.arguments or {})
                 row = {
                     "sequence": len(trace) + 1,
@@ -291,10 +298,10 @@ def run_condition(
             if step.type in {"final", "abstention"}:
                 final_step = step
                 break
-            raise RunnerError(f"unsupported ActStep type: {step.type!r}")
+            raise AgentBehaviourError("agent_protocol_violation", f"unsupported ActStep type: {step.type!r}")
 
         if final_step is None:
-            raise RunnerError("act probe did not terminate within max_agent_turns")
+            raise AgentBehaviourError("trajectory_collapse", "act probe did not terminate within max_agent_turns")
         output = AgentOutput(
             type="abstention" if final_step.type == "abstention" else ("structured" if final_step.value is not None else "message"),
             content=final_step.content,
@@ -315,6 +322,26 @@ def run_condition(
                 execute_act_probe(sampled)
             else:
                 raise NotImplementedError(f"reference Runner implements respond/act Probes, got {sampled.get('delivery')!r}")
+        except AgentBehaviourError as exc:
+            # Cognitive failure: the Probe was executed and the Agent failed it.
+            row = {
+                "probe_id": sampled["id"],
+                "probe_kind": sampled.get("kind"),
+                "condition": condition,
+                "repetition": repetition,
+                "outcome": "scored",
+                "score": 0.0,
+                "weight": float(sampled.get("weight", 1.0)),
+                "dimensions": list(sampled.get("dimensions") or []),
+                "failure_codes": [exc.code],
+                "latency_ms": 0.0,
+                "evaluator_results": [],
+                "output_digest": hashlib.sha256(repr(exc).encode()).hexdigest(),
+                "extensions": {"mib.runner.agent_error": repr(exc)},
+            }
+            if scored_probe_ids is not None and sampled["id"] not in scored_probe_ids:
+                row = {**row, "weight": 0.0}
+            probe_results.append(row)
         except Exception as exc:
             row = {
                 "probe_id": sampled["id"],
@@ -406,6 +433,9 @@ def run_condition(
                 deliver_observation(_project_observation(event, actor_by_id, virtual_time))
 
     try:
+        # Reset inside the guarded region: any failure after this point must
+        # release the Agent (and its sandboxed subprocess) before propagating.
+        agent.reset(run_id=run_id, seed=seed, virtual_time=virtual_time)
         timeline, injected_after = merged_timeline()
         for event in timeline:
             is_scenario_injection = str(event["id"]) in scenario_injection_ids
@@ -448,12 +478,13 @@ def run_condition(
         "instance_seed": instance.get("seed"),
         "condition": condition,
         **({"ablation_id": ablation_id, "ablation_method": ablation_method} if ablation else {}),
+        **({"ablation_tolerance": float(ablation["tolerance"])} if ablation and ablation.get("tolerance") is not None else {}),
         "repetition": repetition,
         "agent_seed": seed,
         "status": status,
         "started_at": started,
         "completed_at": completed,
-        "scenario_score": _scenario_score(probe_results),
+        "scenario_score": scenario_score_from_probes(probe_results),
         "probe_results": probe_results,
         "validity": {"causal_pair_valid": True, "runner_valid": True, "notes": []},
         "extensions": {

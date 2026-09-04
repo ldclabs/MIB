@@ -12,7 +12,7 @@
     "id": "MIB-R-0.1-Dev",
     "version": "0.1.0"
   },
-  "environment_adapter": "mib_runner.reality_domains.ledger_codes:LedgerCodesAdapter",
+  "environment_adapter": "mib_runner.experimental.reality_domains.ledger_codes:LedgerCodesAdapter",
   "verifier": "local_deterministic",
   "train_tasks": [
     {

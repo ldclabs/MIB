@@ -328,7 +328,7 @@ It is a **reference domain**, not an external benchmark, and it redistributes no
 mib reality-benchmark reality/MIB-R-Demo-LedgerCodes/pack.json \
   --profile profiles/MIB-R-0.1-Dev.json \
   --pack-schema schemas/mib-reality-pack.schema.json \
-  --agent mib_runner.agents.reality_fixtures:RuleLearningRealityAgent \
+  --agent mib_runner.experimental.reality_fixtures:RuleLearningRealityAgent \
   --bootstrap-resamples 2000 \
   --output-report reality-internal.json \
   --output-public reality-public.json \

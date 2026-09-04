@@ -1,6 +1,68 @@
 {
   "valid": true,
+  "verification_level": "full",
   "stored_base_score": 100.0,
   "recomputed_base_score": 100.0,
-  "difference": 0.0
+  "stored_final_score": 100.0,
+  "recomputed_final_score": 100.0,
+  "difference": 0.0,
+  "run_checks": [
+    {
+      "run_id": "run_671b86151aca42a5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a239dc88db93435b",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_a6bbf68f47ee4e18",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    }
+  ],
+  "instance_checks": [
+    {
+      "scenario_instance_id": "MIB-SKILL-003:101",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    }
+  ],
+  "template_checks": [
+    {
+      "template_id": "MIB-SKILL-003",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-SKILL-003",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "dimension_checks": [
+    {
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "errors": []
 }

@@ -7,12 +7,31 @@ from typing import Any
 
 import jsonschema
 
-from .transfer import (
+from .experimental.transfer import (
     TRANSFER_EXTENSION,
     TransferAnnotationError,
     parse_transfer_support,
     validate_transfer_support,
 )
+
+
+# What the reference Runner can execute.  The schema is deliberately wider (it
+# is the format contract); a Scenario that uses anything outside these sets is
+# schema-valid but unrunnable, so the validator rejects it here instead of
+# letting the Runner crash mid-pack or score every Agent zero in silence.
+RUNNER_EVALUATOR_TYPES = {"set_match", "world_state", "trajectory", "composite"}
+RUNNER_TRIGGER_KINDS = {"after_event"}
+RUNNER_DELIVERY_MODES = {"respond", "act"}
+RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections"}
+RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1"}
+RUNNER_EVENT_TYPES = {
+    "interaction", "observation", "tool_result", "distractor", "document", "feedback",
+    "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update",
+}
+RUNNER_NORMALIZATIONS = {"none", "casefold_trim", "trim", "casefold_trim_collapse_ws", "answer_normalized"}
+RUNNER_MATCH_MODES = {"exact", "contains"}
+RUNNER_WORLD_OPERATORS = {"eq", "neq", "exists", "not_exists", "contains", "gte", "lte"}
+RUNNER_TRAJECTORY_TYPES = {"required_action", "forbidden_action", "before", "after", "max_occurrences", "min_occurrences"}
 
 
 @dataclass(slots=True)
@@ -60,32 +79,59 @@ def validate_scenario(
     tool_names: set[str] = set()
     for tool in (scenario.get("world") or {}).get("tools", []):
         tid = tool.get("id")
+        if tool.get("simulator_binding") not in RUNNER_SIMULATOR_BINDINGS:
+            errors.append(
+                f"unsupported:{tid}: simulator_binding {tool.get('simulator_binding')!r} "
+                "not implemented by the reference World Simulator"
+            )
         for op in tool.get("operations", []):
             tool_names.add(f"{tid}.{op.get('name')}")
 
     for event in timeline:
         if event.get("actor") and event["actor"] not in actor_ids:
             errors.append(f"semantic:{event.get('id')}: unresolved actor {event['actor']}")
+        if event.get("type") not in RUNNER_EVENT_TYPES or event.get("generator"):
+            errors.append(
+                f"unsupported:{event.get('id')}: event type {event.get('type')!r} with generator="
+                f"{'yes' if event.get('generator') else 'no'} is not executable by the reference Runner"
+            )
 
     for p in probes:
         trigger = p.get("trigger") or {}
         after = trigger.get("after_event")
         if after and after not in timeline_ids:
             errors.append(f"semantic:{p.get('id')}: unresolved trigger {after}")
-        unsupported = set(trigger) - {"after_event"}
+        if not after:
+            errors.append(f"unsupported:{p.get('id')}: the reference Runner requires an after_event trigger")
+        unsupported = set(trigger) - RUNNER_TRIGGER_KINDS
         if unsupported:
-            warnings.append(f"unsupported:{p.get('id')}: trigger kinds not executable by the reference Runner: {sorted(unsupported)}")
+            errors.append(f"unsupported:{p.get('id')}: trigger kinds not executable by the reference Runner: {sorted(unsupported)}")
         for eid in p.get("evaluators", []):
             if eid not in evaluator_ids:
                 errors.append(f"semantic:{p.get('id')}: unresolved evaluator {eid}")
-        if p.get("delivery") not in {"respond", "act"}:
-            warnings.append(f"unsupported:{p.get('id')}: delivery={p.get('delivery')} not executable by the reference Runner")
+        if p.get("delivery") not in RUNNER_DELIVERY_MODES:
+            errors.append(f"unsupported:{p.get('id')}: delivery={p.get('delivery')} not executable by the reference Runner")
+        oracle = p.get("oracle") or {}
+        for assertion in oracle.get("world_assertions") or []:
+            if assertion.get("operator") not in RUNNER_WORLD_OPERATORS:
+                errors.append(f"unsupported:{p.get('id')}: world assertion operator {assertion.get('operator')!r}")
+        for requirement in oracle.get("trajectory_requirements") or []:
+            if requirement.get("type") not in RUNNER_TRAJECTORY_TYPES:
+                errors.append(f"unsupported:{p.get('id')}: trajectory requirement {requirement.get('type')!r}")
         if p.get("delivery") == "act":
             for name in (p.get("input") or {}).get("available_tools", []):
                 if name not in tool_names:
                     errors.append(f"semantic:{p.get('id')}: unavailable tool {name}")
 
     for e in evaluators:
+        if e.get("type") not in RUNNER_EVALUATOR_TYPES:
+            errors.append(f"unsupported:{e.get('id')}: evaluator type {e.get('type')!r} not implemented by the reference Runner")
+        cfg = e.get("config") or {}
+        if e.get("type") == "set_match":
+            if cfg.get("normalization", "answer_normalized") not in RUNNER_NORMALIZATIONS:
+                errors.append(f"unsupported:{e.get('id')}: normalization {cfg.get('normalization')!r}")
+            if cfg.get("match", "contains") not in RUNNER_MATCH_MODES:
+                errors.append(f"unsupported:{e.get('id')}: match mode {cfg.get('match')!r}")
         if e.get("type") == "composite":
             for c in e.get("components", []):
                 if c.get("evaluator") not in evaluator_ids:
@@ -101,8 +147,8 @@ def validate_scenario(
         for eid in (a.get("targets") or {}).get("event_ids", []):
             if eid not in timeline_ids:
                 errors.append(f"semantic:{a.get('id')}: unresolved event {eid}")
-        if a.get("method") not in {"replay_excluding_events", "replay_with_injections"}:
-            warnings.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
+        if a.get("method") not in RUNNER_ABLATION_METHODS:
+            errors.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
         injection_ids: set[str] = set()
         for injection in a.get("injections", []):
             iid = str(injection.get("id"))

@@ -77,7 +77,7 @@ def test_skill_positive_and_negative_transfer():
     s = materialize(json.loads(p.read_text()), 101)
     runs = run_scenario(scenario=s, agent_factory=ReferenceMemoryAgent, include_ablations=True, agent_seed=101)
     full = next(r for r in runs if r["condition"] == "full")
-    counter = next(r for r in runs if r["condition"] == "counterexample")
+    counter = next(r for r in runs if r["condition"] == "relevant_ablation")
     assert full["scenario_score"] == 1.0
     assert counter["scenario_score"] < full["scenario_score"]
     assert full["extensions"]["mib.runner.world_state"]["contextual_save"]["policy_violation"] is False

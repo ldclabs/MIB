@@ -1,5 +1,7 @@
 # MIB Scoring
 
+> **Superseded design draft.** Retained for rationale and history only. The normative text is [`docs/MIB-Specification.md`](../MIB-Specification.md); where the two differ, the Specification and the reference implementation win.
+
 ## Score Semantics for the Memory Intelligence Benchmark
 
 **Version:** 0.1-draft  
@@ -365,6 +367,20 @@ Scenario penalty
 ```
 
 depending on the Scenario.
+
+Reference evaluator policy (`set_match`, default `match = contains`):
+
+```text
+accepted value present, no forbidden value      → 1
+forbidden value present anywhere in the answer  → 0  (stale_memory_adoption)
+neither                                         → 0  (retrieval_miss)
+expected_status = unknown:
+  abstention output, or an accepted value       → 1
+  any other definite answer                     → 0  (false_certainty)
+expected_status ≠ unknown and the Agent abstains → 0  (retrieval_miss)
+```
+
+An answer that hedges between the current and the superseded value ("UTC+1, previously UTC+8") fails a Probe that declares the old value forbidden. Such Probes ask for the value only; a Scenario that wants to reward historical context must ask for it in a separate historical Probe (§82).
 
 ---
 
@@ -1243,6 +1259,10 @@ not run
 
 Engineering interpretation depends on this distinction.
 
+The reference Runner classifies an Agent that breaks the task or protocol contract — exhausting `max_agent_turns` or `max_tool_calls`, calling a tool that was not offered, sending arguments the tool schema rejects, reusing a `tool_call_id` — as a **cognitive failure**: the Probe is `scored` with score 0 and a failure code (`trajectory_collapse` or `agent_protocol_violation`), and the run status stays `succeeded`. Only Runner, World Simulator, evaluator, or transport faults are `execution_failure`, so a looping Agent cannot inflate the execution failure rate that gates eligibility (§142).
+
+A required Scenario is `unsupported` when the Agent descriptor declares a required capability false; it is not executed, it is listed under `coverage.unsupported_required_templates`, and its evidence weight stays in the coverage denominator (§42, §43).
+
 ---
 
 # 48. Causal Conditions
@@ -1782,8 +1802,10 @@ CausalScore
 =
 100
 \cdot
+HMB
+\cdot
 \frac{
-0.50HMB
+0.50
 +
 0.20IMS
 +
@@ -1793,7 +1815,11 @@ CausalScore
 }
 \]
 
-If a component is absent for a Scenario/Template, its weight is removed and the remaining weights are renormalized.
+If IMS or HRS is absent for a Scenario/Template, its weight is removed and the remaining weights are renormalized.
+
+HMB is not optional. Stability and harm-resistance credit is **scaled by the demonstrated benefit**: without that gate a memory-blind Agent scores IMS = HRS = 1 trivially (ablating what it never reads changes nothing) and would earn 50–100 on a dimension that asks whether memory made a difference. When no relevant / no-memory pair with measurable headroom exists (§54), the causal dimension is **not evaluated** for that unit; IMS and HRS are still reported as raw diagnostics.
+
+Worked check: a memory-blind Agent has HMB = 0 and scores 0. An Agent with HMB = 0.8, IMS = 0.5 and no harm condition scores 0.8 · (0.5 + 0.10) / 0.70 = 0.686.
 
 ---
 
@@ -2588,20 +2614,22 @@ Recommended default for official MIB:
 One bootstrap draw conceptually:
 
 ```text
-sample Templates within each Dimension
-        ↓
-sample hidden Instances within selected Template
+sample hidden Instances within each Template
         ↓
 keep all paired causal variants together
         ↓
 sample repetitions if required
+        ↓
+sample Templates once, shared by every Dimension
         ↓
 recompute Dimension Scores
         ↓
 recompute MIB Score
 ```
 
-This respects the benchmark hierarchy.
+This respects the benchmark hierarchy. The Template resample is drawn **once per draw and shared across Dimensions**: a Cross-Dimension Template makes Dimension scores positively correlated, and resampling Templates independently per Dimension would drop that covariance and understate the MIB Score interval.
+
+A Dimension carried by fewer Templates than the Profile's `statistics.min_templates_per_dimension` (default 5) receives no interval, and the MIB Score interval is omitted whenever any weighted Dimension lacks one. A percentile interval over three Templates is decoration, not evidence. The report records the threshold and the affected Dimensions under `statistics.bootstrap`.
 
 ---
 
@@ -3829,6 +3857,8 @@ mib verify-score report.json
 ```
 
 to recompute the displayed score.
+
+The reference `verify-score` reports its `verification_level`. An internal report carries `results.runs`, so verification is `full`: run scores from Probe results, Instance full and dimension scores and every causal metric from the paired runs (Ablation tolerances travel on the Run Artifacts), then Template, Dimension and MIB Score. A redacted public report carries no runs, so its level is `aggregates_only`; the evaluation service verifies the internal report at the full level before redaction.
 
 ---
 

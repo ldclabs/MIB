@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .transfer import TRANSFER_DIAGNOSTICS_EXTENSION
+from .experimental.transfer import TRANSFER_DIAGNOSTICS_EXTENSION
 
 DISPLAY = {
     "retention_retrieval": "Retention & Retrieval",
@@ -56,7 +56,7 @@ def render_capability_card(report: dict[str, Any]) -> str:
         ("memory_harm", "Memory Harm", "pp"),
         ("net_memory_gain", "Net Memory Gain", "pp"),
         ("irrelevant_memory_stability", "Irrelevant Stability", "score"),
-        ("negative_transfer", "Negative Transfer", "score"),
+        ("harm_resistance", "Harm Resistance", "score"),
     ]:
         m = _metric(report, name)
         if not m:

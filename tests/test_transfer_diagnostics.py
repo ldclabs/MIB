@@ -18,8 +18,8 @@ from mib_runner.capability import render_capability_card
 from mib_runner.hidden import redact_report_for_public
 from mib_runner.leaderboard import result_family
 from mib_runner.report import validate_report, verify_score
-from mib_runner.transfer import TRANSFER_DIAGNOSTICS_EXTENSION, TRANSFER_EXTENSION
-from mib_runner.transfer_diagnostics import (
+from mib_runner.experimental.transfer import TRANSFER_DIAGNOSTICS_EXTENSION, TRANSFER_EXTENSION
+from mib_runner.experimental.transfer_diagnostics import (
     DEFAULT_EPSILON,
     build_transfer_diagnostics,
     redact_transfer_diagnostics,
@@ -77,7 +77,7 @@ def test_transfer_profile_is_its_own_result_family():
 
 
 def test_transfer_pack_covers_every_declared_relation():
-    from mib_runner.transfer import check_profile_transfer_coverage, transfer_coverage
+    from mib_runner.experimental.transfer import check_profile_transfer_coverage, transfer_coverage
 
     coverage = transfer_coverage(load_templates(TRANSFER_PACK))
     assert check_profile_transfer_coverage(TRANSFER_PROFILE, coverage) == []

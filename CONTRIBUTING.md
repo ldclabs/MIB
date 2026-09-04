@@ -134,8 +134,10 @@ mib run scenarios/dev/<family>/MIB-<FAMILY>-NNN.json \
   --schema schemas/mib-scenario.schema.json
 ```
 
-If the Template is added to the pack, update `scenarios/manifest.json` and the
-`template_count` alongside it. Calibration decides whether a Scenario is admitted:
+If the Template is added to the pack, add its id to the Profile's
+`required_templates` (`profiles/*.json`); the Profile is the only definition of
+pack membership, and `mib benchmark` refuses a directory whose Templates do not
+match it exactly. Calibration decides whether a Scenario is admitted:
 `docs/harness/calibration-harness-notes.md` describes the gates a Template has to
 clear (full-context solvability, no-memory ceiling, memory discriminativeness,
 baseline span, causal sensitivity, irrelevant stability).

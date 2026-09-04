@@ -20,7 +20,7 @@ from mib_runner.hidden import redact_report_for_public
 from mib_runner.materialize import materialize
 from mib_runner.report import build_basic_report, verify_score
 from mib_runner.runner import run_scenario
-from mib_runner.transfer import (
+from mib_runner.experimental.transfer import (
     TRANSFER_EXTENSION,
     check_profile_transfer_coverage,
     inspect_transfer,

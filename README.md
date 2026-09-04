@@ -219,7 +219,7 @@ Negative Transfer
 Error Recurrence
 ```
 
-`docs/MIB-Scoring.md` defines both, and the Scenario schema already accepts their
+`docs/MIB-Specification.md` (Appendix A) lists both as roadmap items, and the Scenario schema already accepts their
 metric names, but the v0.1 reference Runner emits neither. A generic counterexample
 ablation demonstrates applicability sensitivity and is deliberately *not* reported as
 Negative Transfer, because it is not the standardized control the scoring model
@@ -573,6 +573,8 @@ MIB v0.1 currently includes:
 
 ✓ Fixture Calibration
   36 / 36 official Templates pass structural calibration
+  (plumbing only: fixture Agents are hand-written to pass or
+  fail each Template; this establishes nothing about difficulty)
 
 ✓ Same-Model Empirical Harness
 
@@ -592,6 +594,22 @@ MIB v0.1 currently includes:
   pending empirical calibration
 ```
 
+What v0.1 can and cannot claim today:
+
+- Every public Scenario is **MIB-S**: a few dozen events, far below any
+  model's context window. At this scale the benchmark measures whether an
+  Agent uses memory *semantics* correctly in context (current vs historical,
+  source vs claim, applicable vs inapplicable Skill). It does not yet
+  discriminate memory *systems*: a stateless full-context model saturates the
+  relevant-memory ablation, because removing an event from the replay removes
+  the information, not a retrieval step. That discrimination needs the
+  MIB-M/L history sizes that are still pending.
+- The reference Agent is a deterministic fixture whose heuristics are keyed to
+  the public Templates' wording. Its 100.0 on the dev pack exercises the
+  Runner; it is not a baseline.
+- The causal metrics have been validated on fixtures only. No real model has
+  been calibrated yet.
+
 ---
 
 ## Reference Architecture
@@ -607,15 +625,15 @@ Every artifact has exactly one canonical location.
 
 ```text
 MIB/
-├── docs/                                  normative specifications
-│   ├── MIB-Architecture.md
-│   ├── MIB-Scenario-Model.md
-│   ├── MIB-Agent-Adapter.md
-│   ├── MIB-Scoring.md
+├── docs/
+│   ├── MIB-Specification.md               the normative spec: scenario model,
+│   │                                      execution, scoring, causal metrics,
+│   │                                      statistics, reports (+ roadmap appendix)
+│   ├── MIB-Agent-Adapter.md               Agent Adapter protocol (stdio / HTTP)
 │   ├── MIB-Leaderboard-Evaluation-Service.md
-│   ├── MIB-Transfer-Intelligence.md
-│   ├── MIB-R-Reality-Track.md
 │   ├── MIB-v0.1-Test-Plan.md
+│   ├── experimental/                      Transfer Intelligence and MIB-R notes
+│   ├── archive/                           superseded design drafts (rationale only)
 │   ├── harness/                           calibration, same-model, hidden-eval,
 │   │                                      and evaluation-service harness notes
 │   └── diagram/                           reference architecture diagram
@@ -626,7 +644,8 @@ MIB/
 │                                          calibration, same-model experiment)
 │
 ├── scenarios/                             the public dev Scenario Packs
-│   ├── manifest.json
+│   │                                      (membership is fixed by each Profile's
+│   │                                      required_templates)
 │   ├── dev/                               MIB-Core Public Dev, 24 Templates
 │   │   ├── recall/        4      ├── skill/       3
 │   │   ├── time/          4      ├── causal/      3
@@ -639,8 +658,10 @@ MIB/
 ├── reality/                               MIB-R prototype Reality Packs
 │
 ├── src/mib_runner/                        reference Runner, evaluators,
-│                                          adapters, calibration, service,
-│                                          leaderboard
+│   │                                      adapters, calibration, service,
+│   │                                      leaderboard
+│   └── experimental/                      Transfer Intelligence, Memory Adapter,
+│                                          MIB-R (never enters the MIB Score)
 ├── tests/
 │
 ├── profiles/                              benchmark profiles
@@ -731,6 +752,10 @@ submission sandbox, which relies on Linux unprivileged user, mount, and network
 namespaces via `unshare`. They are supported on Linux only; on macOS and Windows no
 isolation is enforced and hidden evaluator paths cannot be masked.
 
+HTTP submissions are accepted from `localhost` only. A remote `base_url` needs
+`--allow-remote-http` and `https`; the HTTP transport exists for local
+development of non-Python Agents, not for remote evaluation.
+
 The rest of the CLI — `mib validate`, `run`, `run-pack`, `benchmark`,
 `capability-card`, `verify-score`, `public-eval-manifest`, and the non-executing
 `mib-service` subcommands — is cross-platform.
@@ -748,8 +773,7 @@ See:
 
 ```text
 docs/MIB-Agent-Adapter.md
-docs/MIB-Scenario-Model.md
-docs/MIB-Scoring.md
+docs/MIB-Specification.md
 ```
 
 for the protocol and evaluation semantics.
@@ -765,7 +789,7 @@ never retrieved it, or retrieved the right one and could not execute it.
 
 Two supplemental layers separate those cases.
 
-**Transfer Intelligence** (`docs/MIB-Transfer-Intelligence.md`) makes the
+**Transfer Intelligence** (`docs/experimental/MIB-Transfer-Intelligence.md`) makes the
 evaluator's latent hypothesis explicit — which past Experience supports which
 future Probe, through which Ability, under which applicability boundary — and
 then decomposes the outcome:
@@ -781,7 +805,7 @@ trap the learned procedure must be withheld from, and an unsupported task where
 memory must stay neutral. Three of the four diagnostic cells run against an
 ordinary black-box Agent.
 
-**MIB-R** (`docs/MIB-R-Reality-Track.md`) asks whether the same memory
+**MIB-R** (`docs/experimental/MIB-R-Reality-Track.md`) asks whether the same memory
 intelligence survives in a realistic external task environment, by running
 acquisition and held-out transfer under paired memory conditions where only
 memory state varies.
@@ -800,7 +824,7 @@ mib benchmark scenarios/transfer \
 
 mib reality-benchmark reality/MIB-R-Demo-LedgerCodes/pack.json \
   --profile profiles/MIB-R-0.1-Dev.json \
-  --agent mib_runner.agents.reality_fixtures:RuleLearningRealityAgent
+  --agent mib_runner.experimental.reality_fixtures:RuleLearningRealityAgent
 ```
 
 ---

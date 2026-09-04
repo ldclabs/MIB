@@ -157,9 +157,6 @@
       "type": "object",
       "additionalProperties": true
     },
-    "integrity": {
-      "$ref": "#/$defs/Integrity"
-    },
     "extensions": {
       "type": "object",
       "propertyNames": {
@@ -295,10 +292,7 @@
             "fixed",
             "choice",
             "integer_range",
-            "number_range",
-            "datetime_range",
-            "generator",
-            "derived"
+            "number_range"
           ]
         },
         "visibility": {
@@ -325,12 +319,6 @@
         },
         "maximum": {
           "type": "number"
-        },
-        "generator": {
-          "$ref": "#/$defs/Generator"
-        },
-        "expression": {
-          "type": "string"
         },
         "description": {
           "type": "string"
@@ -464,18 +452,14 @@
         "on_agent_error": {
           "type": "string",
           "enum": [
-            "fail_probe",
-            "skip_probe",
-            "abort_scenario"
+            "fail_probe"
           ],
           "default": "fail_probe"
         },
         "on_timeout": {
           "type": "string",
           "enum": [
-            "fail_probe",
-            "skip_probe",
-            "abort_scenario"
+            "fail_probe"
           ],
           "default": "fail_probe"
         }
@@ -744,38 +728,6 @@
         }
       }
     },
-    "Generator": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id"
-      ],
-      "properties": {
-        "id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "version": {
-          "type": "string"
-        },
-        "count": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "seed": {
-          "type": [
-            "integer",
-            "string"
-          ]
-        },
-        "parameters": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/$defs/JsonValue"
-          }
-        }
-      }
-    },
     "TimelineEvent": {
       "type": "object",
       "additionalProperties": false,
@@ -810,7 +762,6 @@
             "world_update",
             "time_advance",
             "distractor",
-            "distractor_batch",
             "maintenance_window",
             "checkpoint",
             "feedback",
@@ -843,9 +794,6 @@
           "items": {
             "$ref": "#/$defs/WorldUpdate"
           }
-        },
-        "generator": {
-          "$ref": "#/$defs/Generator"
         },
         "oracle_labels": {
           "type": "object",
@@ -899,24 +847,13 @@
     "ProbeTrigger": {
       "type": "object",
       "additionalProperties": false,
-      "minProperties": 1,
+      "required": [
+        "after_event"
+      ],
       "properties": {
         "after_event": {
-          "type": "string"
-        },
-        "at_sequence": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "at_time": {
           "type": "string",
-          "format": "date-time"
-        },
-        "world_condition": {
-          "$ref": "#/$defs/WorldCondition"
-        },
-        "manual": {
-          "type": "boolean"
+          "minLength": 1
         }
       }
     },
@@ -1095,8 +1032,7 @@
           "type": "string",
           "enum": [
             "respond",
-            "act",
-            "observe_only"
+            "act"
           ]
         },
         "input": {
@@ -1163,13 +1099,9 @@
         "type": {
           "type": "string",
           "enum": [
-            "exact",
             "set_match",
-            "structured",
             "world_state",
-            "semantic_constraints",
             "trajectory",
-            "llm_judge",
             "composite"
           ]
         },
@@ -1279,15 +1211,8 @@
         "method": {
           "type": "string",
           "enum": [
-            "auto",
-            "memory_mask",
-            "memory_delete",
-            "snapshot_branch",
-            "filtered_memory_clone",
             "replay_excluding_events",
-            "replay_with_injections",
-            "context_filter",
-            "black_box_reconstruction"
+            "replay_with_injections"
           ]
         },
         "targets": {
@@ -1344,34 +1269,6 @@
         }
       }
     },
-    "Penalty": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "id",
-        "condition",
-        "points"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "condition": {
-          "type": "string"
-        },
-        "points": {
-          "type": "number",
-          "minimum": 0
-        },
-        "cap": {
-          "type": "number",
-          "minimum": 0
-        },
-        "description": {
-          "type": "string"
-        }
-      }
-    },
     "Scoring": {
       "type": "object",
       "additionalProperties": false,
@@ -1383,11 +1280,7 @@
         "probe_aggregation": {
           "type": "string",
           "enum": [
-            "weighted_mean",
-            "mean",
-            "min",
-            "max",
-            "custom"
+            "weighted_mean"
           ]
         },
         "score_range": {
@@ -1429,12 +1322,6 @@
             ]
           }
         },
-        "penalties": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Penalty"
-          }
-        },
         "normalization": {
           "type": "string",
           "enum": [
@@ -1445,26 +1332,7 @@
           "default": "linear"
         }
       }
-    },
-    "Integrity": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "digest_profile": {
-          "type": "string"
-        },
-        "content_digest": {
-          "type": "string",
-          "pattern": "^sha256:[0-9a-fA-F]{64}$"
-        },
-        "signatures": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": true
-          }
-        }
-      }
     }
-  }
+  },
+  "$comment": "v0.1 executable subset: every enumeration here is something the reference Runner executes. Roadmap constructs (other evaluator types, triggers, ablation methods, generated distractor batches, penalties, integrity digests) are listed in docs/MIB-Specification.md Appendix A and are not accepted."
 }

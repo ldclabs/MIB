@@ -566,6 +566,8 @@ MIB v0.1 当前完成情况：
 
 ✓ 规则基准校准（Fixture Calibration）
   36 / 36 个官方模板已通过结构校准
+  （仅验证管道：fixture Agent 是按模板手写的通过/失败规则，
+  不说明任何难度）
 
 ✓ 同模型经验校准工具
 
@@ -582,6 +584,18 @@ MIB v0.1 当前完成情况：
 
 ○ MIB v0.1 官方榜单数据包冻结（等待经验校准完成）
 ```
+
+v0.1 目前能够与不能够声称的事：
+
+- 所有公开场景都是 **MIB-S** 尺度：几十个事件，远小于任何模型的上下文窗口。
+  在这个尺度上，基准测量的是 Agent 能否在上下文内正确使用记忆**语义**
+  （当前 vs 历史、来源 vs 断言、适用 vs 不适用的技能），还不能区分记忆
+  **系统**：无状态的全上下文模型会让相关记忆消融饱和，因为从重放中移除
+  一个事件移除的是信息本身，而不是一次检索。区分记忆系统需要尚未完成的
+  MIB-M/L 历史规模。
+- 参考 Agent 是一个确定性 fixture，其启发式规则绑定公开模板的措辞。它在
+  dev 包上的 100.0 只是在锻炼 Runner，不是基线。
+- 因果指标目前只在 fixture 上验证过，尚未对任何真实模型做过校准。
 
 ---
 
@@ -755,7 +769,7 @@ mib benchmark scenarios/transfer \
 
 mib reality-benchmark reality/MIB-R-Demo-LedgerCodes/pack.json \
   --profile profiles/MIB-R-0.1-Dev.json \
-  --agent mib_runner.agents.reality_fixtures:RuleLearningRealityAgent
+  --agent mib_runner.experimental.reality_fixtures:RuleLearningRealityAgent
 ```
 
 ---

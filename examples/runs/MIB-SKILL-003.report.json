@@ -2,13 +2,13 @@
   "mib": "0.1",
   "kind": "MIBReport",
   "report_version": "0.1.0",
-  "report_id": "report_773e8355fca84373",
-  "generated_at": "2026-08-19T04:49:03.176421Z",
+  "report_id": "report_7aff57b20d9b479b",
+  "generated_at": "2026-09-04T03:23:37.346316Z",
   "scope": "internal",
   "benchmark": {
     "mib_version": "0.1",
     "profile": {
-      "id": "MIB-Core-0.1-Dev-M2",
+      "id": "MIB-Core-0.1-Dev-Single",
       "version": "0.1.0"
     },
     "track": "integrated_agent",
@@ -24,33 +24,33 @@
   "system": {
     "agent": {
       "name": "MIB Reference Fixture Agent",
-      "version": "0.2.0"
+      "version": "0.8.0"
     }
   },
   "adapter": {
     "protocol": "mib-agent/0.1",
     "implementation": {
       "name": "MIB Reference Fixture Agent",
-      "version": "0.2.0"
+      "version": "0.8.0"
     }
   },
   "environment": {
     "runner": {
       "name": "MIB Reference Runner",
-      "version": "0.2.0"
+      "version": "0.8.0"
     },
     "world_simulator": {
-      "name": "MIB Milestone 2 World",
-      "version": "0.2.0"
+      "name": "MIB Reference World Simulator",
+      "version": "0.8.0"
     },
     "evaluator_bundle": {
-      "name": "MIB M2 Evaluator Bundle",
-      "version": "0.2.0"
+      "name": "MIB Reference Evaluator Bundle",
+      "version": "0.8.0"
     }
   },
   "execution": {
-    "started_at": "2026-08-19T04:49:03.175741Z",
-    "completed_at": "2026-08-19T04:49:03.176361Z",
+    "started_at": "2026-09-04T03:23:37.345188Z",
+    "completed_at": "2026-09-04T03:23:37.346247Z",
     "scheduled_runs": 3,
     "completed_runs": 3,
     "scheduled_probe_attempts": 3,
@@ -63,18 +63,18 @@
   "results": {
     "runs": [
       {
-        "run_id": "run_e1a3eb36a12b4539",
+        "run_id": "run_671b86151aca42a5",
         "scenario_instance_id": "MIB-SKILL-003:101",
-        "scenario_instance_version": "0.1.0",
+        "scenario_instance_version": "0.2.0",
         "template_id": "MIB-SKILL-003",
-        "template_version": "0.1.0",
+        "template_version": "0.2.0",
         "instance_seed": 101,
         "condition": "full",
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.175741Z",
-        "completed_at": "2026-08-19T04:49:03.175951Z",
+        "started_at": "2026-09-04T03:23:37.345188Z",
+        "completed_at": "2026-09-04T03:23:37.345718Z",
         "scenario_score": 1.0,
         "probe_results": [
           {
@@ -114,7 +114,7 @@
               }
             ],
             "failure_codes": [],
-            "latency_ms": 0.112315,
+            "latency_ms": 0.142792,
             "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4"
           }
         ],
@@ -125,26 +125,26 @@
         }
       },
       {
-        "run_id": "run_a1d443afbfae4dd5",
+        "run_id": "run_a239dc88db93435b",
         "scenario_instance_id": "MIB-SKILL-003:101",
-        "scenario_instance_version": "0.1.0",
+        "scenario_instance_version": "0.2.0",
         "template_id": "MIB-SKILL-003",
-        "template_version": "0.1.0",
+        "template_version": "0.2.0",
         "instance_seed": 101,
-        "condition": "counterexample",
-        "ablation_id": "a-remove-counterexample",
+        "condition": "relevant_ablation",
+        "ablation_id": "a-relevant-counterexample",
         "ablation_method": "replay_excluding_events",
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.175990Z",
-        "completed_at": "2026-08-19T04:49:03.176178Z",
+        "started_at": "2026-09-04T03:23:37.345756Z",
+        "completed_at": "2026-09-04T03:23:37.346019Z",
         "scenario_score": 0.5,
         "probe_results": [
           {
             "probe_id": "p-action",
             "probe_kind": "action",
-            "condition": "counterexample",
+            "condition": "relevant_ablation",
             "repetition": 0,
             "outcome": "scored",
             "score": 0.5,
@@ -184,7 +184,7 @@
               "negative_transfer",
               "trajectory_collapse"
             ],
-            "latency_ms": 0.113148,
+            "latency_ms": 0.143291,
             "output_digest": "6b771ed0483d047d1c45edaf6dfb061c77be7594eb52417b872b931bae173439"
           }
         ],
@@ -195,11 +195,11 @@
         }
       },
       {
-        "run_id": "run_3a39dc64279742d7",
+        "run_id": "run_a6bbf68f47ee4e18",
         "scenario_instance_id": "MIB-SKILL-003:101",
-        "scenario_instance_version": "0.1.0",
+        "scenario_instance_version": "0.2.0",
         "template_id": "MIB-SKILL-003",
-        "template_version": "0.1.0",
+        "template_version": "0.2.0",
         "instance_seed": 101,
         "condition": "irrelevant_ablation",
         "ablation_id": "a-irrelevant",
@@ -207,8 +207,8 @@
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.176211Z",
-        "completed_at": "2026-08-19T04:49:03.176361Z",
+        "started_at": "2026-09-04T03:23:37.346045Z",
+        "completed_at": "2026-09-04T03:23:37.346247Z",
         "scenario_score": 1.0,
         "probe_results": [
           {
@@ -248,7 +248,7 @@
               }
             ],
             "failure_codes": [],
-            "latency_ms": 0.084463,
+            "latency_ms": 0.0965,
             "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4"
           }
         ],
@@ -270,15 +270,42 @@
         "instance_seed": 101,
         "full_score": 1.0,
         "dimension_scores": {
-          "skill_learning_transfer": 1.0
+          "skill_learning_transfer": 1.0,
+          "causal_memory_impact": 1.0
         },
         "condition_scores": {
           "full": 1.0,
-          "counterexample": 0.5,
+          "relevant_ablation": 0.5,
           "irrelevant_ablation": 1.0
         },
         "repetitions": 1,
+        "causal_pair_ids": [
+          "pair:MIB-SKILL-003:101:0:a-relevant-counterexample",
+          "pair:MIB-SKILL-003:101:0:a-irrelevant"
+        ],
         "causal_metrics": [
+          {
+            "name": "memory_benefit",
+            "value": 0.5,
+            "unit": "percentage_points",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
+          {
+            "name": "headroom_normalized_memory_benefit",
+            "value": 1.0,
+            "unit": "normalized",
+            "scope": "scenario_instance",
+            "reference_condition": "full",
+            "comparison_condition": "relevant_ablation",
+            "eligible_n": 1,
+            "total_n": 1,
+            "coverage": 1.0
+          },
           {
             "name": "irrelevant_memory_stability",
             "value": 1.0,
@@ -289,17 +316,6 @@
             "eligible_n": 1,
             "total_n": 1,
             "coverage": 1.0
-          },
-          {
-            "name": "negative_transfer",
-            "value": 0.5,
-            "unit": "normalized",
-            "scope": "scenario_instance",
-            "reference_condition": "full",
-            "comparison_condition": "counterexample",
-            "eligible_n": 1,
-            "total_n": 1,
-            "coverage": 1.0
           }
         ]
       }
@@ -307,15 +323,17 @@
     "templates": [
       {
         "template_id": "MIB-SKILL-003",
-        "template_version": "0.1.0",
+        "template_version": "0.2.0",
         "instance_count": 1,
         "template_weight": 1.0,
         "full_score": 100.0,
         "dimension_scores": {
-          "skill_learning_transfer": 100.0
+          "skill_learning_transfer": 100.0,
+          "causal_memory_impact": 100.0
         },
         "dimension_weights": {
-          "skill_learning_transfer": 1.0
+          "skill_learning_transfer": 0.8,
+          "causal_memory_impact": 0.2
         },
         "coverage_weight": 1.0
       }
@@ -324,7 +342,15 @@
       {
         "dimension": "skill_learning_transfer",
         "score": 100.0,
-        "weight": 1.0,
+        "weight": 0.8,
+        "coverage": 1.0,
+        "template_count": 1,
+        "eligible_template_count": 1
+      },
+      {
+        "dimension": "causal_memory_impact",
+        "score": 100.0,
+        "weight": 0.2,
         "coverage": 1.0,
         "template_count": 1,
         "eligible_template_count": 1
@@ -343,6 +369,28 @@
   },
   "causal_metrics": [
     {
+      "name": "memory_benefit",
+      "value": 0.5,
+      "unit": "percentage_points",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
+      "name": "headroom_normalized_memory_benefit",
+      "value": 1.0,
+      "unit": "normalized",
+      "scope": "benchmark",
+      "reference_condition": "full",
+      "comparison_condition": "relevant_ablation",
+      "eligible_n": 1,
+      "total_n": 1,
+      "coverage": 1.0
+    },
+    {
       "name": "irrelevant_memory_stability",
       "value": 1.0,
       "unit": "normalized",
@@ -352,28 +400,18 @@
       "eligible_n": 1,
       "total_n": 1,
       "coverage": 1.0
-    },
-    {
-      "name": "negative_transfer",
-      "value": 0.5,
-      "unit": "normalized",
-      "scope": "benchmark",
-      "reference_condition": "full",
-      "comparison_condition": "counterexample",
-      "eligible_n": 1,
-      "total_n": 1,
-      "coverage": 1.0
     }
   ],
   "coverage": {
     "overall": 1.0,
     "profile_required": 0.0,
     "by_dimension": {
-      "skill_learning_transfer": 1.0
+      "skill_learning_transfer": 1.0,
+      "causal_memory_impact": 1.0
     },
     "missing_required_templates": [],
     "unsupported_required_templates": [],
-    "partial_score_reason": "Milestone 2 single-scenario development report; not an official profile score."
+    "partial_score_reason": "Single-Scenario development report; not an official profile score."
   },
   "statistics": {
     "confidence_level": 0.95,
@@ -384,15 +422,15 @@
   },
   "warnings": [
     {
-      "code": "development.milestone2_partial_score",
+      "code": "development.single_scenario_partial_score",
       "severity": "info",
-      "message": "This is a Milestone 2 development report, not an official MIB-Core-0.1 score.",
+      "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
       "scope": "report"
     }
   ],
   "provenance": {
     "generated_by": "MIB Reference Runner",
-    "generator_version": "0.2.0",
+    "generator_version": "0.8.0",
     "score_recomputed": true,
     "verification_status": "partially_verified"
   }

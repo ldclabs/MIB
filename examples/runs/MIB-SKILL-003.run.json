@@ -1,744 +1,458 @@
 {
-  "scenario": {
-    "mib": "0.1",
-    "kind": "MemoryEpisodeProgram",
-    "id": "MIB-SKILL-003",
-    "version": "0.1.0",
-    "status": "candidate",
-    "title": "Non-Matching Negative Transfer",
-    "description": "Tests whether a previously useful procedural memory is withheld when the current environment explicitly makes it inapplicable.",
-    "suite": "skill",
-    "dimensions": [
-      "skill_learning_transfer"
-    ],
-    "tags": [
-      "negative-transfer",
-      "applicability",
-      "counterexample"
-    ],
-    "difficulty": {
-      "level": "medium",
-      "meaningful_events": 2,
-      "distractor_events": 1,
-      "entity_count": 2,
-      "memory_hops": 1,
-      "experience_steps": 4,
-      "probe_indirectness": 0.6
-    },
-    "requirements": {
-      "black_box_compatible": true,
-      "memory_adapter_preferred": false,
-      "memory_adapter_required": false,
-      "capabilities": [
-        "observe",
-        "act",
-        "tools"
-      ]
-    },
-    "execution": {
-      "repetitions": 1,
-      "reset_between_repetitions": true,
-      "max_agent_turns": 12,
-      "max_tool_calls": 10,
-      "on_agent_error": "fail_probe",
-      "on_timeout": "fail_probe"
-    },
-    "leakage": {
-      "probe_sampling": "late",
-      "future_probe_visible_during_formation": false,
-      "oracle_visible_to_agent": false,
-      "ablation_labels_visible_to_agent": false,
-      "hidden_world_state_visible_to_agent": false
-    },
-    "world": {
-      "clock": {
-        "mode": "virtual",
-        "start": "2026-01-01T09:00:00Z",
-        "timezone": "UTC"
-      },
-      "state": {
-        "contextual_save": {
-          "context_required": false,
-          "expected_context": null,
-          "active_context": null,
-          "edited": false,
-          "committed": false,
-          "policy_violation": false
-        }
-      },
-      "tools": [
-        {
-          "id": "canvas",
-          "version": "0.1.0",
-          "simulator_binding": "mib.contextual_save.v1",
-          "operations": [
-            {
-              "name": "activate_context",
-              "description": "Activate the context for the current item.",
-              "input_schema": {
-                "type": "object",
-                "properties": {
-                  "context": {
-                    "type": "string"
-                  }
-                }
-              }
-            },
-            {
-              "name": "edit_item",
-              "description": "Edit the current item.",
-              "input_schema": {
-                "type": "object",
-                "properties": {
-                  "value": {
-                    "type": "string"
-                  }
-                }
-              }
-            },
-            {
-              "name": "commit",
-              "description": "Commit the edited item.",
-              "input_schema": {
-                "type": "object",
-                "properties": {}
-              }
-            },
-            {
-              "name": "inspect_status",
-              "description": "Inspect current item state.",
-              "input_schema": {
-                "type": "object",
-                "properties": {}
-              }
-            }
-          ]
-        }
-      ],
-      "hidden_ground_truth": {}
-    },
-    "timeline": [
-      {
-        "id": "e-old-skill",
-        "stage": "past",
-        "type": "feedback",
-        "at": {
-          "sequence": 1
-        },
-        "visibility": "agent",
-        "content": "Earlier workspace tasks taught us that workspace_required errors are avoided by selecting the workspace before saving.",
-        "tags": [
-          "relevant"
-        ]
-      },
-      {
-        "id": "e-current",
-        "stage": "past",
-        "type": "observation",
-        "at": {
-          "sequence": 60
-        },
-        "visibility": "agent",
-        "content": "This new system uses a global record. No workspace is required and no context is required before commit.",
-        "tags": [
-          "relevant",
-          "counterexample"
-        ]
-      },
-      {
-        "id": "d1",
-        "stage": "past",
-        "type": "distractor",
-        "at": {
-          "sequence": 70
-        },
-        "visibility": "agent",
-        "content": "Unrelated note: the item has a blue label.",
-        "tags": [
-          "irrelevant"
-        ]
-      },
-      {
-        "id": "cp",
-        "stage": "pre_probe",
-        "type": "checkpoint",
-        "at": {
-          "sequence": 100
-        },
-        "visibility": "harness"
-      }
-    ],
-    "probes": [
-      {
-        "id": "p-action",
-        "kind": "action",
-        "trigger": {
-          "after_event": "cp"
-        },
-        "delivery": "act",
-        "input": {
-          "goal": "Edit the global item and commit it correctly.",
-          "available_tools": [
-            "canvas.activate_context",
-            "canvas.edit_item",
-            "canvas.commit"
-          ]
-        },
-        "oracle": {
-          "world_assertions": [
-            {
-              "path": "/contextual_save/committed",
-              "operator": "eq",
-              "value": true
-            },
-            {
-              "path": "/contextual_save/policy_violation",
-              "operator": "eq",
-              "value": false
-            }
-          ],
-          "trajectory_requirements": [
-            {
-              "type": "forbidden_action",
-              "action": "canvas.activate_context"
-            },
-            {
-              "type": "required_action",
-              "action": "canvas.commit"
-            }
-          ]
-        },
-        "evaluators": [
-          "eval-composite"
-        ],
-        "dimensions": [
-          "skill_learning_transfer"
-        ],
-        "weight": 1.0
-      }
-    ],
-    "ablations": [
-      {
-        "id": "a-remove-counterexample",
-        "kind": "counterexample",
-        "probes": [
-          "p-action"
-        ],
-        "method": "replay_excluding_events",
-        "targets": {
-          "event_ids": [
-            "e-current"
-          ]
-        },
-        "expected_effect": "degrade"
-      },
-      {
-        "id": "a-irrelevant",
-        "kind": "irrelevant_memory",
-        "probes": [
-          "p-action"
-        ],
-        "method": "replay_excluding_events",
-        "targets": {
-          "event_ids": [
-            "d1"
-          ]
-        },
-        "expected_effect": "neutral"
-      }
-    ],
-    "evaluators": [
-      {
-        "id": "eval-world",
-        "type": "world_state",
-        "config": {}
-      },
-      {
-        "id": "eval-trajectory",
-        "type": "trajectory",
-        "config": {}
-      },
-      {
-        "id": "eval-composite",
-        "type": "composite",
-        "components": [
-          {
-            "evaluator": "eval-world",
-            "weight": 0.6
-          },
-          {
-            "evaluator": "eval-trajectory",
-            "weight": 0.4
-          }
-        ]
-      }
-    ],
-    "scoring": {
-      "probe_aggregation": "weighted_mean",
-      "score_range": {
-        "min": 0,
-        "max": 100
-      },
-      "dimension_weights": {
-        "skill_learning_transfer": 1.0
-      },
-      "causal_metrics": [
-        "causal_memory_impact",
-        "memory_benefit",
-        "irrelevant_memory_stability",
-        "negative_transfer",
-        "error_recurrence"
-      ]
-    },
-    "metadata": {
-      "visibility": "public_dev",
-      "profile": "MIB-Core-0.1",
-      "milestone": "Reference Runner M2"
-    },
-    "instantiation": {
-      "template_id": "MIB-SKILL-003",
-      "template_version": "0.1.0",
-      "seed": 101,
-      "parameter_digest": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-      "generator_version": "mib-reference-runner-materializer/0.2.0"
-    }
-  },
+  "scenario": "MIB-SKILL-003",
   "runs": [
     {
-      "run_id": "run_e1a3eb36a12b4539",
-      "scenario_instance_id": "MIB-SKILL-003:101",
-      "scenario_instance_version": "0.1.0",
-      "template_id": "MIB-SKILL-003",
-      "template_version": "0.1.0",
-      "instance_seed": 101,
       "condition": "full",
-      "repetition": 0,
-      "agent_seed": 101,
-      "status": "succeeded",
-      "started_at": "2026-08-19T04:49:03.175741Z",
-      "completed_at": "2026-08-19T04:49:03.175951Z",
-      "scenario_score": 1.0,
-      "probe_results": [
-        {
-          "probe_id": "p-action",
-          "probe_kind": "action",
-          "condition": "full",
-          "repetition": 0,
-          "outcome": "scored",
-          "score": 1.0,
-          "weight": 1.0,
-          "dimensions": [
-            "skill_learning_transfer"
-          ],
-          "evaluator_results": [
-            {
-              "evaluator_id": "eval-composite",
-              "evaluator_type": "composite",
-              "score": 1.0,
-              "passed": true,
-              "failure_codes": [],
-              "details": {
-                "components": [
-                  {
-                    "evaluator": "eval-world",
-                    "weight": 0.6,
-                    "score": 1.0,
-                    "passed": true
-                  },
-                  {
-                    "evaluator": "eval-trajectory",
-                    "weight": 0.4,
-                    "score": 1.0,
-                    "passed": true
-                  }
-                ]
-              }
-            }
-          ],
-          "failure_codes": [],
-          "latency_ms": 0.112315,
-          "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4",
-          "extensions": {
-            "mib.runner.action_trace": [
-              {
-                "sequence": 1,
-                "kind": "tool_call",
-                "tool_call_id": "call_0001",
-                "tool": "canvas.edit_item",
-                "arguments": {
-                  "value": "updated"
-                },
-                "result": {
-                  "success": true,
-                  "edited": true
-                }
-              },
-              {
-                "sequence": 2,
-                "kind": "tool_call",
-                "tool_call_id": "call_0002",
-                "tool": "canvas.commit",
-                "arguments": {},
-                "result": {
-                  "success": true,
-                  "committed": true
-                }
-              }
-            ]
-          }
-        }
-      ],
-      "validity": {
-        "causal_pair_valid": true,
-        "runner_valid": true,
-        "notes": []
-      },
-      "extensions": {
-        "mib.runner.world_state": {
-          "contextual_save": {
-            "context_required": false,
-            "expected_context": null,
-            "active_context": null,
-            "edited": true,
-            "committed": true,
-            "policy_violation": false,
-            "value": "updated",
-            "last_error": null
-          }
-        },
-        "mib.runner.world_state_digest": "1ec190570ba0b49be6eaffdd4ab2674c47abac5e4fc69cc8841cb7bf1f716248",
-        "mib.runner.action_trace": [
-          {
-            "probe_id": "p-action",
-            "sequence": 1,
-            "kind": "tool_call",
-            "tool_call_id": "call_0001",
-            "tool": "canvas.edit_item",
-            "arguments": {
-              "value": "updated"
-            },
-            "result": {
-              "success": true,
-              "edited": true
-            }
-          },
-          {
-            "probe_id": "p-action",
-            "sequence": 2,
-            "kind": "tool_call",
-            "tool_call_id": "call_0002",
-            "tool": "canvas.commit",
-            "arguments": {},
-            "result": {
-              "success": true,
-              "committed": true
-            }
-          }
-        ]
-      }
+      "score": 1.0,
+      "status": "succeeded"
     },
     {
-      "run_id": "run_a1d443afbfae4dd5",
-      "scenario_instance_id": "MIB-SKILL-003:101",
-      "scenario_instance_version": "0.1.0",
-      "template_id": "MIB-SKILL-003",
-      "template_version": "0.1.0",
-      "instance_seed": 101,
-      "condition": "counterexample",
-      "ablation_id": "a-remove-counterexample",
-      "ablation_method": "replay_excluding_events",
-      "repetition": 0,
-      "agent_seed": 101,
-      "status": "succeeded",
-      "started_at": "2026-08-19T04:49:03.175990Z",
-      "completed_at": "2026-08-19T04:49:03.176178Z",
-      "scenario_score": 0.5,
-      "probe_results": [
+      "condition": "relevant_ablation",
+      "score": 0.5,
+      "status": "succeeded"
+    },
+    {
+      "condition": "irrelevant_ablation",
+      "score": 1.0,
+      "status": "succeeded"
+    }
+  ],
+  "dev_score": 100.0,
+  "report": {
+    "mib": "0.1",
+    "kind": "MIBReport",
+    "report_version": "0.1.0",
+    "report_id": "report_7aff57b20d9b479b",
+    "generated_at": "2026-09-04T03:23:37.346316Z",
+    "scope": "internal",
+    "benchmark": {
+      "mib_version": "0.1",
+      "profile": {
+        "id": "MIB-Core-0.1-Dev-Single",
+        "version": "0.1.0"
+      },
+      "track": "integrated_agent",
+      "scale": "MIB-S",
+      "scenario_pack": {
+        "id": "single-scenario-dev",
+        "version": "0.1.0"
+      },
+      "scoring_spec_version": "0.1-draft",
+      "scenario_schema_version": "0.1",
+      "agent_adapter_protocol": "mib-agent/0.1"
+    },
+    "system": {
+      "agent": {
+        "name": "MIB Reference Fixture Agent",
+        "version": "0.8.0"
+      }
+    },
+    "adapter": {
+      "protocol": "mib-agent/0.1",
+      "implementation": {
+        "name": "MIB Reference Fixture Agent",
+        "version": "0.8.0"
+      }
+    },
+    "environment": {
+      "runner": {
+        "name": "MIB Reference Runner",
+        "version": "0.8.0"
+      },
+      "world_simulator": {
+        "name": "MIB Reference World Simulator",
+        "version": "0.8.0"
+      },
+      "evaluator_bundle": {
+        "name": "MIB Reference Evaluator Bundle",
+        "version": "0.8.0"
+      }
+    },
+    "execution": {
+      "started_at": "2026-09-04T03:23:37.345188Z",
+      "completed_at": "2026-09-04T03:23:37.346247Z",
+      "scheduled_runs": 3,
+      "completed_runs": 3,
+      "scheduled_probe_attempts": 3,
+      "execution_failed_probe_attempts": 0,
+      "execution_failure_rate": 0.0,
+      "unsupported_required_weight": 0.0,
+      "total_required_weight": 1.0,
+      "unsupported_rate": 0.0
+    },
+    "results": {
+      "runs": [
         {
-          "probe_id": "p-action",
-          "probe_kind": "action",
-          "condition": "counterexample",
+          "run_id": "run_671b86151aca42a5",
+          "scenario_instance_id": "MIB-SKILL-003:101",
+          "scenario_instance_version": "0.2.0",
+          "template_id": "MIB-SKILL-003",
+          "template_version": "0.2.0",
+          "instance_seed": 101,
+          "condition": "full",
           "repetition": 0,
-          "outcome": "scored",
-          "score": 0.5,
-          "weight": 1.0,
-          "dimensions": [
-            "skill_learning_transfer"
-          ],
-          "evaluator_results": [
+          "agent_seed": 101,
+          "status": "succeeded",
+          "started_at": "2026-09-04T03:23:37.345188Z",
+          "completed_at": "2026-09-04T03:23:37.345718Z",
+          "scenario_score": 1.0,
+          "probe_results": [
             {
-              "evaluator_id": "eval-composite",
-              "evaluator_type": "composite",
+              "probe_id": "p-action",
+              "probe_kind": "action",
+              "condition": "full",
+              "repetition": 0,
+              "outcome": "scored",
+              "score": 1.0,
+              "weight": 1.0,
+              "dimensions": [
+                "skill_learning_transfer"
+              ],
+              "evaluator_results": [
+                {
+                  "evaluator_id": "eval-composite",
+                  "evaluator_type": "composite",
+                  "score": 1.0,
+                  "passed": true,
+                  "failure_codes": [],
+                  "details": {
+                    "components": [
+                      {
+                        "evaluator": "eval-world",
+                        "weight": 0.6,
+                        "score": 1.0,
+                        "passed": true
+                      },
+                      {
+                        "evaluator": "eval-trajectory",
+                        "weight": 0.4,
+                        "score": 1.0,
+                        "passed": true
+                      }
+                    ]
+                  }
+                }
+              ],
+              "failure_codes": [],
+              "latency_ms": 0.142792,
+              "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4"
+            }
+          ],
+          "validity": {
+            "causal_pair_valid": true,
+            "runner_valid": true,
+            "notes": []
+          }
+        },
+        {
+          "run_id": "run_a239dc88db93435b",
+          "scenario_instance_id": "MIB-SKILL-003:101",
+          "scenario_instance_version": "0.2.0",
+          "template_id": "MIB-SKILL-003",
+          "template_version": "0.2.0",
+          "instance_seed": 101,
+          "condition": "relevant_ablation",
+          "ablation_id": "a-relevant-counterexample",
+          "ablation_method": "replay_excluding_events",
+          "repetition": 0,
+          "agent_seed": 101,
+          "status": "succeeded",
+          "started_at": "2026-09-04T03:23:37.345756Z",
+          "completed_at": "2026-09-04T03:23:37.346019Z",
+          "scenario_score": 0.5,
+          "probe_results": [
+            {
+              "probe_id": "p-action",
+              "probe_kind": "action",
+              "condition": "relevant_ablation",
+              "repetition": 0,
+              "outcome": "scored",
               "score": 0.5,
-              "passed": false,
+              "weight": 1.0,
+              "dimensions": [
+                "skill_learning_transfer"
+              ],
+              "evaluator_results": [
+                {
+                  "evaluator_id": "eval-composite",
+                  "evaluator_type": "composite",
+                  "score": 0.5,
+                  "passed": false,
+                  "failure_codes": [
+                    "negative_transfer",
+                    "trajectory_collapse"
+                  ],
+                  "details": {
+                    "components": [
+                      {
+                        "evaluator": "eval-world",
+                        "weight": 0.6,
+                        "score": 0.5,
+                        "passed": false
+                      },
+                      {
+                        "evaluator": "eval-trajectory",
+                        "weight": 0.4,
+                        "score": 0.5,
+                        "passed": false
+                      }
+                    ]
+                  }
+                }
+              ],
               "failure_codes": [
                 "negative_transfer",
                 "trajectory_collapse"
               ],
-              "details": {
-                "components": [
-                  {
-                    "evaluator": "eval-world",
-                    "weight": 0.6,
-                    "score": 0.5,
-                    "passed": false
-                  },
-                  {
-                    "evaluator": "eval-trajectory",
-                    "weight": 0.4,
-                    "score": 0.5,
-                    "passed": false
-                  }
-                ]
-              }
+              "latency_ms": 0.143291,
+              "output_digest": "6b771ed0483d047d1c45edaf6dfb061c77be7594eb52417b872b931bae173439"
             }
           ],
-          "failure_codes": [
-            "negative_transfer",
-            "trajectory_collapse"
+          "validity": {
+            "causal_pair_valid": true,
+            "runner_valid": true,
+            "notes": []
+          }
+        },
+        {
+          "run_id": "run_a6bbf68f47ee4e18",
+          "scenario_instance_id": "MIB-SKILL-003:101",
+          "scenario_instance_version": "0.2.0",
+          "template_id": "MIB-SKILL-003",
+          "template_version": "0.2.0",
+          "instance_seed": 101,
+          "condition": "irrelevant_ablation",
+          "ablation_id": "a-irrelevant",
+          "ablation_method": "replay_excluding_events",
+          "repetition": 0,
+          "agent_seed": 101,
+          "status": "succeeded",
+          "started_at": "2026-09-04T03:23:37.346045Z",
+          "completed_at": "2026-09-04T03:23:37.346247Z",
+          "scenario_score": 1.0,
+          "probe_results": [
+            {
+              "probe_id": "p-action",
+              "probe_kind": "action",
+              "condition": "irrelevant_ablation",
+              "repetition": 0,
+              "outcome": "scored",
+              "score": 1.0,
+              "weight": 1.0,
+              "dimensions": [
+                "skill_learning_transfer"
+              ],
+              "evaluator_results": [
+                {
+                  "evaluator_id": "eval-composite",
+                  "evaluator_type": "composite",
+                  "score": 1.0,
+                  "passed": true,
+                  "failure_codes": [],
+                  "details": {
+                    "components": [
+                      {
+                        "evaluator": "eval-world",
+                        "weight": 0.6,
+                        "score": 1.0,
+                        "passed": true
+                      },
+                      {
+                        "evaluator": "eval-trajectory",
+                        "weight": 0.4,
+                        "score": 1.0,
+                        "passed": true
+                      }
+                    ]
+                  }
+                }
+              ],
+              "failure_codes": [],
+              "latency_ms": 0.0965,
+              "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4"
+            }
           ],
-          "latency_ms": 0.113148,
-          "output_digest": "6b771ed0483d047d1c45edaf6dfb061c77be7594eb52417b872b931bae173439",
-          "extensions": {
-            "mib.runner.action_trace": [
-              {
-                "sequence": 1,
-                "kind": "tool_call",
-                "tool_call_id": "call_0001",
-                "tool": "canvas.activate_context",
-                "arguments": {
-                  "context": "primary"
-                },
-                "result": {
-                  "success": false,
-                  "error": "unnecessary_context_activation"
-                }
-              },
-              {
-                "sequence": 2,
-                "kind": "tool_call",
-                "tool_call_id": "call_0002",
-                "tool": "canvas.edit_item",
-                "arguments": {
-                  "value": "updated"
-                },
-                "result": {
-                  "success": true,
-                  "edited": true
-                }
-              },
-              {
-                "sequence": 3,
-                "kind": "tool_call",
-                "tool_call_id": "call_0003",
-                "tool": "canvas.commit",
-                "arguments": {},
-                "result": {
-                  "success": true,
-                  "committed": true
-                }
-              }
-            ]
+          "validity": {
+            "causal_pair_valid": true,
+            "runner_valid": true,
+            "notes": []
           }
         }
       ],
-      "validity": {
-        "causal_pair_valid": true,
-        "runner_valid": true,
-        "notes": []
-      },
-      "extensions": {
-        "mib.runner.world_state": {
-          "contextual_save": {
-            "context_required": false,
-            "expected_context": null,
-            "active_context": null,
-            "edited": true,
-            "committed": true,
-            "policy_violation": true,
-            "value": "updated",
-            "last_error": null
-          }
+      "redacted": false,
+      "raw_output_policy": "digest_only"
+    },
+    "aggregates": {
+      "scenario_instances": [
+        {
+          "scenario_instance_id": "MIB-SKILL-003:101",
+          "template_id": "MIB-SKILL-003",
+          "instance_seed": 101,
+          "full_score": 1.0,
+          "dimension_scores": {
+            "skill_learning_transfer": 1.0,
+            "causal_memory_impact": 1.0
+          },
+          "condition_scores": {
+            "full": 1.0,
+            "relevant_ablation": 0.5,
+            "irrelevant_ablation": 1.0
+          },
+          "repetitions": 1,
+          "causal_pair_ids": [
+            "pair:MIB-SKILL-003:101:0:a-relevant-counterexample",
+            "pair:MIB-SKILL-003:101:0:a-irrelevant"
+          ],
+          "causal_metrics": [
+            {
+              "name": "memory_benefit",
+              "value": 0.5,
+              "unit": "percentage_points",
+              "scope": "scenario_instance",
+              "reference_condition": "full",
+              "comparison_condition": "relevant_ablation",
+              "eligible_n": 1,
+              "total_n": 1,
+              "coverage": 1.0
+            },
+            {
+              "name": "headroom_normalized_memory_benefit",
+              "value": 1.0,
+              "unit": "normalized",
+              "scope": "scenario_instance",
+              "reference_condition": "full",
+              "comparison_condition": "relevant_ablation",
+              "eligible_n": 1,
+              "total_n": 1,
+              "coverage": 1.0
+            },
+            {
+              "name": "irrelevant_memory_stability",
+              "value": 1.0,
+              "unit": "normalized",
+              "scope": "scenario_instance",
+              "reference_condition": "full",
+              "comparison_condition": "irrelevant_ablation",
+              "eligible_n": 1,
+              "total_n": 1,
+              "coverage": 1.0
+            }
+          ]
+        }
+      ],
+      "templates": [
+        {
+          "template_id": "MIB-SKILL-003",
+          "template_version": "0.2.0",
+          "instance_count": 1,
+          "template_weight": 1.0,
+          "full_score": 100.0,
+          "dimension_scores": {
+            "skill_learning_transfer": 100.0,
+            "causal_memory_impact": 100.0
+          },
+          "dimension_weights": {
+            "skill_learning_transfer": 0.8,
+            "causal_memory_impact": 0.2
+          },
+          "coverage_weight": 1.0
+        }
+      ],
+      "dimensions": [
+        {
+          "dimension": "skill_learning_transfer",
+          "score": 100.0,
+          "weight": 0.8,
+          "coverage": 1.0,
+          "template_count": 1,
+          "eligible_template_count": 1
         },
-        "mib.runner.world_state_digest": "109c47cb92456c3bdf7221ab1ca19a5780bbd7d44855342cf44446138bb27fad",
-        "mib.runner.action_trace": [
-          {
-            "probe_id": "p-action",
-            "sequence": 1,
-            "kind": "tool_call",
-            "tool_call_id": "call_0001",
-            "tool": "canvas.activate_context",
-            "arguments": {
-              "context": "primary"
-            },
-            "result": {
-              "success": false,
-              "error": "unnecessary_context_activation"
-            }
-          },
-          {
-            "probe_id": "p-action",
-            "sequence": 2,
-            "kind": "tool_call",
-            "tool_call_id": "call_0002",
-            "tool": "canvas.edit_item",
-            "arguments": {
-              "value": "updated"
-            },
-            "result": {
-              "success": true,
-              "edited": true
-            }
-          },
-          {
-            "probe_id": "p-action",
-            "sequence": 3,
-            "kind": "tool_call",
-            "tool_call_id": "call_0003",
-            "tool": "canvas.commit",
-            "arguments": {},
-            "result": {
-              "success": true,
-              "committed": true
-            }
-          }
-        ]
+        {
+          "dimension": "causal_memory_impact",
+          "score": 100.0,
+          "weight": 0.2,
+          "coverage": 1.0,
+          "template_count": 1,
+          "eligible_template_count": 1
+        }
+      ],
+      "mib_score": {
+        "base_score": 100.0,
+        "global_guardrail_penalty": 0.0,
+        "final_score": 100.0,
+        "official": false,
+        "partial": true,
+        "profile_eligible": false,
+        "formula": "weighted_dimension_sum"
+      },
+      "dimension_weight_sum": 1.0
+    },
+    "causal_metrics": [
+      {
+        "name": "memory_benefit",
+        "value": 0.5,
+        "unit": "percentage_points",
+        "scope": "benchmark",
+        "reference_condition": "full",
+        "comparison_condition": "relevant_ablation",
+        "eligible_n": 1,
+        "total_n": 1,
+        "coverage": 1.0
+      },
+      {
+        "name": "headroom_normalized_memory_benefit",
+        "value": 1.0,
+        "unit": "normalized",
+        "scope": "benchmark",
+        "reference_condition": "full",
+        "comparison_condition": "relevant_ablation",
+        "eligible_n": 1,
+        "total_n": 1,
+        "coverage": 1.0
+      },
+      {
+        "name": "irrelevant_memory_stability",
+        "value": 1.0,
+        "unit": "normalized",
+        "scope": "benchmark",
+        "reference_condition": "full",
+        "comparison_condition": "irrelevant_ablation",
+        "eligible_n": 1,
+        "total_n": 1,
+        "coverage": 1.0
+      }
+    ],
+    "coverage": {
+      "overall": 1.0,
+      "profile_required": 0.0,
+      "by_dimension": {
+        "skill_learning_transfer": 1.0,
+        "causal_memory_impact": 1.0
+      },
+      "missing_required_templates": [],
+      "unsupported_required_templates": [],
+      "partial_score_reason": "Single-Scenario development report; not an official profile score."
+    },
+    "statistics": {
+      "confidence_level": 0.95,
+      "mib_score": {
+        "value": 100.0,
+        "n": 1
       }
     },
-    {
-      "run_id": "run_3a39dc64279742d7",
-      "scenario_instance_id": "MIB-SKILL-003:101",
-      "scenario_instance_version": "0.1.0",
-      "template_id": "MIB-SKILL-003",
-      "template_version": "0.1.0",
-      "instance_seed": 101,
-      "condition": "irrelevant_ablation",
-      "ablation_id": "a-irrelevant",
-      "ablation_method": "replay_excluding_events",
-      "repetition": 0,
-      "agent_seed": 101,
-      "status": "succeeded",
-      "started_at": "2026-08-19T04:49:03.176211Z",
-      "completed_at": "2026-08-19T04:49:03.176361Z",
-      "scenario_score": 1.0,
-      "probe_results": [
-        {
-          "probe_id": "p-action",
-          "probe_kind": "action",
-          "condition": "irrelevant_ablation",
-          "repetition": 0,
-          "outcome": "scored",
-          "score": 1.0,
-          "weight": 1.0,
-          "dimensions": [
-            "skill_learning_transfer"
-          ],
-          "evaluator_results": [
-            {
-              "evaluator_id": "eval-composite",
-              "evaluator_type": "composite",
-              "score": 1.0,
-              "passed": true,
-              "failure_codes": [],
-              "details": {
-                "components": [
-                  {
-                    "evaluator": "eval-world",
-                    "weight": 0.6,
-                    "score": 1.0,
-                    "passed": true
-                  },
-                  {
-                    "evaluator": "eval-trajectory",
-                    "weight": 0.4,
-                    "score": 1.0,
-                    "passed": true
-                  }
-                ]
-              }
-            }
-          ],
-          "failure_codes": [],
-          "latency_ms": 0.084463,
-          "output_digest": "11adf8b9c6c14fed6834ad5f8d2378c694defc7f3654f399a5d8714a215824e4",
-          "extensions": {
-            "mib.runner.action_trace": [
-              {
-                "sequence": 1,
-                "kind": "tool_call",
-                "tool_call_id": "call_0001",
-                "tool": "canvas.edit_item",
-                "arguments": {
-                  "value": "updated"
-                },
-                "result": {
-                  "success": true,
-                  "edited": true
-                }
-              },
-              {
-                "sequence": 2,
-                "kind": "tool_call",
-                "tool_call_id": "call_0002",
-                "tool": "canvas.commit",
-                "arguments": {},
-                "result": {
-                  "success": true,
-                  "committed": true
-                }
-              }
-            ]
-          }
-        }
-      ],
-      "validity": {
-        "causal_pair_valid": true,
-        "runner_valid": true,
-        "notes": []
-      },
-      "extensions": {
-        "mib.runner.world_state": {
-          "contextual_save": {
-            "context_required": false,
-            "expected_context": null,
-            "active_context": null,
-            "edited": true,
-            "committed": true,
-            "policy_violation": false,
-            "value": "updated",
-            "last_error": null
-          }
-        },
-        "mib.runner.world_state_digest": "1ec190570ba0b49be6eaffdd4ab2674c47abac5e4fc69cc8841cb7bf1f716248",
-        "mib.runner.action_trace": [
-          {
-            "probe_id": "p-action",
-            "sequence": 1,
-            "kind": "tool_call",
-            "tool_call_id": "call_0001",
-            "tool": "canvas.edit_item",
-            "arguments": {
-              "value": "updated"
-            },
-            "result": {
-              "success": true,
-              "edited": true
-            }
-          },
-          {
-            "probe_id": "p-action",
-            "sequence": 2,
-            "kind": "tool_call",
-            "tool_call_id": "call_0002",
-            "tool": "canvas.commit",
-            "arguments": {},
-            "result": {
-              "success": true,
-              "committed": true
-            }
-          }
-        ]
+    "warnings": [
+      {
+        "code": "development.single_scenario_partial_score",
+        "severity": "info",
+        "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
+        "scope": "report"
       }
+    ],
+    "provenance": {
+      "generated_by": "MIB Reference Runner",
+      "generator_version": "0.8.0",
+      "score_recomputed": true,
+      "verification_status": "partially_verified"
     }
-  ]
+  }
 }

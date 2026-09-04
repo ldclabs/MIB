@@ -3,7 +3,7 @@
 ## Formation, Routing, Uptake, and Transfer Distance
 
 **Version:** 0.1-draft
-**Status:** Diagnostic extension / Companion to `MIB-Scoring.md` and `MIB-Scenario-Model.md`
+**Status:** Diagnostic extension / Companion to `MIB-Specification.md` and `MIB-Specification.md`
 
 ---
 
@@ -469,7 +469,7 @@ Negative Transfer Rate              share of annotated Probes with AA < B
 
 Near-Match Resistance is an **outcome** measure, not applicability precision. A correct answer is not proof that memory was withheld. Applicability Precision and Recall may be computed only when a Scenario or a decomposable adapter provides direct observable evidence that memory was applied.
 
-`Negative Transfer Rate` is deliberately its own name. It is not the standardized MIB `negative_transfer` causal metric, whose control semantics come from `MIB-Scoring.md`. For transfer diagnostics use the explicit terms: Near-Match Harm, Wrong-Ability Harm, Unsupported Memory Delta, Stale-Skill Harm.
+`Negative Transfer Rate` is deliberately its own name. It is not the standardized MIB `negative_transfer` causal metric, whose control semantics come from `MIB-Specification.md`. For transfer diagnostics use the explicit terms: Near-Match Harm, Wrong-Ability Harm, Unsupported Memory Delta, Stale-Skill Harm.
 
 ## 9.9 Efficiency
 

@@ -12,7 +12,7 @@ from .capability import render_capability_card
 from .materialize import materialize
 from .hidden import HiddenEvalStore, redact_report_for_public
 from .submission import build_submission_runtime, load_submission_spec
-from .reality import (
+from .experimental.reality import (
     attest_reality_result,
     load_reality_pack,
     redact_reality_report,
@@ -21,7 +21,7 @@ from .reality import (
 )
 from .report import build_basic_report, validate_report, verify_score
 from .runner import run_scenario
-from .transfer import inspect_transfer
+from .experimental.transfer import inspect_transfer
 from .validation import load_json, validate_scenario
 
 
@@ -302,6 +302,9 @@ def cmd_evaluate_hidden(args) -> int:
         bootstrap_seed=args.bootstrap_seed,
     )
     report.setdefault("provenance", {})["notes"] = f"Hidden evaluation cycle {args.cycle}; submission={spec['id']}; transport={runtime.transport}."
+    internal_verify = verify_score(report)
+    if not internal_verify["valid"]:
+        raise SystemExit("internal report failed full score verification: " + "; ".join(internal_verify["errors"][:5]))
     if report_schema:
         validate_report(report, report_schema)
     public = redact_report_for_public(report, aliases=aliases, redaction_key=eval_key)
@@ -324,6 +327,7 @@ def cmd_evaluate_hidden(args) -> int:
         "instances": len(instances),
         "summary": summary,
         "public_report_verified": True,
+        "internal_report_verification": internal_verify["verification_level"],
         "internal_report": args.output_internal,
         "public_report": args.output_public,
         "capability_card": args.card,

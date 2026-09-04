@@ -3,7 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ..transfer import RECALL_PREFIX
+from .. import __version__
+from ..experimental.transfer import RECALL_PREFIX
 from ..types import ActStep, AgentOutput, Observation
 
 _RECALL_MARKER = RECALL_PREFIX.casefold()
@@ -46,7 +47,7 @@ class ReferenceMemoryAgent:
             "protocol": "mib-agent/0.1",
             "implementation": {
                 "name": "MIB Reference Fixture Agent",
-                "version": "0.4.0",
+                "version": __version__,
                 "vendor": "MIB",
             },
             "track_support": ["integrated_agent"],
@@ -274,6 +275,13 @@ class ReferenceMemoryAgent:
         if "allergic to shellfish" in ql:
             if not any("shellfish" in (o.content or "").casefold() for o in obs):
                 return "unknown"
+
+        # Known preference (paired with the abstention Probe in MIB-EPI-001).
+        if "what food do i enjoy" in ql:
+            for o in reversed(obs):
+                m = re.search(r"i enjoy (.+?)\.", o.content or "", re.I)
+                if m:
+                    return m.group(1).strip()
 
         # Direct code recall.
         if "access code" in ql:

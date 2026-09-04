@@ -3,7 +3,7 @@
 ## Transport-Neutral Interface Between the MIB Runner and Memory-Enabled Agents
 
 **Version:** 0.1-draft  
-**Status:** Adapter Protocol Proposal / Companion to `MIB-Architecture.md` and `MIB-Scenario-Model.md`
+**Status:** Adapter Protocol Proposal / Companion to `MIB-Specification.md` and `MIB-Specification.md`
 
 ---
 
@@ -3081,7 +3081,7 @@ same future Probe
 record counterfactual outcome
 ```
 
-This is the executable bridge from `MIB-Scenario-Model` to actual benchmark runs.
+This is the executable bridge from `MIB-Specification` to actual benchmark runs.
 
 ---
 
@@ -3783,8 +3783,8 @@ The observable tool/action trajectory becomes available to the MIB trajectory ev
 
 ```text
 MIB/
-├── MIB-Architecture.md
-├── MIB-Scenario-Model.md
+├── MIB-Specification.md
+├── MIB-Specification.md
 ├── MIB-Agent-Adapter.md
 │
 ├── schemas/
@@ -3809,7 +3809,7 @@ MIB/
 With Architecture, Scenario Model, Scenario Schema, and Agent Adapter defined, the next highest-value artifact is:
 
 ```text
-MIB-Scoring.md
+MIB-Specification.md
 ```
 
 followed by:
@@ -3821,7 +3821,7 @@ canonical scenario pack
 reference runner
 ```
 
-`MIB-Scoring.md` should freeze:
+`MIB-Specification.md` should freeze:
 
 ```text
 Probe normalization

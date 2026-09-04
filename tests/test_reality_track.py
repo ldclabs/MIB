@@ -13,13 +13,13 @@ import json
 
 import pytest
 
-from mib_runner.agents.reality_fixtures import (
+from mib_runner.experimental.reality_fixtures import (
     NaiveRealityAgent,
     OverGeneralizingRealityAgent,
     RuleLearningRealityAgent,
 )
 from mib_runner.leaderboard import paired_compare_reports, result_family
-from mib_runner.reality import (
+from mib_runner.experimental.reality import (
     CONDITIONS,
     REALITY_EXTENSION,
     attest_reality_result,
@@ -31,14 +31,14 @@ from mib_runner.reality import (
     run_reality_pair,
     verify_reality_attestation,
 )
-from mib_runner.reality_domains.ledger_codes import (
+from mib_runner.experimental.reality_domains.ledger_codes import (
     ABILITY_MOD97,
     UNKNOWN_ANSWER,
     ability_is_load_bearing,
 )
-from mib_runner.reality_domains.ledger_codes import test_tasks as held_out_tasks
-from mib_runner.reality_domains.ledger_codes import train_tasks as acquisition_tasks
-from mib_runner.reality_graph import (
+from mib_runner.experimental.reality_domains.ledger_codes import test_tasks as held_out_tasks
+from mib_runner.experimental.reality_domains.ledger_codes import train_tasks as acquisition_tasks
+from mib_runner.experimental.reality_graph import (
     load_reality_graph,
     parse_reality_graph,
     redact_reality_graph,

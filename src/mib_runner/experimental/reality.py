@@ -31,21 +31,21 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
-from . import __version__
+from .. import __version__
 from .reality_graph import (
     RealityTransferGraph,
     load_reality_graph,
     redact_reality_graph,
     validate_reality_graph,
 )
-from .service_signing import derive_ed25519_private_key, digest_json, sign_json_ed25519, verify_json_ed25519
+from ..service_signing import derive_ed25519_private_key, digest_json, sign_json_ed25519, verify_json_ed25519
 from .transfer import (
     DISTANCE_CLASSES,
     DISTANCE_LABEL,
     POSITIVE_RELATIONS,
     RECALL_PREFIX,
 )
-from .types import Observation
+from ..types import Observation
 
 REALITY_EXTENSION = "mib.reality.v1"
 
@@ -803,7 +803,7 @@ def attest_reality_result(
 def verify_reality_attestation(signed: dict[str, Any], *, root_secret: str | None = None) -> bool:
     expected = None
     if root_secret is not None:
-        from .service_signing import public_key_b64
+        from ..service_signing import public_key_b64
 
         expected = public_key_b64(derive_ed25519_private_key(root_secret, "reality-result-attestation"))
     return verify_json_ed25519(

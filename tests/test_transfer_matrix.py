@@ -26,16 +26,16 @@ from mib_runner.agents import (
 from mib_runner.benchmark import load_templates, run_benchmark_pack
 from mib_runner.calibration import DEFAULT_TRANSFER_THRESHOLDS, calibrate_transfer
 from mib_runner.materialize import materialize
-from mib_runner.memory_adapter import (
+from mib_runner.experimental.memory_adapter import (
     InProcessMemoryAdapter,
     MIBMemoryAdapter,
     select_artifact_for_ability,
     supports_memory_adapter,
 )
 from mib_runner.runner import run_scenario
-from mib_runner.transfer import RECALL_PREFIX, TRANSFER_DIAGNOSTICS_EXTENSION, parse_transfer_support
-from mib_runner.transfer_diagnostics import build_transfer_diagnostics
-from mib_runner.transfer_matrix import (
+from mib_runner.experimental.transfer import RECALL_PREFIX, TRANSFER_DIAGNOSTICS_EXTENSION, parse_transfer_support
+from mib_runner.experimental.transfer_diagnostics import build_transfer_diagnostics
+from mib_runner.experimental.transfer_matrix import (
     baseline_excluded_event_ids,
     run_transfer_matrix,
     run_transfer_matrix_pack,

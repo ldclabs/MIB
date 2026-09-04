@@ -80,7 +80,7 @@ def make_service_handler(service: EvaluationService):
                 if path=="/submissions": return self._send(201,service.register_submission(b["spec_path"],display_name=b.get("display_name"),owner=b.get("owner"),track=b.get("track","integrated_agent"),smoke_test=bool(b.get("smoke_test",True))))
                 if path=="/jobs": return self._send(201,service.enqueue(b["submission_id"],cycle_id=b.get("cycle_id"),backend=b.get("backend")))
                 if path=="/worker/once": return self._send(200,service.worker_once())
-                if path=="/compare": return self._send(200,service.compare(b["result_a"],b["result_b"],resamples=int(b.get("resamples",5000)),seed=b.get("seed",20260819)))
+                if path=="/compare": return self._send(200,service.compare(b["result_a"],b["result_b"],resamples=max(1,min(int(b.get("resamples",5000)),20000)),seed=b.get("seed",20260819)))
                 return self._send(404,{"error":"not_found"})
             except Exception as e:return self._send(400,{"error":repr(e)})
     return Handler

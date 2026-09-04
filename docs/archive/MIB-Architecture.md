@@ -1,5 +1,7 @@
 # MIB Architecture
 
+> **Superseded design draft.** Retained for rationale and history only. The normative text is [`docs/MIB-Specification.md`](../MIB-Specification.md); where the two differ, the Specification and the reference implementation win.
+
 ## Memory Intelligence Benchmark
 
 **Version:** 0.1-draft  

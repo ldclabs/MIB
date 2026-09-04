@@ -19,7 +19,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ..reality_domains.ledger_codes import (
+from .reality_domains.ledger_codes import (
     ABILITY_DROP_CK,
     ABILITY_LEGACY_MOD100,
     ABILITY_MOD97,

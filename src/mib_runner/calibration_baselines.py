@@ -6,7 +6,7 @@ from typing import Any, Iterable
 
 from .agents.reference_memory import ReferenceMemoryAgent
 from . import __version__
-from .transfer import RECALL_PREFIX
+from .experimental.transfer import RECALL_PREFIX
 from .types import ActStep, AgentOutput, Observation
 
 _RECALL_MARKER = RECALL_PREFIX.casefold()

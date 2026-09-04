@@ -9,13 +9,15 @@
 Companion documents:
 
 ```text
-MIB-Architecture.md
-MIB-Scenario-Model.md
-schemas/mib-scenario.schema.json
+MIB-Specification.md
 MIB-Agent-Adapter.md
-MIB-Scoring.md
+schemas/mib-scenario.schema.json
 schemas/mib-report.schema.json
 ```
+
+This plan predates the consolidated specification. Where a milestone below
+describes a construct that `MIB-Specification.md` lists under Appendix A
+(Roadmap), the construct is not implemented in v0.1.
 
 ---
 
@@ -521,7 +523,7 @@ MIB-Core-0.1 Score
 
 Hidden instances inside one Template do not become independent Template weight.
 
-This follows `MIB-Scoring.md`.
+This follows `MIB-Specification.md`.
 
 ---
 
@@ -2926,7 +2928,7 @@ poorly discriminative templates
 
 # 90. MIB-Core-0.1 Causal Score
 
-The `causal_memory_impact` dimension uses the scoring model from `MIB-Scoring.md`.
+The `causal_memory_impact` dimension uses the scoring model from `MIB-Specification.md`.
 
 Recommended component weights:
 
@@ -3679,7 +3681,7 @@ preserve:
   causal pairs
 ```
 
-This follows `MIB-Scoring.md`.
+This follows `MIB-Specification.md`.
 
 ---
 
@@ -3766,10 +3768,10 @@ Recommended:
 
 ```text
 MIB/
-├── MIB-Architecture.md
-├── MIB-Scenario-Model.md
+├── MIB-Specification.md
+├── MIB-Specification.md
 ├── MIB-Agent-Adapter.md
-├── MIB-Scoring.md
+├── MIB-Specification.md
 ├── MIB-v0.1-Test-Plan.md
 │
 ├── schemas/

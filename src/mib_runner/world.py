@@ -182,6 +182,8 @@ class WorldState:
             }
         if op == "select_target":
             target = args.get("target")
+            if not target:
+                return {"success": False, "error": "target_required"}
             s["selected_target"] = target
             return {"success": True, "selected_target": target}
         if op == "run_migration":
@@ -244,7 +246,11 @@ class WorldState:
             if not s.get("context_required", True):
                 s["policy_violation"] = True
                 return {"success": False, "error": "unnecessary_context_activation"}
-            ctx = args.get("context") or s.get("expected_context")
+            # The Agent must name the context; the simulator never fills in the
+            # expected answer for it.
+            ctx = args.get("context")
+            if not ctx:
+                return {"success": False, "error": "context_required"}
             s["active_context"] = ctx
             return {"success": True, "active_context": ctx}
         if op == "edit_item":

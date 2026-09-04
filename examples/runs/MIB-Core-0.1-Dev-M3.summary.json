@@ -2,26 +2,26 @@
   "profile": "MIB-Core-0.1-Dev-M3",
   "template_count": 24,
   "instance_count": 72,
-  "run_count": 498,
+  "run_count": 504,
   "repetitions": 2,
   "instance_seeds": [
     101,
     202,
     303
   ],
-  "mib_score": 99.99999999999999,
+  "mib_score": 100.0,
   "coverage": 1.0,
   "dimensions": {
     "retention_retrieval": 100.0,
     "temporal_memory": 100.0,
-    "epistemic_memory": 99.99999999999999,
+    "epistemic_memory": 100.0,
     "experience_memory": 99.99999999999999,
-    "skill_learning_transfer": 99.99999999999999,
+    "skill_learning_transfer": 100.0,
     "causal_memory_impact": 100.0
   },
   "causal_metrics": {
     "headroom_normalized_memory_benefit": 1.0,
     "irrelevant_memory_stability": 1.0,
-    "memory_benefit": 0.9764705882352941
+    "memory_benefit": 0.9731481481481481
   }
 }

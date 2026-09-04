@@ -83,6 +83,8 @@ def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict
     match = config.get("match", "contains")
     if match not in {"exact", "contains"}:
         raise ValueError(f"unsupported set_match mode: {match}")
+    expected_status = oracle.get("expected_status")
+    abstained = output.type == "abstention"
     actual = normalize(output_text(output), mode)
     accepted = [normalize(x, mode) for x in oracle.get("accepted", [])]
     forbidden = [normalize(x, mode) for x in oracle.get("forbidden", [])]
@@ -94,13 +96,27 @@ def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict
         accepted_match = any(_contains_value(actual, a) for a in accepted) if accepted else False
         forbidden_match = any(_contains_value(actual, f) for f in forbidden)
 
-    score = 1.0 if accepted_match and not forbidden_match else 0.0
     failure_codes: list[str] = []
-    if forbidden_match:
-        # A stale value was adopted; that is the specific failure, not a miss.
-        failure_codes.append("stale_memory_adoption")
-    elif not accepted_match:
+    if expected_status == "unknown":
+        # MIB-Specification §4.7: a correct abstention scores 1; an unsupported
+        # definite claim is false certainty, not a retrieval miss.
+        score = 1.0 if (abstained or (accepted_match and not forbidden_match)) else 0.0
+        if score == 0.0:
+            failure_codes.append("false_certainty")
+    elif abstained:
+        # The answer was knowable; abstaining is a miss, not a safe default.
+        score = 0.0
         failure_codes.append("retrieval_miss")
+    else:
+        score = 1.0 if accepted_match and not forbidden_match else 0.0
+        if forbidden_match:
+            # Policy: a forbidden (superseded) value anywhere in the answer fails
+            # the Probe even when the accepted value is present too.  Probes that
+            # declare ``forbidden`` ask for the value only; hedging between the
+            # current and the stale value is stale adoption, not richness.
+            failure_codes.append("stale_memory_adoption")
+        elif not accepted_match:
+            failure_codes.append("retrieval_miss")
     return {
         "score": score,
         "passed": score == 1.0,
@@ -108,6 +124,8 @@ def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict
         "details": {
             "actual_normalized": actual,
             "match": match,
+            "expected_status": expected_status,
+            "abstained": abstained,
             "accepted_count": len(accepted),
             "accepted_match": accepted_match,
             "forbidden_match": forbidden_match,
@@ -146,11 +164,16 @@ def evaluate_world_state(world: WorldState, oracle: dict[str, Any], config: dict
     return {"score": score, "passed": score == 1.0, "failure_codes": failures, "details": {"assertions": checks}}
 
 
-def evaluate_trajectory(trace: list[dict[str, Any]], oracle: dict[str, Any], config: dict[str, Any] | None) -> dict[str, Any]:
+def evaluate_trajectory(
+    trace: list[dict[str, Any]], oracle: dict[str, Any], config: dict[str, Any] | None, probe_kind: str | None = None
+) -> dict[str, Any]:
     reqs = list(oracle.get("trajectory_requirements") or [])
     if not reqs:
         return {"score": 0.0, "passed": False, "failure_codes": ["evaluator_error"], "details": {"reason": "no trajectory_requirements"}}
     tools = [x.get("tool") for x in trace if x.get("kind") == "tool_call"]
+    # Repeating a known failure is error recurrence in an Experience Probe and
+    # negative transfer in a Skill/action Probe (MIB-Specification §5.4).
+    forbidden_code = "error_recurrence" if probe_kind == "experience" else "negative_transfer"
     checks = []
     failures: set[str] = set()
     for r in reqs:
@@ -159,9 +182,11 @@ def evaluate_trajectory(trace: list[dict[str, Any]], oracle: dict[str, Any], con
         if typ == "required_action":
             ok = r.get("action") in tools
         elif typ == "forbidden_action":
-            ok = r.get("action") not in tools
+            # Abstaining from every action earns no credit for avoiding one:
+            # the requirement is only exercised by a non-empty trajectory.
+            ok = bool(tools) and r.get("action") not in tools
             if not ok:
-                failures.add("negative_transfer")
+                failures.add(forbidden_code if tools else "trajectory_collapse")
         elif typ in {"before", "after"}:
             first, second = r.get("first"), r.get("second")
             try:
@@ -175,7 +200,7 @@ def evaluate_trajectory(trace: list[dict[str, Any]], oracle: dict[str, Any], con
             ok = tools.count(r.get("action")) >= int(r.get("count", 0))
         else:
             raise ValueError(f"unsupported trajectory requirement {typ}")
-        if not ok:
+        if not ok and typ != "forbidden_action":
             failures.add("trajectory_collapse")
         checks.append({"requirement": r, "passed": ok})
     score = sum(1.0 for x in checks if x["passed"]) / len(checks)
@@ -189,7 +214,7 @@ def _eval_one(eid: str, spec: dict[str, Any], output: AgentOutput, probe: dict[s
     elif etype == "world_state":
         r = evaluate_world_state(context["world"], probe["oracle"], spec.get("config"))
     elif etype == "trajectory":
-        r = evaluate_trajectory(context.get("action_trace", []), probe["oracle"], spec.get("config"))
+        r = evaluate_trajectory(context.get("action_trace", []), probe["oracle"], spec.get("config"), probe_kind=probe.get("kind"))
     elif etype == "composite":
         comps = spec.get("components") or []
         if not comps:

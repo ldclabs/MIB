@@ -2,10 +2,10 @@
   "mib": "0.1",
   "kind": "MemoryEpisodeProgram",
   "id": "MIB-EPI-001",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "status": "candidate",
   "title": "Unknown vs False",
-  "description": "Tests whether absence of evidence remains unknown rather than becoming a fabricated negative claim.",
+  "description": "Tests whether absence of evidence remains unknown rather than becoming a fabricated negative claim. A known-food Probe pairs with the abstention Probe so that always-abstaining cannot earn full epistemic credit.",
   "suite": "epistemic",
   "dimensions": [
     "epistemic_memory",
@@ -136,6 +136,30 @@
   ],
   "probes": [
     {
+      "id": "p-known",
+      "kind": "factual",
+      "trigger": {
+        "after_event": "cp"
+      },
+      "delivery": "respond",
+      "input": {
+        "content": "What food do I enjoy? Answer with the food only."
+      },
+      "oracle": {
+        "accepted": [
+          "${known_food}"
+        ],
+        "expected_status": "known"
+      },
+      "evaluators": [
+        "eval-status"
+      ],
+      "dimensions": [
+        "epistemic_memory"
+      ],
+      "weight": 1.0
+    },
+    {
       "id": "p-unknown",
       "kind": "abstention",
       "trigger": {
@@ -161,6 +185,20 @@
     }
   ],
   "ablations": [
+    {
+      "id": "a-relevant",
+      "kind": "relevant_memory",
+      "probes": [
+        "p-known"
+      ],
+      "method": "replay_excluding_events",
+      "targets": {
+        "event_ids": [
+          "e-known"
+        ]
+      },
+      "expected_effect": "degrade"
+    },
     {
       "id": "a-irrelevant",
       "kind": "irrelevant_memory",
@@ -199,6 +237,7 @@
     },
     "causal_metrics": [
       "causal_memory_impact",
+      "memory_benefit",
       "irrelevant_memory_stability"
     ]
   },

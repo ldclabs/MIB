@@ -1,5 +1,7 @@
 # MIB Scenario Model
 
+> **Superseded design draft.** Retained for rationale and history only. The normative text is [`docs/MIB-Specification.md`](../MIB-Specification.md); where the two differ, the Specification and the reference implementation win.
+
 ## Memory Episode Program for the Memory Intelligence Benchmark
 
 **Version:** 0.1-draft  
@@ -743,7 +745,7 @@ absolute virtual datetime
 relative time advance
 ```
 
-The Runner owns clock progression.
+The Runner owns clock progression. An absolute `at.time` sets the clock; a `time_advance` event may instead carry `payload.duration` as an ISO 8601 duration (`P3D`, `PT2H30M`) that moves the clock forward from the current virtual time.
 
 ---
 
@@ -1261,6 +1263,8 @@ composite
 ```
 
 The Scenario SHOULD use deterministic evaluators whenever possible.
+
+The reference Runner executes `set_match`, `world_state`, `trajectory`, and `composite`. The schema accepts the full registry because it is the format contract, but the reference Scenario Validator rejects any Scenario that uses an evaluator type, trigger kind (only `after_event`), delivery mode (only `respond` / `act`), ablation method (only `replay_excluding_events` / `replay_with_injections`), tool `simulator_binding`, or generated event (`distractor_batch`) the Runner cannot execute. A schema-valid Scenario that would crash the Runner or score every Agent zero must not enter a pack.
 
 ---
 

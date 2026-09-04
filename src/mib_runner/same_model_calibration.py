@@ -14,9 +14,9 @@ from .materialize import materialize
 from .model_clients import build_model_client, DeterministicStubModelClient
 from .runner import run_condition, run_scenario
 from .same_model_agent import InvocationRecorder, SameModelAgent, load_prompt
-from .transfer import oracle_artifact_bundle_digest
-from .transfer_diagnostics import DEFAULT_EPSILON, build_transfer_diagnostics
-from .transfer_matrix import eligible_transfer_templates, run_transfer_matrix
+from .experimental.transfer import oracle_artifact_bundle_digest
+from .experimental.transfer_diagnostics import DEFAULT_EPSILON, build_transfer_diagnostics
+from .experimental.transfer_matrix import eligible_transfer_templates, run_transfer_matrix
 from .validation import load_json, validate_scenario
 
 
@@ -37,8 +37,7 @@ _KIND_TO_CONDITION = {
 }
 
 
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+from .util import utc_now  # noqa: E402
 
 
 def sha256_bytes(b: bytes) -> str:

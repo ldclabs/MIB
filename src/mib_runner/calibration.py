@@ -10,15 +10,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from .agents.transfer_fixtures import OverTransferAgent
+from .experimental.transfer_fixtures import OverTransferAgent
 from .benchmark import build_instance_aggregate, validate_causal_pairs
 from .calibration_baselines import BASELINE_FACTORIES
 from .materialize import materialize
 from .runner import run_scenario
-from .scoring import mean as _mean
-from .transfer import POSITIVE_RELATIONS, parse_transfer_support
-from .transfer_diagnostics import transfer_relation_aggregates
-from .transfer_matrix import run_transfer_matrix
+from .scoring import mean as _mean, percentile  # noqa: F401
+from .util import utc_now  # noqa: F401
+from .experimental.transfer import POSITIVE_RELATIONS, parse_transfer_support
+from .experimental.transfer_diagnostics import transfer_relation_aggregates
+from .experimental.transfer_matrix import run_transfer_matrix
 from .validation import validate_scenario
 
 
@@ -32,26 +33,9 @@ DEFAULT_THRESHOLDS = {
 }
 
 
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
 def mean(xs: list[float]) -> float:
     """Re-exported from ``scoring`` so calibration and pack aggregation agree."""
     return _mean(xs)
-
-
-def percentile(xs: list[float], q: float) -> float:
-    if not xs:
-        return 0.0
-    ys = sorted(xs)
-    if len(ys) == 1:
-        return ys[0]
-    pos = (len(ys) - 1) * q
-    lo = int(math.floor(pos)); hi = int(math.ceil(pos)); frac = pos - lo
-    if lo == hi:
-        return ys[lo]
-    return ys[lo] * (1 - frac) + ys[hi] * frac
 
 
 def bootstrap_ci(values: list[float], *, resamples: int, seed: str | int, level: float = 0.95) -> dict[str, Any] | None:

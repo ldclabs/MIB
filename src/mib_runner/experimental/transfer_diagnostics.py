@@ -454,7 +454,7 @@ def transfer_diagnostic_aggregates(template_rows: list[dict[str, Any]]) -> dict[
 
     # Negative Transfer Rate is deliberately its own name.  It is not the
     # standardized MIB `negative_transfer` causal metric, whose control
-    # semantics come from MIB-Scoring.md.  Like every other aggregate here it is
+    # semantics come from MIB-Specification.md.  Like every other aggregate here it is
     # Template-first: pooling Probe rows would let one Template with many
     # annotated Probes dominate the benchmark number.
     per_template_rates: list[float] = []

@@ -2,13 +2,13 @@
   "mib": "0.1",
   "kind": "MIBReport",
   "report_version": "0.1.0",
-  "report_id": "report_156b2003281946ef",
-  "generated_at": "2026-08-19T04:49:03.170268Z",
+  "report_id": "report_f3315a3758054cb7",
+  "generated_at": "2026-09-04T03:23:37.056240Z",
   "scope": "internal",
   "benchmark": {
     "mib_version": "0.1",
     "profile": {
-      "id": "MIB-Core-0.1-Dev-M2",
+      "id": "MIB-Core-0.1-Dev-Single",
       "version": "0.1.0"
     },
     "track": "integrated_agent",
@@ -24,33 +24,33 @@
   "system": {
     "agent": {
       "name": "MIB Reference Fixture Agent",
-      "version": "0.2.0"
+      "version": "0.8.0"
     }
   },
   "adapter": {
     "protocol": "mib-agent/0.1",
     "implementation": {
       "name": "MIB Reference Fixture Agent",
-      "version": "0.2.0"
+      "version": "0.8.0"
     }
   },
   "environment": {
     "runner": {
       "name": "MIB Reference Runner",
-      "version": "0.2.0"
+      "version": "0.8.0"
     },
     "world_simulator": {
-      "name": "MIB Milestone 2 World",
-      "version": "0.2.0"
+      "name": "MIB Reference World Simulator",
+      "version": "0.8.0"
     },
     "evaluator_bundle": {
-      "name": "MIB M2 Evaluator Bundle",
-      "version": "0.2.0"
+      "name": "MIB Reference Evaluator Bundle",
+      "version": "0.8.0"
     }
   },
   "execution": {
-    "started_at": "2026-08-19T04:49:03.169432Z",
-    "completed_at": "2026-08-19T04:49:03.170207Z",
+    "started_at": "2026-09-04T03:23:37.054863Z",
+    "completed_at": "2026-09-04T03:23:37.056157Z",
     "scheduled_runs": 3,
     "completed_runs": 3,
     "scheduled_probe_attempts": 3,
@@ -63,7 +63,7 @@
   "results": {
     "runs": [
       {
-        "run_id": "run_665c3ab8e22843bb",
+        "run_id": "run_50c27fa793ca45e3",
         "scenario_instance_id": "MIB-EXP-001:101",
         "scenario_instance_version": "0.1.0",
         "template_id": "MIB-EXP-001",
@@ -73,8 +73,8 @@
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.169432Z",
-        "completed_at": "2026-08-19T04:49:03.169708Z",
+        "started_at": "2026-09-04T03:23:37.054863Z",
+        "completed_at": "2026-09-04T03:23:37.055525Z",
         "scenario_score": 1.0,
         "probe_results": [
           {
@@ -115,7 +115,7 @@
               }
             ],
             "failure_codes": [],
-            "latency_ms": 0.15958,
+            "latency_ms": 0.244833,
             "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
           }
         ],
@@ -126,7 +126,7 @@
         }
       },
       {
-        "run_id": "run_85ba0df41509446e",
+        "run_id": "run_382f5c7aef5f4350",
         "scenario_instance_id": "MIB-EXP-001:101",
         "scenario_instance_version": "0.1.0",
         "template_id": "MIB-EXP-001",
@@ -138,8 +138,8 @@
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.169743Z",
-        "completed_at": "2026-08-19T04:49:03.169963Z",
+        "started_at": "2026-09-04T03:23:37.055574Z",
+        "completed_at": "2026-09-04T03:23:37.055823Z",
         "scenario_score": 0.13333333333333333,
         "probe_results": [
           {
@@ -184,8 +184,8 @@
             "failure_codes": [
               "trajectory_collapse"
             ],
-            "latency_ms": 0.14004,
-            "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
+            "latency_ms": 0.107541,
+            "output_digest": "f1086bd547356a47b3ff7a711c91921c873d7712d1ab87ff437417f8bf211ca3"
           }
         ],
         "validity": {
@@ -195,7 +195,7 @@
         }
       },
       {
-        "run_id": "run_225b856ec7bb4dd8",
+        "run_id": "run_db6d0af50c8a4f7f",
         "scenario_instance_id": "MIB-EXP-001:101",
         "scenario_instance_version": "0.1.0",
         "template_id": "MIB-EXP-001",
@@ -207,8 +207,8 @@
         "repetition": 0,
         "agent_seed": 101,
         "status": "succeeded",
-        "started_at": "2026-08-19T04:49:03.169994Z",
-        "completed_at": "2026-08-19T04:49:03.170207Z",
+        "started_at": "2026-09-04T03:23:37.055848Z",
+        "completed_at": "2026-09-04T03:23:37.056157Z",
         "scenario_score": 1.0,
         "probe_results": [
           {
@@ -249,7 +249,7 @@
               }
             ],
             "failure_codes": [],
-            "latency_ms": 0.132664,
+            "latency_ms": 0.169,
             "output_digest": "e1b0cc6e928162e40927eef6336c9993f11307517b14e42ef55f42e2e765c630"
           }
         ],
@@ -280,6 +280,10 @@
           "irrelevant_ablation": 1.0
         },
         "repetitions": 1,
+        "causal_pair_ids": [
+          "pair:MIB-EXP-001:101:0:a-relevant",
+          "pair:MIB-EXP-001:101:0:a-irrelevant"
+        ],
         "causal_metrics": [
           {
             "name": "memory_benefit",
@@ -408,7 +412,7 @@
     },
     "missing_required_templates": [],
     "unsupported_required_templates": [],
-    "partial_score_reason": "Milestone 2 single-scenario development report; not an official profile score."
+    "partial_score_reason": "Single-Scenario development report; not an official profile score."
   },
   "statistics": {
     "confidence_level": 0.95,
@@ -419,15 +423,15 @@
   },
   "warnings": [
     {
-      "code": "development.milestone2_partial_score",
+      "code": "development.single_scenario_partial_score",
       "severity": "info",
-      "message": "This is a Milestone 2 development report, not an official MIB-Core-0.1 score.",
+      "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
       "scope": "report"
     }
   ],
   "provenance": {
     "generated_by": "MIB Reference Runner",
-    "generator_version": "0.2.0",
+    "generator_version": "0.8.0",
     "score_recomputed": true,
     "verification_status": "partially_verified"
   }

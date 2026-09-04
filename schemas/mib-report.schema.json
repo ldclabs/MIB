@@ -726,6 +726,8 @@
               "memory_hallucination",
               "irrelevant_memory_interference",
               "authority_confusion",
+              "agent_protocol_violation",
+              "error_recurrence",
               "execution_failure",
               "timeout",
               "rate_limited",
@@ -896,6 +898,12 @@
           "items": {
             "$ref": "#/$defs/Warning"
           }
+        },
+        "ablation_tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Scenario-declared tolerance of this run's Ablation, carried so paired IMS/HRS can be re-verified from the report alone."
         }
       }
     },
@@ -1463,6 +1471,16 @@
         },
         "preserve_causal_pairs": {
           "type": "boolean"
+        },
+        "min_templates_per_dimension": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "insufficient_dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

@@ -31,18 +31,7 @@ def result_family(profile: dict[str, Any] | str) -> str:
     return CORE_FAMILY
 
 
-def percentile(values: list[float], q: float) -> float:
-    if not values:
-        return 0.0
-    xs = sorted(values)
-    if len(xs) == 1:
-        return xs[0]
-    pos = (len(xs)-1)*q
-    lo, hi = math.floor(pos), math.ceil(pos)
-    if lo == hi:
-        return xs[lo]
-    f = pos-lo
-    return xs[lo]*(1-f)+xs[hi]*f
+from .scoring import percentile  # noqa: E402
 
 
 def leaderboard(db: ServiceDB, *, cycle_id: str | None = None, profile_id: str | None = None) -> dict[str, Any]:

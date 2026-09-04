@@ -1,5 +1,5 @@
 from .reference_memory import ReferenceMemoryAgent
-from .transfer_fixtures import (
+from ..experimental.transfer_fixtures import (
     BadFormationAgent,
     BadRoutingAgent,
     BadUptakeAgent,

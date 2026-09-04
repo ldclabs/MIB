@@ -42,7 +42,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from .memory_adapter import select_artifact_for_ability, supports_memory_adapter
-from .runner import run_condition
+from ..runner import run_condition
 from .transfer import RECALL_PREFIX, TransferAbility, TransferSupport, parse_transfer_support
 
 CELL_CONDITIONS = {

@@ -1,6 +1,68 @@
 {
   "valid": true,
+  "verification_level": "full",
   "stored_base_score": 100.0,
   "recomputed_base_score": 100.0,
-  "difference": 0.0
+  "stored_final_score": 100.0,
+  "recomputed_final_score": 100.0,
+  "difference": 0.0,
+  "run_checks": [
+    {
+      "run_id": "run_50c27fa793ca45e3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_382f5c7aef5f4350",
+      "stored": 0.13333333333333333,
+      "recomputed": 0.13333333333333333,
+      "valid": true
+    },
+    {
+      "run_id": "run_db6d0af50c8a4f7f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    }
+  ],
+  "instance_checks": [
+    {
+      "scenario_instance_id": "MIB-EXP-001:101",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    }
+  ],
+  "template_checks": [
+    {
+      "template_id": "MIB-EXP-001",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-EXP-001",
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "dimension_checks": [
+    {
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "causal_memory_impact",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "errors": []
 }

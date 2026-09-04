@@ -58,7 +58,9 @@ def test_pack_level_execution_aggregation_bootstrap_and_report():
     report, summary = run_benchmark_pack(
         templates=templates,
         schema=SCHEMA,
-        profile=PROFILE,
+        # The dev pack carries 3–4 Templates per Dimension; opt into small-sample
+        # intervals here only to exercise the bootstrap plumbing.
+        profile={**PROFILE, "statistics": {**PROFILE["statistics"], "min_templates_per_dimension": 1}},
         agent_factory=ReferenceMemoryAgent,
         instance_seeds=[101, 202],
         repetitions=2,

@@ -38,8 +38,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..memory_adapter import InProcessMemoryAdapter, MemoryArtifact
-from ..transfer import RECALL_PREFIX
+from .memory_adapter import InProcessMemoryAdapter, MemoryArtifact
+from .transfer import RECALL_PREFIX
 from ..types import ActStep, AgentOutput, Observation
 
 #: Text cues that identify a raw Experience narrative, per domain.

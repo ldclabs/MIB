@@ -1,134 +1,30 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import uuid
-from datetime import datetime, timezone
+from collections import defaultdict
 from typing import Any
 
 import jsonschema
 
 from . import __version__
-
-from .scoring import ablation_tolerances, tolerant_harm_resistance, tolerant_stability
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _condition_scores(runs: list[dict[str, Any]]) -> dict[str, float]:
-    buckets: dict[str, list[float]] = {}
-    for r in runs:
-        buckets.setdefault(r["condition"], []).append(float(r.get("scenario_score", 0.0)))
-    return {k: sum(v) / len(v) for k, v in buckets.items() if v}
+from .scoring import (
+    build_instance_aggregate,
+    instance_dimension_scores,
+    instance_pair_notes,
+    mean,
+    paired_causal_metrics,
+    scenario_score_from_probes,
+    weighted_mean,
+)
+from .util import utc_now
 
 
-def _probe_map(run: dict[str, Any]) -> dict[str, float]:
-    return {
-        p["probe_id"]: float(p.get("score", 0.0))
-        for p in run.get("probe_results", [])
-        if p.get("outcome") in {"scored", "execution_failure"}
-        and float(p.get("weight", 1.0)) > 0
-    }
-
-
-def _mean_selected(full_probe_scores: dict[str, float], probe_ids: set[str]) -> float | None:
-    vals = [full_probe_scores[p] for p in probe_ids if p in full_probe_scores]
-    return sum(vals) / len(vals) if vals else None
-
-
-def _causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, float] | None = None) -> list[dict[str, Any]]:
-    """Compute paired causal metrics on each intervention's Probe subset."""
-    tolerances = tolerances or {}
-    full_runs = [r for r in runs if r["condition"] == "full"]
-    if not full_runs:
-        return []
-    full_buckets: dict[str, list[float]] = {}
-    for fr in full_runs:
-        for pid, score in _probe_map(fr).items():
-            full_buckets.setdefault(pid, []).append(score)
-    full_probe_scores = {k: sum(v) / len(v) for k, v in full_buckets.items()}
-
-    relevant: list[tuple[float, str]] = []
-    hmbs: list[float] = []
-    irrelevant_stabilities: list[float] = []
-    harms: list[float] = []
-    harm_resistance: list[float] = []
-    negative_transfers: list[float] = []
-
-    relevant_probe_ids = {
-        pid
-        for run in runs if run.get("condition") == "relevant_ablation"
-        for pid in _probe_map(run)
-    }
-
-    for run in runs:
-        condition = run["condition"]
-        if condition == "full":
-            continue
-        probe_scores = _probe_map(run)
-        if condition == "no_memory":
-            probe_scores = {pid: score for pid, score in probe_scores.items() if pid not in relevant_probe_ids}
-        probe_ids = set(probe_scores)
-        if not probe_ids:
-            continue
-        full_match = _mean_selected(full_probe_scores, probe_ids)
-        variant = sum(probe_scores.values()) / len(probe_scores)
-        if full_match is None:
-            continue
-
-        if condition in {"relevant_ablation", "no_memory"}:
-            delta = full_match - variant
-            relevant.append((delta, condition))
-            denom = 1.0 - variant
-            if denom > 0.02:
-                hmbs.append(max(0.0, delta) / denom)
-        elif condition == "irrelevant_ablation":
-            tau = tolerances.get(run.get("ablation_id"), 0.0)
-            irrelevant_stabilities.append(tolerant_stability(full_match - variant, tau))
-        elif condition in {"harmful_memory", "stale_memory"}:
-            tau = tolerances.get(run.get("ablation_id"), 0.0)
-            harm = max(0.0, full_match - variant)
-            harms.append(harm)
-            harm_resistance.append(tolerant_harm_resistance(harm, tau))
-        elif condition == "counterexample":
-            # Counterexample removal is not the standardized Negative Transfer control.
-            pass
-
-    out: list[dict[str, Any]] = []
-    if relevant:
-        vals = [x[0] for x in relevant]
-        refs = {x[1] for x in relevant}
-        comparison = next(iter(refs)) if len(refs) == 1 else "custom"
-        out.append({
-            "name": "memory_benefit", "value": sum(vals) / len(vals), "unit": "percentage_points",
-            "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": comparison,
-            "eligible_n": len(vals), "total_n": len(vals), "coverage": 1.0,
-        })
-    if hmbs:
-        out.append({
-            "name": "headroom_normalized_memory_benefit", "value": sum(hmbs) / len(hmbs), "unit": "normalized",
-            "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "relevant_ablation",
-            "eligible_n": len(hmbs), "total_n": len(relevant), "coverage": len(hmbs) / len(relevant) if relevant else 0.0,
-        })
-    if irrelevant_stabilities:
-        out.append({
-            "name": "irrelevant_memory_stability", "value": sum(irrelevant_stabilities) / len(irrelevant_stabilities), "unit": "normalized",
-            "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "irrelevant_ablation",
-            "eligible_n": len(irrelevant_stabilities), "total_n": len(irrelevant_stabilities), "coverage": 1.0,
-        })
-    if harms:
-        mh = sum(harms) / len(harms)
-        out.extend([
-            {"name": "memory_harm", "value": mh, "unit": "percentage_points", "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
-            {"name": "harm_resistance", "value": sum(harm_resistance)/len(harm_resistance), "unit": "normalized", "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
-        ])
-    mb = next((m["value"] for m in out if m["name"] == "memory_benefit"), None)
-    mh = next((m["value"] for m in out if m["name"] == "memory_harm"), None)
-    if mb is not None and mh is not None:
-        out.append({"name": "net_memory_gain", "value": mb-mh, "unit": "percentage_points", "scope": "scenario_instance"})
-    return out
+def pair_warnings(scope: str, notes: list[str]) -> list[dict[str, Any]]:
+    """Causal-pair validity is a report warning, never a metric (MIB-Specification §7.7)."""
+    return [
+        {"code": "causal.pair_invalid", "severity": "warning", "message": note, "scope": scope}
+        for note in notes
+    ]
 
 
 def build_basic_report(
@@ -137,64 +33,50 @@ def build_basic_report(
     scenario: dict[str, Any],
     agent_descriptor: dict[str, Any],
 ) -> dict[str, Any]:
-    full_runs = [r for r in runs if r["condition"] == "full"]
-    if not full_runs:
-        raise ValueError("at least one full run is required")
-    full_score = sum(r["scenario_score"] for r in full_runs) / len(full_runs)
+    """Single-Scenario development report.
+
+    It uses exactly the pack path's Instance aggregation, so ``mib run`` and
+    ``mib benchmark`` cannot disagree about one Scenario.
+    """
+    aggregate = build_instance_aggregate(scenario, runs)
+    notes = instance_pair_notes(runs)
     instance = scenario.get("instantiation") or {}
-    iid = full_runs[0]["scenario_instance_id"]
-    template_id = instance.get("template_id", scenario["id"])
-    metrics = _causal_metrics(runs, ablation_tolerances(scenario))
-    conditions = _condition_scores(runs)
-
-    dim_scores01: dict[str, float] = {}
-    # Single-Scenario reports use the full Scenario score as evidence for non-causal dimensions.
-    for d in scenario.get("dimensions", []):
-        if d != "causal_memory_impact":
-            dim_scores01[d] = full_score
-
-    hmb_component = next((m for m in metrics if m["name"] == "headroom_normalized_memory_benefit"), None)
-    ims_component = next((m for m in metrics if m["name"] == "irrelevant_memory_stability"), None)
-    hrs_component = next((m for m in metrics if m["name"] == "harm_resistance"), None)
-    if "causal_memory_impact" in scenario.get("dimensions", []):
-        available = []
-        if hmb_component:
-            available.append((0.5, hmb_component["value"]))
-        if ims_component:
-            available.append((0.2, ims_component["value"]))
-        if hrs_component:
-            available.append((0.3, hrs_component["value"]))
-        if available:
-            causal01 = sum(w * v for w, v in available) / sum(w for w, _ in available)
-            dim_scores01["causal_memory_impact"] = causal01
+    iid = aggregate["scenario_instance_id"]
+    template_id = aggregate["template_id"]
+    full_score = float(aggregate["full_score"])
+    dim_scores01 = dict(aggregate["dimension_scores"])
+    metrics = aggregate["causal_metrics"]
 
     dim_weights = (scenario.get("scoring") or {}).get("dimension_weights") or {}
-    available_weights = {d: w for d, w in dim_weights.items() if d in dim_scores01}
-    weight_sum = sum(available_weights.values())
-    if weight_sum:
-        mib_score = 100.0 * sum(dim_scores01[d] * w for d, w in available_weights.items()) / weight_sum
-    else:
-        mib_score = 100.0 * full_score
+    weighted = weighted_mean(
+        [(dim_scores01[d], float(w)) for d, w in dim_weights.items() if d in dim_scores01 and float(w) > 0]
+    )
+    mib_score = 100.0 * (weighted if weighted is not None else full_score)
 
     scheduled = sum(len(r.get("probe_results", [])) for r in runs)
     failed = sum(
         1 for r in runs for p in r.get("probe_results", [])
         if p.get("outcome") == "execution_failure"
     )
-
-    dim_objs = []
-    for d, score01 in dim_scores01.items():
-        weight = float(dim_weights.get(d, 0.0))
-        dim_objs.append({
+    dim_objs = [
+        {
             "dimension": d,
             "score": 100.0 * score01,
-            "weight": weight,
+            "weight": float(dim_weights.get(d, 0.0)),
             "coverage": 1.0,
             "template_count": 1,
             "eligible_template_count": 1,
-        })
+        }
+        for d, score01 in dim_scores01.items()
+    ]
+    warnings = [{
+        "code": "development.single_scenario_partial_score",
+        "severity": "info",
+        "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
+        "scope": "report",
+    }] + pair_warnings(iid, notes)
 
-    report = {
+    return {
         "mib": "0.1",
         "kind": "MIBReport",
         "report_version": "0.1.0",
@@ -247,16 +129,7 @@ def build_basic_report(
             "raw_output_policy": "digest_only",
         },
         "aggregates": {
-            "scenario_instances": [{
-                "scenario_instance_id": iid,
-                "template_id": template_id,
-                **({"instance_seed": instance.get("seed")} if instance.get("seed") is not None else {}),
-                "full_score": full_score,
-                "dimension_scores": dim_scores01,
-                "condition_scores": conditions,
-                "repetitions": 1,
-                "causal_metrics": metrics,
-            }],
+            "scenario_instances": [aggregate],
             "templates": [{
                 "template_id": template_id,
                 "template_version": instance.get("template_version", scenario.get("version")),
@@ -279,9 +152,7 @@ def build_basic_report(
             },
             "dimension_weight_sum": min(1.0, sum(float(x.get("weight", 0.0)) for x in dim_objs)),
         },
-        "causal_metrics": [
-            {**m, "scope": "benchmark"} for m in metrics
-        ],
+        "causal_metrics": [{**m, "scope": "benchmark"} for m in metrics],
         "coverage": {
             "overall": 1.0,
             "profile_required": 0.0,
@@ -294,12 +165,7 @@ def build_basic_report(
             "confidence_level": 0.95,
             "mib_score": {"value": mib_score, "n": 1},
         },
-        "warnings": [{
-            "code": "development.single_scenario_partial_score",
-            "severity": "info",
-            "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
-            "scope": "report",
-        }],
+        "warnings": warnings,
         "provenance": {
             "generated_by": "MIB Reference Runner",
             "generator_version": __version__,
@@ -307,7 +173,6 @@ def build_basic_report(
             "verification_status": "partially_verified",
         },
     }
-    return report
 
 
 def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
@@ -315,8 +180,8 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
     allowed = {
         "run_id", "scenario_instance_id", "scenario_instance_version", "template_id",
         "template_version", "instance_seed", "condition", "ablation_id", "ablation_method",
-        "repetition", "agent_seed", "status", "started_at", "completed_at", "scenario_score",
-        "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings",
+        "ablation_tolerance", "repetition", "agent_seed", "status", "started_at", "completed_at",
+        "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings",
     }
     result = {k: v for k, v in run.items() if k in allowed and v is not None}
     # ProbeResult is also closed; keep its allowed fields.
@@ -337,31 +202,90 @@ def validate_report(report: dict[str, Any], schema: dict[str, Any]) -> None:
 
 
 def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, Any]:
-    """Recompute Template, Dimension, and final MIB score from report aggregates."""
+    """Recompute every aggregation layer the report carries (MIB-Specification §9.2).
+
+    With ``results.runs`` present (internal reports) verification is ``full``:
+    run scores from Probe results, Instance full/dimension scores and causal
+    metrics from the paired runs, then Template, Dimension and MIB Score.  A
+    redacted public report carries no runs, so its verification level is
+    ``aggregates_only`` and says so.
+    """
     errors: list[str] = []
-    instance_rows = report.get("aggregates", {}).get("scenario_instances", [])
-    template_rows = report.get("aggregates", {}).get("templates", [])
-    dimension_rows = report.get("aggregates", {}).get("dimensions", [])
+    aggregates = report.get("aggregates", {})
+    instance_rows = aggregates.get("scenario_instances", [])
+    template_rows = aggregates.get("templates", [])
+    dimension_rows = aggregates.get("dimensions", [])
+    runs = (report.get("results") or {}).get("runs") or []
+    level = "full" if runs else "aggregates_only"
+
+    def close(a: float, b: float) -> bool:
+        return abs(a - b) <= tolerance
+
+    run_checks: list[dict[str, Any]] = []
+    instance_checks: list[dict[str, Any]] = []
+    if runs:
+        runs_by_iid: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for r in runs:
+            recomputed = scenario_score_from_probes(r.get("probe_results", []))
+            stored = float(r.get("scenario_score", 0.0))
+            ok = close(recomputed, stored)
+            run_checks.append({"run_id": r.get("run_id"), "stored": stored, "recomputed": recomputed, "valid": ok})
+            if not ok:
+                errors.append(f"run {r.get('run_id')}: stored={stored} recomputed={recomputed}")
+            runs_by_iid[r["scenario_instance_id"]].append(r)
+
+        for inst in instance_rows:
+            iid = inst["scenario_instance_id"]
+            rr = runs_by_iid.get(iid, [])
+            full_runs = [r for r in rr if r.get("condition") == "full"]
+            if not full_runs:
+                errors.append(f"instance {iid}: no full runs in report")
+                continue
+            recomputed_full = mean([float(r.get("scenario_score", 0.0)) for r in full_runs])
+            ok = close(recomputed_full, float(inst["full_score"]))
+            if not ok:
+                errors.append(f"instance {iid} full_score: stored={inst['full_score']} recomputed={recomputed_full}")
+            # Tolerances travel on the Run Artifacts, so no Scenario body is needed.
+            metrics = paired_causal_metrics(rr)
+            recomputed_metrics = {m["name"]: float(m["value"]) for m in metrics}
+            metric_ok = True
+            for m in inst.get("causal_metrics", []):
+                rec = recomputed_metrics.get(m["name"])
+                if rec is None or not close(rec, float(m["value"])):
+                    metric_ok = False
+                    errors.append(f"instance {iid} causal metric {m['name']}: stored={m['value']} recomputed={rec}")
+            stored_dims = inst.get("dimension_scores") or {}
+            recomputed_dims = instance_dimension_scores(list(stored_dims), full_runs, metrics)
+            dims_ok = True
+            for d, stored in stored_dims.items():
+                rec = recomputed_dims.get(d)
+                if rec is None or not close(rec, float(stored)):
+                    dims_ok = False
+                    errors.append(f"instance {iid} dimension {d}: stored={stored} recomputed={rec}")
+            instance_checks.append({
+                "scenario_instance_id": iid, "full_score_valid": ok,
+                "causal_metrics_valid": metric_ok, "dimension_scores_valid": dims_ok,
+            })
 
     # Template dimension scores must equal the mean of their Scenario Instance dimension scores.
-    by_template: dict[str, list[dict[str, Any]]] = {}
+    by_template: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for inst in instance_rows:
-        by_template.setdefault(inst["template_id"], []).append(inst)
+        by_template[inst["template_id"]].append(inst)
     template_checks = []
     for t in template_rows:
         tid = t["template_id"]
         insts = by_template.get(tid, [])
         for d, stored in (t.get("dimension_scores") or {}).items():
-            vals = [float(i.get("dimension_scores", {}).get(d)) for i in insts if d in (i.get("dimension_scores") or {})]
+            vals = [float(i["dimension_scores"][d]) for i in insts if d in (i.get("dimension_scores") or {})]
             if not vals:
                 continue
-            recomputed = 100.0 * sum(vals) / len(vals)
-            ok = abs(recomputed - float(stored)) <= tolerance
+            recomputed = 100.0 * mean(vals)
+            ok = close(recomputed, float(stored))
             template_checks.append({"template_id": tid, "dimension": d, "stored": float(stored), "recomputed": recomputed, "valid": ok})
             if not ok:
                 errors.append(f"template {tid} dimension {d}: stored={stored} recomputed={recomputed}")
 
-    # Dimension scores are weighted means of Template dimension scores using Scenario dimension evidence weights.
+    # Dimension scores are weighted means of Template dimension scores using Scenario evidence weights.
     dimension_checks = []
     for drow in dimension_rows:
         d = drow["dimension"]
@@ -372,36 +296,35 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             w = float((t.get("dimension_weights") or {}).get(d, 0.0))
             if w > 0:
                 rows.append((float(t["dimension_scores"][d]), w))
-        denom = sum(w for _, w in rows)
-        recomputed = sum(s*w for s,w in rows)/denom if denom else 0.0
+        recomputed = weighted_mean(rows) or 0.0
         stored = float(drow["score"])
-        ok = abs(recomputed - stored) <= tolerance
+        ok = close(recomputed, stored)
         dimension_checks.append({"dimension": d, "stored": stored, "recomputed": recomputed, "valid": ok})
         if not ok:
             errors.append(f"dimension {d}: stored={stored} recomputed={recomputed}")
 
     weighted = [(float(x["score"]), float(x["weight"])) for x in dimension_rows if float(x.get("weight", 0.0)) > 0]
-    denom = sum(w for _, w in weighted)
-    recomputed_base = sum(s * w for s, w in weighted) / denom if denom else 0.0
+    recomputed_base = weighted_mean(weighted) or 0.0
     stored_base = float(report["aggregates"]["mib_score"]["base_score"])
-    score_ok = abs(recomputed_base - stored_base) <= tolerance
-    if not score_ok:
+    if not close(recomputed_base, stored_base):
         errors.append(f"MIB base score: stored={stored_base} recomputed={recomputed_base}")
 
     penalty = float(report["aggregates"]["mib_score"].get("global_guardrail_penalty", 0.0))
     recomputed_final = max(0.0, recomputed_base - penalty)
     stored_final = float(report["aggregates"]["mib_score"]["final_score"])
-    final_ok = abs(recomputed_final - stored_final) <= tolerance
-    if not final_ok:
+    if not close(recomputed_final, stored_final):
         errors.append(f"MIB final score: stored={stored_final} recomputed={recomputed_final}")
 
     return {
         "valid": not errors,
+        "verification_level": level,
         "stored_base_score": stored_base,
         "recomputed_base_score": recomputed_base,
         "stored_final_score": stored_final,
         "recomputed_final_score": recomputed_final,
         "difference": recomputed_base - stored_base,
+        "run_checks": run_checks,
+        "instance_checks": instance_checks,
         "template_checks": template_checks,
         "dimension_checks": dimension_checks,
         "errors": errors,

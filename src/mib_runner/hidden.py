@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from .materialize import materialize
-from .transfer import TRANSFER_DIAGNOSTICS_EXTENSION, TRANSFER_EXTENSION, transfer_support_digest
-from .transfer_diagnostics import redact_transfer_diagnostics
+from .experimental.transfer import TRANSFER_DIAGNOSTICS_EXTENSION, TRANSFER_EXTENSION, transfer_support_digest
+from .experimental.transfer_diagnostics import redact_transfer_diagnostics
 from .validation import validate_scenario
 
 
