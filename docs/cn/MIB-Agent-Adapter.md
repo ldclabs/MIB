@@ -3,7 +3,7 @@
 ## MIB Runner 与记忆赋能智能体之间的传输中立通信接口
 
 **版本：** 0.1-draft
-**状态：** 适配器协议提案 / `MIB-Architecture.md` 与 `MIB-Scenario-Model.md` 配套规范
+**状态：** 适配器协议提案 / `MIB-Specification.md` 配套规范
 
 ---
 
@@ -938,6 +938,8 @@ Runner 在事件后**不会**追加任何提示性问答。
 
 这是检验真正前瞻记忆触发能力的标准范式。
 
+在 MIB v0.2 中，仅观察探针的 `input.observation` 像任何其他观察事件一样正常投递；Agent 无法区分触发事件与普通事件。Runner 会将每次 `observe` 结果的 `emissions[]` 条目与产生它的观察事件索引一同记录，并依据在 `[trigger, trigger + window]` 范围内（`oracle.expected_emission.window`，默认为 1）产生的发射对探针进行评测。带有 `must_not_emit` 的拟真干扰探针在窗口内发生任何匹配发射时即判定失败（`premature_trigger` 早熟触发）；触发探针在窗口内无任何匹配时判定失败（`commitment_miss` 承诺缺失）。参见 `MIB-Specification.md` §4.6。
+
 ---
 
 # 33. 回答认知提问（Respond）
@@ -967,11 +969,15 @@ Runner 在事件后**不会**追加任何提示性问答。
   "body": {
     "interaction_id": "interaction_7",
     "input": {
-      "content": "搬家去伦敦之前，我使用的是哪个时区？"
+      "content": "搬家去伦敦之前，我使用的是哪个时区？",
+      "context": {"actor": "alice", "display_name": "Alice"},
+      "answer_schema": {"value": true, "status": true, "confidence": true}
     }
   }
 }
 ```
+
+`input.context` 指明提问者身份，使第一人称问题可被正确理解；它不携带任何权威信息。`input.answer_schema`（MIB v0.2，`MIB-Specification.md` §4.7）请求结构化答案。Agent **可以（MAY）**返回结构化取值 `{"value": "...", "status": "known|historical|contested|unknown", "confidence": 0.0–1.0}`，包含这些字段作为文本内容的 JSON 对象，以 `value:` / `status:` / `confidence:` 分行的文本，或纯文本；Runner 的解析器是确定性的，且解析记录会被完整记录。`status` 指明答案的认识状态分类，`confidence` 产出校准评分项；两者均为可选，纯文本答案仅依据其 value 评分。
 
 ---
 
@@ -1294,6 +1300,8 @@ maintenance = true
 ```
 
 Runner 会在时间线的对应位置显式调用 `maintain()` 原语。
+
+参考 Runner（0.9.0）在 Agent 暴露该操作时，会在每个 `maintenance_window` 事件处调用 `maintain`，传递窗口的 `payload.budget` 与虚拟时间，并在所有情况下均将该窗口作为 `system_event` 观察事件投递。`no_maintenance` 消融重放相同时间线但扣留整理窗口；二者配对的差异报告为 `consolidation_benefit` 巩固收益（`MIB-Specification.md` §7.2）。`maintain` 抛出的任何异常仅作为运行警告记录，绝不会导致运行失败。
 
 ---
 
@@ -2313,6 +2321,8 @@ reset(run_B)（启动对照消融运行）
 记录反事实对照产出
 ```
 
+这是连接规范定义与实际基准测试运行的可执行桥梁。
+
 ---
 
 # 140. 极简黑盒 Adapter 参考实现
@@ -2944,8 +2954,7 @@ MIB/
 完成本协议阅读后，建议依次阅读：
 
 ```text
-1. MIB-Scenario-Model.md（场景模型定义）
-2. MIB-Scoring.md（计分与因果指标体系）
+1. MIB-Specification.md（规范性规范：场景模型与计分体系）
 3. MIB-v0.1-Test-Plan.md（v0.1 测试与校准计划）
 4. MIB-Leaderboard-Evaluation-Service.md（排行榜与评测服务）
 ```

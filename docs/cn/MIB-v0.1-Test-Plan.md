@@ -9,13 +9,13 @@
 配套文档：
 
 ```text
-MIB-Architecture.md
-MIB-Scenario-Model.md
-schemas/mib-scenario.schema.json
+MIB-Specification.md
 MIB-Agent-Adapter.md
-MIB-Scoring.md
+schemas/mib-scenario.schema.json
 schemas/mib-report.schema.json
 ```
+
+本测试计划早于整合后的规范文档。若下述某里程碑所描述的机制被 `MIB-Specification.md` 列入附录 A（路线图），则该机制在 v0.1 中未予实现。
 
 ---
 
@@ -1171,17 +1171,13 @@ v0.2 引入遗忘、前瞻与自我认知套件；v0.3+ 探索跨智能体、多
 ```text
 MIB/
 ├── docs/
-│   ├── MIB-Architecture.md
-│   ├── MIB-Scenario-Model.md
+│   ├── MIB-Specification.md
 │   ├── MIB-Agent-Adapter.md
-│   ├── MIB-Scoring.md
 │   └── MIB-v0.1-Test-Plan.md
 │
 ├── docs/cn/
-│   ├── MIB-Architecture.md
-│   ├── MIB-Scenario-Model.md
+│   ├── MIB-Specification.md
 │   ├── MIB-Agent-Adapter.md
-│   ├── MIB-Scoring.md
 │   └── MIB-v0.1-Test-Plan.md
 │
 ├── schemas/

@@ -14,6 +14,7 @@ from .scoring import (
     mean,
     paired_causal_metrics,
     scenario_score_from_probes,
+    full_run_metrics,
     weighted_mean,
 )
 from .util import utc_now
@@ -181,14 +182,14 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
         "run_id", "scenario_instance_id", "scenario_instance_version", "template_id",
         "template_version", "instance_seed", "condition", "ablation_id", "ablation_method",
         "ablation_tolerance", "repetition", "agent_seed", "status", "started_at", "completed_at",
-        "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings",
+        "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings", "task_results",
     }
     result = {k: v for k, v in run.items() if k in allowed and v is not None}
     # ProbeResult is also closed; keep its allowed fields.
     p_allowed = {
         "probe_id", "probe_kind", "condition", "repetition", "outcome", "score", "weight",
         "dimensions", "evaluator_results", "failure_codes", "output_ref", "output_digest",
-        "latency_ms", "usage",
+        "latency_ms", "usage", "counterfactual", "recurrence", "traps",
     }
     result["probe_results"] = [
         {k: v for k, v in p.items() if k in p_allowed and v is not None}
@@ -246,7 +247,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             if not ok:
                 errors.append(f"instance {iid} full_score: stored={inst['full_score']} recomputed={recomputed_full}")
             # Tolerances travel on the Run Artifacts, so no Scenario body is needed.
-            metrics = paired_causal_metrics(rr)
+            metrics = paired_causal_metrics(rr) + full_run_metrics(full_runs)
             recomputed_metrics = {m["name"]: float(m["value"]) for m in metrics}
             metric_ok = True
             for m in inst.get("causal_metrics", []):
@@ -268,8 +269,14 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             })
 
     # Template dimension scores must equal the mean of their Scenario Instance dimension scores.
+    # Only canonical-rung Instances feed the capability score (MIB-Specification §8.3); the
+    # canonical rung travels on the retention block, so a redacted report can still be verified.
+    canonical_by_template = {r["template_id"]: r.get("canonical_rung") for r in report.get("retention") or []}
     by_template: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for inst in instance_rows:
+        canonical = canonical_by_template.get(inst["template_id"])
+        if canonical is not None and inst.get("rung") is not None and int(inst["rung"]) != int(canonical):
+            continue
         by_template[inst["template_id"]].append(inst)
     template_checks = []
     for t in template_rows:

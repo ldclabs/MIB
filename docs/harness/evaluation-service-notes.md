@@ -47,7 +47,7 @@ The Runner, pack executor, and hidden evaluator are included and regression-test
 - Local HTTP service API.
 - Worker crash recovery for the reference single-node queue.
 
-See [MIB-Leaderboard-Evaluation-Service.md](MIB-Leaderboard-Evaluation-Service.md) for the trust and service model.
+See [MIB-Leaderboard-Evaluation-Service.md](../MIB-Leaderboard-Evaluation-Service.md) for the trust and service model.
 
 ## Platform prerequisites
 

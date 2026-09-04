@@ -21,16 +21,23 @@ from .scoring import (  # noqa: F401  (re-exported: callers and tests import the
     ablation_tolerances,
     build_instance_aggregate,
     causal_score01,
+    ci_bca,
     ci_percentile,
     condition_scores,
+    full_run_metrics,
     instance_dimension_scores,
+    instance_key,
     mean,
+    memory_dependence,
     paired_causal_metrics,
     percentile,
+    retention_block,
+    rung_of_key,
     validate_causal_pairs,
     weighted_mean,
     weighted_probe_score,
 )
+from .generate import generate_pack
 from .util import utc_now
 from .experimental.transfer_diagnostics import (
     DEFAULT_EPSILON,
@@ -138,9 +145,9 @@ def aggregate_benchmark_causal_metrics(instances_by_template: dict[str, list[dic
         for i in instances:
             for m in i.get("causal_metrics", []):
                 per_name[m["name"]].append(float(m["value"]))
-        evidence_w = float(((templates_by_id[tid].get("scoring") or {}).get("dimension_weights") or {}).get(CAUSAL_DIM, 0.0))
-        if evidence_w <= 0:
-            continue
+        # v0.2: causal metrics are diagnostics.  A Template that carries no causal
+        # evidence weight still contributes, with unit weight.
+        evidence_w = float(((templates_by_id[tid].get("scoring") or {}).get("dimension_weights") or {}).get(CAUSAL_DIM, 0.0)) or 1.0
         for name, vals in per_name.items():
             template_metric_values[name].append((mean(vals), evidence_w))
     out = []
@@ -148,10 +155,12 @@ def aggregate_benchmark_causal_metrics(instances_by_template: dict[str, list[dic
         "memory_benefit": "percentage_points",
         "memory_harm": "percentage_points",
         "net_memory_gain": "percentage_points",
+        "consolidation_benefit": "percentage_points",
         "headroom_normalized_memory_benefit": "normalized",
         "irrelevant_memory_stability": "normalized",
         "harm_resistance": "normalized",
-        "negative_transfer": "normalized",
+        "negative_transfer": "percentage_points",
+        "learning_gain": "percentage_points",
     }
     for name, rows in sorted(template_metric_values.items()):
         denom = math.fsum(w for _, w in rows)
@@ -260,12 +269,19 @@ def hierarchical_bootstrap(
         int((profile.get("statistics") or {}).get("min_templates_per_dimension", DEFAULT_MIN_TEMPLATES_PER_DIMENSION))
         if min_templates_per_dimension is None else int(min_templates_per_dimension)
     )
+    # Generated packs: the score is taken at the Profile's canonical rung, and
+    # the statistical unit is the Instance (a program is a generator, not a
+    # sample), so the threshold counts Instances per Dimension.
+    canonical_rung = profile.get("canonical_rung")
+    unit_is_instance = bool(profile.get("programs"))
 
     # Compact per-repetition summaries make 10k resamples practical.
     rep_stats: dict[str, list[dict[str, Any]]] = defaultdict(list)
     instance_template: dict[str, str] = {}
     for iid, runs in runs_by_instance.items():
         if not runs:
+            continue
+        if canonical_rung is not None and rung_of_key(iid) not in (None, int(canonical_rung)):
             continue
         tid = runs[0]["template_id"]
         instance_template[iid] = tid
@@ -277,7 +293,7 @@ def hierarchical_bootstrap(
             full = next((r for r in rr if r.get("condition") == "full"), None)
             if full is None:
                 continue
-            metrics = paired_causal_metrics(rr, tolerances)
+            metrics = paired_causal_metrics(rr, tolerances) + full_run_metrics([full])
             rep_stats[iid].append({
                 "dimensions": instance_dimension_scores(list(scenario.get("dimensions", [])), [full], metrics),
                 "metrics": {m["name"]: float(m["value"]) for m in metrics},
@@ -312,6 +328,8 @@ def hierarchical_bootstrap(
     def template_stats(ids_by_tid: dict[str, list[str]], resample: bool) -> dict[str, dict[str, Any]]:
         synthetic: dict[str, dict[str, Any]] = {}
         for tid in tids:
+            if not ids_by_tid.get(tid):
+                continue   # a jackknife draw may empty a Template
             inst_rows = [sample_instance(iid, resample) for iid in ids_by_tid[tid]]
             dim_names = {d for dims, _ in inst_rows for d in dims}
             metric_names = {m for _, metrics in inst_rows for m in metrics}
@@ -339,8 +357,8 @@ def hierarchical_bootstrap(
         causal_values: dict[str, float] = {}
         for name in sorted({m for tid in selected for m in synthetic[tid]["metrics"]}):
             rows = [
-                (float(synthetic[tid]["metrics"][name]), weight(tid, CAUSAL_DIM))
-                for tid in selected if name in synthetic[tid]["metrics"] and weight(tid, CAUSAL_DIM) > 0
+                (float(synthetic[tid]["metrics"][name]), weight(tid, CAUSAL_DIM) or 1.0)
+                for tid in selected if name in synthetic[tid]["metrics"]
             ]
             value = weighted_mean(rows)
             if value is not None:
@@ -350,13 +368,19 @@ def hierarchical_bootstrap(
     point = template_stats(dict(instance_ids_by_template), resample=False)
     point_mib, point_dims, point_causal = reduce(point, tids)
     dim_candidates = {d: [tid for tid in tids if d in point[tid]["dimensions"] and weight(tid, d) > 0] for d, _ in profile_dims}
-    eligible_dims = {d for d, c in dim_candidates.items() if len(c) >= threshold}
+
+    def unit_count(candidate_tids: list[str]) -> int:
+        if unit_is_instance:
+            return sum(len(instance_ids_by_template[tid]) for tid in candidate_tids)
+        return len(candidate_tids)
+
+    eligible_dims = {d for d, c in dim_candidates.items() if unit_count(c) >= threshold}
     insufficient = sorted(d for d, _ in profile_dims if d not in eligible_dims)
     causal_candidates = {
-        name: [tid for tid in tids if name in point[tid]["metrics"] and weight(tid, CAUSAL_DIM) > 0]
+        name: [tid for tid in tids if name in point[tid]["metrics"] and (weight(tid, CAUSAL_DIM) > 0 or unit_is_instance)]
         for name in point_causal
     }
-    eligible_causal = {name for name, c in causal_candidates.items() if len(c) >= threshold}
+    eligible_causal = {name for name, c in causal_candidates.items() if unit_count(c) >= threshold}
 
     mib_samples: list[float] = []
     dim_samples: dict[str, list[float]] = defaultdict(list)
@@ -366,7 +390,9 @@ def hierarchical_bootstrap(
         stage1 = {tid: [rng.choice(instance_ids_by_template[tid]) for _ in instance_ids_by_template[tid]] for tid in tids}
         synthetic = template_stats(stage1, resample=True)
         # Stage 2: one Template resample shared by every statistic of this draw.
-        selected = [rng.choice(tids) for _ in tids]
+        # A generated pack has one program per Dimension by design; programs are
+        # generators, not samples, so only their Instances are resampled.
+        selected = list(tids) if unit_is_instance else [rng.choice(tids) for _ in tids]
         mib, dims, causal = reduce(synthetic, selected)
         if mib is not None:
             mib_samples.append(mib)
@@ -375,7 +401,37 @@ def hierarchical_bootstrap(
         for name, v in causal.items():
             causal_samples[name].append(v)
 
-    method = "hierarchical_bootstrap_percentile"
+    # Interval method (§8.2): percentile by default; BCa uses leave-one-unit-out jackknife
+    # estimates over the same statistic (Instances for generated packs, Templates otherwise).
+    interval_method = str((profile.get("statistics") or {}).get("interval_method", "percentile"))
+    jack_mib: list[float] = []
+    jack_dims: dict[str, list[float]] = defaultdict(list)
+    jack_causal: dict[str, list[float]] = defaultdict(list)
+    if interval_method == "bca":
+        units = ([(tid, iid) for tid in tids for iid in instance_ids_by_template[tid]] if unit_is_instance
+                 else [(tid, None) for tid in tids])
+        for tid_u, iid_u in units:
+            if unit_is_instance:
+                ids = {t: [i for i in instance_ids_by_template[t] if i != iid_u] for t in tids}
+                selected = [t for t in tids if ids[t]]
+                synthetic = template_stats(ids, resample=False)
+            else:
+                selected = [t for t in tids if t != tid_u]
+                synthetic = point
+            mib_j, dims_j, causal_j = reduce(synthetic, selected)
+            if mib_j is not None:
+                jack_mib.append(mib_j)
+            for d, v in dims_j.items():
+                jack_dims[d].append(v)
+            for name, v in causal_j.items():
+                jack_causal[name].append(v)
+
+    def interval(samples: list[float], point_value: float, jack: list[float], label: str) -> dict[str, Any]:
+        if interval_method == "bca":
+            return ci_bca(samples, point_value, jack, confidence_level, resamples, seed)
+        return ci_percentile(samples, confidence_level, label, resamples, seed)
+
+    method = "bca" if interval_method == "bca" else "hierarchical_bootstrap_percentile"
     mib_ci_ok = bool(mib_samples) and all(d in eligible_dims for d in weighted_dims)
     return {
         "confidence_level": confidence_level,
@@ -393,13 +449,13 @@ def hierarchical_bootstrap(
         "mib_score": {
             "value": point_mib if point_mib is not None else 0.0,
             "n": len(mib_samples),
-            **({"ci": ci_percentile(mib_samples, confidence_level, method, resamples, seed)} if mib_ci_ok else {}),
+            **({"ci": interval(mib_samples, point_mib if point_mib is not None else 0.0, jack_mib, "hierarchical_bootstrap_percentile")} if mib_ci_ok else {}),
         },
         "dimensions": [
             {
                 "dimension": d,
                 "value": point_dims[d],
-                **({"ci": ci_percentile(dim_samples[d], confidence_level, method, resamples, seed)}
+                **({"ci": interval(dim_samples[d], point_dims[d], jack_dims.get(d, []), "hierarchical_bootstrap_percentile")}
                    if d in eligible_dims and dim_samples.get(d) else {}),
             }
             for d in sorted(point_dims)
@@ -408,12 +464,34 @@ def hierarchical_bootstrap(
             {
                 "name": name,
                 "value": point_causal[name],
-                **({"ci": ci_percentile(causal_samples[name], confidence_level, "paired_hierarchical_bootstrap_percentile", resamples, seed)}
+                **({"ci": interval(causal_samples[name], point_causal[name], jack_causal.get(name, []), "paired_hierarchical_bootstrap_percentile")}
                    if name in eligible_causal and causal_samples.get(name) else {}),
             }
             for name in sorted(point_causal)
         ],
     }
+
+
+def efficiency_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Runner-measured cost of the evaluation (§9.1): latency, tool calls, and any participant-reported usage."""
+    latencies = sorted(float(p.get("latency_ms", 0.0)) for r in runs for p in r.get("probe_results", []) if p.get("outcome") == "scored")
+    tool_calls = sum(1 for r in runs for row in ((r.get("extensions") or {}).get("mib.runner.action_trace") or []) if row.get("kind") == "tool_call")
+    measured: dict[str, Any] = {"runs": len(runs), "scored_probes": len(latencies), "tool_calls_total": tool_calls}
+    if latencies:
+        measured.update({
+            "probe_latency_ms_mean": mean(latencies),
+            "probe_latency_ms_p50": percentile(latencies, 0.5),
+            "probe_latency_ms_max": latencies[-1],
+        })
+    reported: dict[str, float] = defaultdict(float)
+    for r in runs:
+        for key, value in (r.get("usage") or {}).items():
+            if isinstance(value, (int, float)):
+                reported[key] += float(value)
+    out: dict[str, Any] = {"runner_measured": measured}
+    if reported:
+        out["participant_reported"] = dict(reported)
+    return out
 
 
 def build_pack_report(
@@ -431,18 +509,22 @@ def build_pack_report(
     if not all_runs:
         raise ValueError("no runs to report: every required Template was unsupported or skipped")
     templates_by_id = {t["id"]: t for t in templates}
-    instance_by_iid = {f"{s['id']}:{(s.get('instantiation') or {}).get('seed', 'instance')}": s for s in instances}
+    instance_by_iid = {instance_key(s): s for s in instances}
     runs_by_instance: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in all_runs:
         runs_by_instance[r["scenario_instance_id"]].append(r)
 
+    # Generated packs carry a ladder; the capability score is read at the
+    # Profile's canonical rung and every rung feeds the retention curve (§8).
+    canonical_rung = profile.get("canonical_rung")
     instance_aggs = []
     instances_by_template: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for iid, runs in sorted(runs_by_instance.items()):
         scenario = instance_by_iid[iid]
         agg = build_instance_aggregate(scenario, runs)
         instance_aggs.append(agg)
-        instances_by_template[agg["template_id"]].append(agg)
+        if canonical_rung is None or agg.get("rung") is None or int(agg["rung"]) == int(canonical_rung):
+            instances_by_template[agg["template_id"]].append(agg)
 
     template_aggs = [
         build_template_aggregate(templates_by_id[tid], instances_by_template[tid])
@@ -455,6 +537,11 @@ def build_pack_report(
     profile_cov = math.fsum(float(d["weight"]) * float(d["coverage"]) for d in dims)
     profile_eligible = profile_cov + 1e-12 >= required_coverage
     causal = aggregate_benchmark_causal_metrics(instances_by_template, templates_by_id)
+    retention = retention_block(instance_aggs, int(canonical_rung) if canonical_rung is not None else None)
+    dependence = memory_dependence(causal, profile)
+    dependence_gate = profile.get("memory_dependence") is not None
+    dependence_ok = dependence["eligible"] is True if dependence_gate else True
+    format_version = "0.2" if str(profile.get("mib", "")) == "0.2" or profile.get("programs") else "0.1"
 
     failed_probe_attempts = sum(1 for r in all_runs for p in r.get("probe_results", []) if p.get("outcome") == "execution_failure")
     scheduled_probe_attempts = sum(len(r.get("probe_results", [])) for r in all_runs)
@@ -489,6 +576,17 @@ def build_pack_report(
             "message": f"Profile coverage {profile_cov:.3f} is below required {required_coverage:.3f}.",
             "scope": "report",
         })
+    if dependence_gate and not dependence_ok:
+        warnings.append({
+            "code": "memory_dependence.below_floor",
+            "severity": "warning",
+            "message": (
+                f"Memory dependence not established: {dependence['metric']} = {dependence.get(dependence['metric'])} "
+                f"(floor {dependence['floor']}, eligible pairs {dependence['eligible_n']}/{dependence['total_n']}). "
+                "The capability score was not shown to be earned through memory."
+            ),
+            "scope": "report",
+        })
     official_profile = bool(profile.get("official", False))
     if official_profile:
         warnings.append({
@@ -507,20 +605,20 @@ def build_pack_report(
 
     profile_id = profile["id"]
     report = {
-        "mib": "0.1",
+        "mib": format_version,
         "kind": "MIBReport",
-        "report_version": "0.1.0",
+        "report_version": "0.2.0" if format_version == "0.2" else "0.1.0",
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",
         "benchmark": {
-            "mib_version": "0.1",
+            "mib_version": format_version,
             "profile": {"id": profile_id, "version": profile["version"]},
             "track": profile.get("track", "integrated_agent"),
             "scale": profile.get("scale", "MIB-S"),
             "scenario_pack": {"id": profile.get("scenario_pack", {}).get("id", "MIB-v0.1-Public-Dev"), "version": profile.get("scenario_pack", {}).get("version", "0.1.0")},
-            "scoring_spec_version": "0.1-draft",
-            "scenario_schema_version": "0.1",
+            "scoring_spec_version": f"{format_version}-spec",
+            "scenario_schema_version": format_version,
             "agent_adapter_protocol": agent_descriptor.get("protocol", "mib-agent/0.1"),
         },
         "system": {
@@ -571,7 +669,7 @@ def build_pack_report(
                 "base_score": base_score,
                 "global_guardrail_penalty": 0.0,
                 "final_score": base_score,
-                "official": bool(profile.get("official", False)) and profile_eligible,
+                "official": bool(profile.get("official", False)) and profile_eligible and dependence_ok,
                 "partial": not profile_eligible,
                 "profile_eligible": profile_eligible,
                 "formula": "weighted_dimension_sum",
@@ -579,6 +677,9 @@ def build_pack_report(
             "dimension_weight_sum": math.fsum(float(d["weight"]) for d in dims),
         },
         "causal_metrics": causal,
+        **({"retention": retention} if retention else {}),
+        "memory_dependence": dependence,
+        "efficiency": efficiency_summary(all_runs),
         "coverage": {
             "overall": profile_cov,
             "profile_required": required_coverage,
@@ -829,6 +930,89 @@ def run_materialized_pack(
         "dimensions": {d["dimension"]: d["score"] for d in report["aggregates"]["dimensions"]},
         "causal_metrics": {m["name"]: m["value"] for m in report.get("causal_metrics", [])},
         **({"transfer_diagnostic_run_count": len(diagnostic_runs)} if diagnostic_runs else {}),
+    }
+    return report, summary
+
+
+def run_generated_pack(
+    *,
+    profile: dict[str, Any],
+    agent_factory: Callable[[], Any],
+    schema: dict[str, Any] | None = None,
+    seeds: list[int | str] | None = None,
+    repetitions: int = 1,
+    include_ablations: bool = True,
+    bootstrap_resamples: int = 0,
+    bootstrap_seed: int | str = 20260819,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Generate and execute a v0.2 pack: every program of the Profile, every seed, every ladder rung."""
+    descriptors, instances = generate_pack(profile, seeds)
+    descriptor = describe_agent_factory(agent_factory)
+    unsupported = [t["id"] for t in descriptors if not agent_supports_template(descriptor, t)]
+    warnings: list[dict[str, Any]] = []
+    all_runs: list[dict[str, Any]] = []
+    executed: list[dict[str, Any]] = []
+    for instance in instances:
+        if schema is not None:
+            vr = validate_scenario(instance, schema)
+            if not vr.valid:
+                raise ValueError(f"generated instance {instance_key(instance)} invalid: {vr.errors}")
+        inst = instance["instantiation"]
+        if inst["template_id"] in unsupported:
+            continue
+        executed.append(instance)
+        for rep in range(repetitions):
+            agent_seed = f"{inst['seed']}:r{inst['rung']}:{rep}"
+            runs = run_scenario(
+                scenario=instance,
+                agent_factory=agent_factory,
+                include_ablations=include_ablations,
+                repetition=rep,
+                agent_seed=agent_seed,
+            )
+            _, _, notes = validate_causal_pairs(runs)
+            warnings.extend(pair_warnings(runs[0]["scenario_instance_id"], notes))
+            all_runs.extend(runs)
+
+    runs_by_instance: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for r in all_runs:
+        runs_by_instance[r["scenario_instance_id"]].append(r)
+    stats = None
+    if bootstrap_resamples > 0:
+        stats = hierarchical_bootstrap(
+            templates=descriptors,
+            runs_by_instance=runs_by_instance,
+            profile=profile,
+            resamples=bootstrap_resamples,
+            seed=bootstrap_seed,
+            confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
+        )
+    report = build_pack_report(
+        templates=descriptors,
+        instances=executed,
+        all_runs=all_runs,
+        profile=profile,
+        agent_descriptor=descriptor,
+        statistics=stats,
+        unsupported_templates=unsupported,
+        extra_warnings=warnings,
+    )
+    summary = {
+        "profile": profile["id"],
+        "programs": [t["template"]["program"]["id"] for t in descriptors],
+        "template_count": len(descriptors),
+        "instance_count": len(executed),
+        "run_count": len(all_runs),
+        "repetitions": repetitions,
+        "instance_seeds": list(seeds if seeds is not None else profile.get("instance_seeds") or [101, 202]),
+        "ladder": list(profile.get("ladder") or []),
+        "canonical_rung": profile.get("canonical_rung"),
+        "mib_score": report["aggregates"]["mib_score"]["final_score"],
+        "coverage": report["coverage"]["overall"],
+        "dimensions": {d["dimension"]: d["score"] for d in report["aggregates"]["dimensions"]},
+        "causal_metrics": {m["name"]: m["value"] for m in report.get("causal_metrics", [])},
+        "retention": {r["template_id"]: [x["full_score"] for x in r["rungs"]] for r in report.get("retention", [])},
+        "memory_dependence": report["memory_dependence"],
     }
     return report, summary
 

@@ -982,6 +982,14 @@ The Runner does NOT follow with a hidden hint or recall question.
 
 This is the preferred pattern for genuine prospective-memory triggering.
 
+In MIB v0.2 the observe-only Probe's `input.observation` is delivered exactly like any
+other observation; the Agent cannot tell a trigger from an ordinary event. The Runner logs
+every `emissions[]` entry of every `observe` result with the index of the observation that
+produced it and scores the Probe from the emissions within `[trigger, trigger + window]`
+(`oracle.expected_emission.window`, default 1). A near-trigger Probe with `must_not_emit`
+fails on any matching emission in its window (`premature_trigger`); a trigger Probe fails
+when none matches (`commitment_miss`). See `MIB-Specification.md` §4.6.
+
 ---
 
 # 33. Respond
@@ -1011,11 +1019,22 @@ Reference request:
   "body": {
     "interaction_id": "interaction_7",
     "input": {
-      "content": "What timezone did I use before moving?"
+      "content": "What timezone did I use before moving?",
+      "context": {"actor": "alice", "display_name": "Alice"},
+      "answer_schema": {"value": true, "status": true, "confidence": true}
     }
   }
 }
 ```
+
+`input.context` names the asker so that a first-person question is answerable; it carries
+no authority information. `input.answer_schema` (MIB v0.2, `MIB-Specification.md` §4.7)
+asks for a structured answer. The Agent MAY return a structured value
+`{"value": "...", "status": "known|historical|contested|unknown", "confidence": 0.0–1.0}`,
+a JSON object with those fields as the text content, `value:` / `status:` / `confidence:`
+lines, or plain text; the Runner's parser is deterministic and the parsed record is logged.
+`status` names the epistemic class of the answer and `confidence` yields a calibration
+term; both are optional, and a plain-text answer is scored on its value alone.
 
 ---
 
@@ -1368,6 +1387,13 @@ maintain()
 ```
 
 at that point.
+
+The reference Runner (0.9.0) calls `maintain` at every `maintenance_window` event when
+the Agent exposes the operation, passing the window's `payload.budget` and the virtual
+time, and delivers the window as a `system_event` observation in every case. A
+`no_maintenance` Ablation replays the same timeline with the windows withheld; the paired
+difference is reported as `consolidation_benefit` (`MIB-Specification.md` §7.2). An
+exception raised by `maintain` is recorded as a run warning and never fails the run.
 
 ---
 

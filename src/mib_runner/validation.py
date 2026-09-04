@@ -19,19 +19,19 @@ from .experimental.transfer import (
 # is the format contract); a Scenario that uses anything outside these sets is
 # schema-valid but unrunnable, so the validator rejects it here instead of
 # letting the Runner crash mid-pack or score every Agent zero in silence.
-RUNNER_EVALUATOR_TYPES = {"set_match", "world_state", "trajectory", "composite"}
+RUNNER_EVALUATOR_TYPES = {"set_match", "structured", "world_state", "trajectory", "composite", "emission"}
 RUNNER_TRIGGER_KINDS = {"after_event"}
-RUNNER_DELIVERY_MODES = {"respond", "act"}
-RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections"}
+RUNNER_DELIVERY_MODES = {"respond", "act", "observe_only"}
+RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections", "swap_parameter"}
 RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1"}
 RUNNER_EVENT_TYPES = {
     "interaction", "observation", "tool_result", "distractor", "document", "feedback",
-    "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update",
+    "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update", "task",
 }
 RUNNER_NORMALIZATIONS = {"none", "casefold_trim", "trim", "casefold_trim_collapse_ws", "answer_normalized"}
 RUNNER_MATCH_MODES = {"exact", "contains"}
 RUNNER_WORLD_OPERATORS = {"eq", "neq", "exists", "not_exists", "contains", "gte", "lte"}
-RUNNER_TRAJECTORY_TYPES = {"required_action", "forbidden_action", "before", "after", "max_occurrences", "min_occurrences"}
+RUNNER_TRAJECTORY_TYPES = {"required_action", "forbidden_action", "before", "after", "max_occurrences", "min_occurrences", "no_recurrence"}
 
 
 @dataclass(slots=True)
@@ -112,6 +112,13 @@ def validate_scenario(
         if p.get("delivery") not in RUNNER_DELIVERY_MODES:
             errors.append(f"unsupported:{p.get('id')}: delivery={p.get('delivery')} not executable by the reference Runner")
         oracle = p.get("oracle") or {}
+        if p.get("delivery") == "observe_only":
+            if not (p.get("input") or {}).get("observation"):
+                errors.append(f"semantic:{p.get('id')}: observe_only Probes need input.observation")
+            if not oracle.get("expected_emission"):
+                errors.append(f"semantic:{p.get('id')}: observe_only Probes need oracle.expected_emission")
+            if any(e.get("type") != "emission" for e in evaluators if e.get("id") in p.get("evaluators", [])):
+                errors.append(f"semantic:{p.get('id')}: observe_only Probes are scored by emission evaluators only")
         for assertion in oracle.get("world_assertions") or []:
             if assertion.get("operator") not in RUNNER_WORLD_OPERATORS:
                 errors.append(f"unsupported:{p.get('id')}: world assertion operator {assertion.get('operator')!r}")
@@ -122,6 +129,26 @@ def validate_scenario(
             for name in (p.get("input") or {}).get("available_tools", []):
                 if name not in tool_names:
                     errors.append(f"semantic:{p.get('id')}: unavailable tool {name}")
+
+    for event in timeline:
+        task = event.get("task") if event.get("type") == "task" else None
+        if not task:
+            continue
+        for name in task.get("available_tools") or []:
+            if name not in tool_names:
+                errors.append(f"semantic:{event.get('id')}: task uses unavailable tool {name}")
+        if task.get("oracle") or task.get("evaluators"):
+            if not (task.get("oracle") and task.get("evaluators")):
+                errors.append(f"semantic:{event.get('id')}: a trial oracle needs both task.oracle and task.evaluators")
+            for eid in task.get("evaluators") or []:
+                if eid not in evaluator_ids:
+                    errors.append(f"semantic:{event.get('id')}: unresolved task evaluator {eid}")
+            for assertion in (task.get("oracle") or {}).get("world_assertions") or []:
+                if assertion.get("operator") not in RUNNER_WORLD_OPERATORS:
+                    errors.append(f"unsupported:{event.get('id')}: task world assertion operator {assertion.get('operator')!r}")
+            for requirement in (task.get("oracle") or {}).get("trajectory_requirements") or []:
+                if requirement.get("type") not in RUNNER_TRAJECTORY_TYPES:
+                    errors.append(f"unsupported:{event.get('id')}: task trajectory requirement {requirement.get('type')!r}")
 
     for e in evaluators:
         if e.get("type") not in RUNNER_EVALUATOR_TYPES:
@@ -149,6 +176,19 @@ def validate_scenario(
                 errors.append(f"semantic:{a.get('id')}: unresolved event {eid}")
         if a.get("method") not in RUNNER_ABLATION_METHODS:
             errors.append(f"unsupported:{a.get('id')}: ablation method {a.get('method')} not executable by the reference Runner")
+        if a.get("method") == "swap_parameter":
+            cf = a.get("counterfactual") or {}
+            for eid in (a.get("targets") or {}).get("event_ids", []):
+                if eid not in (cf.get("events") or {}):
+                    errors.append(f"semantic:{a.get('id')}: swap_parameter target {eid} has no counterfactual replacement")
+            for pid in a.get("probes", []):
+                if pid not in (cf.get("oracle") or {}):
+                    errors.append(f"semantic:{a.get('id')}: swap_parameter Probe {pid} has no counterfactual oracle")
+        for eid in (a.get("targets") or {}).get("event_ids", []):
+            if eid in timeline_ids and a.get("kind") == "no_maintenance":
+                event = next(e for e in timeline if str(e.get("id")) == str(eid))
+                if event.get("type") != "maintenance_window":
+                    errors.append(f"semantic:{a.get('id')}: no_maintenance may only withhold maintenance_window events")
         injection_ids: set[str] = set()
         for injection in a.get("injections", []):
             iid = str(injection.get("id"))

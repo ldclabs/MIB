@@ -7,7 +7,8 @@ import os
 from pathlib import Path
 
 from .agents import ReferenceMemoryAgent
-from .benchmark import load_templates, run_benchmark_pack, run_materialized_pack
+from .benchmark import load_templates, run_benchmark_pack, run_generated_pack, run_materialized_pack
+from .generate import PROGRAMS, generate_instance
 from .capability import render_capability_card
 from .materialize import materialize
 from .hidden import HiddenEvalStore, redact_report_for_public
@@ -153,23 +154,32 @@ def cmd_benchmark(args) -> int:
     schema = load_json(args.schema)
     report_schema = load_json(args.report_schema) if args.report_schema else None
     profile = load_json(args.profile)
-    templates = load_templates(args.path)
     factory = _load_agent_factory(args.agent)
     seeds = _parse_seeds(args.seeds) if args.seeds else list(profile.get("instance_seeds") or [101, 202])
     repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 2))
     boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
-    report, summary = run_benchmark_pack(
-        templates=templates,
-        schema=schema,
-        profile=profile,
-        agent_factory=factory,
-        instance_seeds=seeds,
-        repetitions=repetitions,
-        include_ablations=not args.full_only,
-        bootstrap_resamples=boot,
-        bootstrap_seed=args.bootstrap_seed,
-        transfer_matrix=args.transfer_diagnostics,
-    )
+    if profile.get("programs"):
+        # A generated pack: the Profile names programs, seeds and the ladder; no path is needed.
+        report, summary = run_generated_pack(
+            profile=profile, schema=schema, agent_factory=factory, seeds=seeds, repetitions=repetitions,
+            include_ablations=not args.full_only, bootstrap_resamples=boot, bootstrap_seed=args.bootstrap_seed,
+        )
+    else:
+        if not args.path:
+            raise SystemExit("a Scenario path is required unless the Profile declares programs")
+        templates = load_templates(args.path)
+        report, summary = run_benchmark_pack(
+            templates=templates,
+            schema=schema,
+            profile=profile,
+            agent_factory=factory,
+            instance_seeds=seeds,
+            repetitions=repetitions,
+            include_ablations=not args.full_only,
+            bootstrap_resamples=boot,
+            bootstrap_seed=args.bootstrap_seed,
+            transfer_matrix=args.transfer_diagnostics,
+        )
     if report_schema:
         validate_report(report, report_schema)
     if args.output_report:
@@ -181,6 +191,22 @@ def cmd_benchmark(args) -> int:
         Path(args.card).write_text(card, encoding="utf-8")
     output = {"summary": summary, "report": args.output_report, "capability_card": args.card}
     print(json.dumps(output, indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_generate(args) -> int:
+    ladder = [int(x) for x in args.ladder.split(",")] if args.ladder else None
+    instance = generate_instance(args.program, _parse_seed(args.seed), rung=args.rung, ladder=ladder)
+    if args.schema:
+        vr = validate_scenario(instance, load_json(args.schema))
+        if not vr.valid:
+            raise SystemExit("generated instance failed validation:\n" + "\n".join(vr.errors))
+    text = json.dumps(instance, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + "\n", encoding="utf-8")
+        print(args.output)
+    else:
+        print(text)
     return 0
 
 
@@ -429,7 +455,7 @@ def build_parser() -> argparse.ArgumentParser:
     rp.set_defaults(func=cmd_run_pack)
 
     b = sub.add_parser("benchmark", help="Execute and aggregate a complete MIB Benchmark Pack")
-    b.add_argument("path")
+    b.add_argument("path", nargs="?", help="Scenario directory or file; omit for a Profile that declares programs")
     b.add_argument("--profile", required=True)
     b.add_argument("--schema", required=True)
     b.add_argument("--report-schema")
@@ -445,6 +471,15 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--output-summary")
     b.add_argument("--card")
     b.set_defaults(func=cmd_benchmark)
+
+    g = sub.add_parser("generate", help="Materialize one generated Scenario Instance from a program")
+    g.add_argument("--program", required=True, choices=sorted(PROGRAMS))
+    g.add_argument("--seed", default="101")
+    g.add_argument("--rung", type=int, default=0)
+    g.add_argument("--ladder", help="Comma-separated interference counts per rung; defaults to the program's ladder")
+    g.add_argument("--schema")
+    g.add_argument("--output")
+    g.set_defaults(func=cmd_generate)
 
     cc = sub.add_parser("capability-card", help="Render a Markdown Capability Card from a MIB Report")
     cc.add_argument("report")

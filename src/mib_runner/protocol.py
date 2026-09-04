@@ -73,6 +73,11 @@ class AgentHost:
                     virtual_time=vt,
                 )
                 return ok_response(request, {"interaction_id": body["interaction_id"], "output": asdict(out)})
+            if op == "maintain":
+                hook = getattr(agent, "maintain", None)
+                if not callable(hook):
+                    return ok_response(request, {"accepted": False, "reason": "maintenance not supported"})
+                return ok_response(request, hook(run_id=run_id, request_id=rid, budget=body.get("budget"), virtual_time=vt))
             if op == "act":
                 step = agent.act(
                     run_id=run_id,

@@ -142,25 +142,28 @@ It is the **Agent + Memory system as a cross-temporal cognitive system**.
 
 ## What MIB Measures
 
-MIB-Core evaluates six primary dimensions in v0.1:
+MIB-Core evaluates seven capability dimensions in v0.2:
 
 | Dimension                     | What it asks                                                                                                                            |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Retention & Retrieval**     | Can relevant past information be recovered accurately, including under indirect cues and interference?                                  |
-| **Temporal Memory**           | Can the system distinguish current state, historical state, transitions, revisions, and stale information?                              |
-| **Epistemic Memory**          | Can it remember who said what, preserve uncertainty, handle correction and contradiction, and avoid treating missing evidence as false? |
-| **Experience Memory**         | Can it preserve the structure of goals, actions, observations, failures, recovery, and outcomes?                                        |
-| **Skill Learning & Transfer** | Can repeated experience become reusable policy, including knowing when *not* to transfer a learned skill?                               |
-| **Causal Memory Impact**      | Can we show that relevant memory improves future behavior while irrelevant, stale, or harmful memory does not control it?               |
+| **Retention & Retrieval**     | Can relevant past information be recovered under indirect cues and generated interference, directly and across a hop?                  |
+| **Temporal Memory**           | Can the system distinguish the current, previous, and original values of a changing state?                                              |
+| **Epistemic Memory**          | Can it remember who said what, tell correction from contradiction, respect authority, and keep unknown distinct from false?              |
+| **Experience Memory**         | Does a failure the Agent itself lived through change what it does next time?                                                            |
+| **Skill Learning & Transfer** | Does a learned precondition transfer where it applies and stay withheld where it does not?                                              |
+| **Prospective & Self Memory** | Does a deferred commitment fire on its trigger, and not before? Does a standing rule about the Agent itself survive a task that asks otherwise? |
+| **Selective Forgetting**      | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
+
+Whether memory made a causal difference is no longer a seventh dimension. It is a set of
+causal diagnostics reported beside the score, one of which — content tracking — gates
+whether the score counts as a memory score at all (see below).
 
 Future profiles will expand first-class evaluation of:
 
 ```text
-Selective Forgetting
-Prospective Memory
-Self Memory
 Cross-Agent Memory
 Multimodal Memory
+Privacy Boundaries
 ```
 
 ---
@@ -201,32 +204,43 @@ A capable memory system should resist avoidable memory-induced errors.
 
 The adversarial scenario family (`MIB-ADV-*`) pushes the harmful memory condition to its purest form: the injected events consist **solely of questions** that presuppose an unestablished habit, date, or procedure. Because questions assert nothing, oracle answers remain identical across both conditions — any paired performance drop reveals that questioning alone installed unverified facts into memory, measured directly via the standard Memory Harm and Harm Resistance metrics.
 
-This produces metrics such as:
+Removal shows that *something* in an event mattered. v0.2 adds the stronger test —
+**counterfactual content**: the same Instance is replayed with one event saying something
+else, and the correct answer changes with it.
+
+```text
+Full Memory
+    vs
+Same past, one event's content swapped
+```
+
+An Agent whose answers follow the swapped content was using memory. An Agent whose
+answers stay the same, however high its score, was answering from priors.
+
+This produces diagnostics such as:
 
 ```text
 Memory Benefit
 Headroom-Normalized Memory Benefit
+Content Tracking Rate          ← gates memory dependence
+Stale Adoption Rate
 Irrelevant Memory Stability
 Memory Harm
 Harm Resistance
 Net Memory Gain
+Error Recurrence Rate          (lived failures, see below)
+Consolidation Benefit          (Agents that implement maintain)
+Negative Transfer / Rate       (the standardized control on a non-matching task)
+Learning Gain / Curve Area     (lived trials)
+Authority Confusion, Historical Fidelity, Source Attribution, Self-Rule Continuity
 ```
 
-Two further causal metrics are **specified but not yet implemented in v0.1**:
-
-```text
-Negative Transfer
-Error Recurrence
-```
-
-`docs/MIB-Specification.md` (Appendix A) lists both as roadmap items, and the Scenario schema already accepts their
-metric names, but the v0.1 reference Runner emits neither. A generic counterexample
-ablation demonstrates applicability sensitivity and is deliberately *not* reported as
-Negative Transfer, because it is not the standardized control the scoring model
-defines. Do not expect either value in a v0.1 report.
-
-The main **MIB Score** measures absolute memory-enabled capability.
-Causal metrics are reported alongside it rather than being mixed into an opaque score.
+The main **MIB Score** measures absolute memory-enabled capability at a fixed interference
+distance. Causal diagnostics are reported alongside it rather than being mixed into an
+opaque score, and a Profile's **memory dependence** floor (content tracking rate ≥ 0.5 by
+default) decides whether that score may be called official. Negative Transfer is now
+measured by its standardized control: the non-matching task with the skill memory
+withheld, compared with the same task with it (`docs/MIB-Specification.md` §7.8).
 
 ---
 
@@ -333,39 +347,36 @@ and:
 
 ## Benchmark Structure
 
-MIB v0.1 defines **60 canonical Scenario Templates**:
+MIB v0.2 does not ship hand-written Scenarios. It ships **Programs**: deterministic
+generators `(seed, rung) → Scenario Instance` over an internal, bitemporal, per-source
+world model. Answers, relevant-memory ablation sets, counterfactual twins, and leak proofs
+are computed from the model, never authored.
 
 ```text
-Recall          10
-Time            10
-Epistemic       10
-Experience       8
-Skill            8
-Causal           8
-Cross             6
-──────────────────
-Total            60
+mib.recall.v1        a fact and a two-hop chain with a decoy
+mib.temporal.v1      one or two updates: current, previous, original value
+mib.epistemic.v1     correction, contradiction with authority, tool resolution, unknown
+mib.experience.v1    a deployment the Agent itself runs and breaks, then a related one
+mib.skill.v1         a learned precondition: apply where it fits, withhold where it does not
+mib.prospective.v1   a deferred commitment, a near-trigger, the real trigger, a self-rule under pressure
+mib.forgetting.v1    a retracted fact must stay unused; its neighbour must stay known
 ```
 
-They are divided into:
+Every Program is executed on a **distance ladder** — the same Instance with 0, 20, and
+100 generated interference events between the past and the Probes (0 / 100 / 1000 in the
+MIB-M development profile) — so a result is a retention curve, not a point. Distance is
+recorded in events, tokens, and virtual hours. The capability score is read at the
+Profile's canonical rung; every rung feeds the curve. Every Program also consolidates
+once (a maintenance window with a paired no-maintenance control), and every lived task
+can carry a trial oracle, so learning curves come from what the Agent actually did.
 
-```text
-24 Public Dev Templates
-30 Hidden Eval Templates
- 6 Private Holdout Templates
-```
+A pack is `programs × seeds × rungs`. Programs, surface pools, and the generator are
+public; official evaluation uses evaluator-secret seeds, so participants can inspect every
+construction and still never see an official Instance.
 
-Public Dev scenarios are intended for:
-
-```text
-integration
-debugging
-research
-regression testing
-local development
-```
-
-Official evaluation uses hidden and holdout scenarios so that leaderboard performance is not dominated by benchmark-specific hardcoding.
+The 24 static Public Dev Templates of v0.1 (and the hidden v0.1 packs) remain executable
+as a superset and are useful for integration and regression testing. They are no longer
+the benchmark.
 
 ---
 
@@ -545,24 +556,30 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB v0.1 currently includes:
+MIB v0.2 (implementation 0.9.0) currently includes:
 
 ```text
 ✓ Benchmark architecture
-✓ Scenario model
-✓ Agent Adapter protocol
-✓ Scoring model
-✓ Report schema
+✓ World model: bitemporal, per-source, computed oracles
+✓ Seven generated Programs on a three-rung distance ladder (MIB-S and MIB-M profiles)
+✓ Support sets, leak proofs, counterfactual twins (all derived)
+✓ Lived tasks and trials (experience the Agent creates itself; learning curves)
+✓ Prospective memory scored from spontaneous emissions
+✓ Structured answers: value / status / confidence, deterministic parser
+✓ Scoring model: capability at the canonical rung + retention curve
+✓ Causal diagnostics + memory-dependence gate
+✓ Standardized Negative Transfer control
+✓ Full-run behaviour diagnostics (error recurrence, authority confusion,
+  historical fidelity, source attribution, self-rule continuity, memory-induced errors)
+✓ Consolidation windows with a paired no-maintenance control
+✓ Percentile and BCa intervals; runner-measured efficiency block
+✓ Report schema, score verification, Capability Card
 
-✓ 24 Public Dev Templates
-✓ 30 Hidden Eval Templates
-✓ 6 Private Holdout Templates
-
-✓ Reference Runner
+✓ Reference Runner (respond / act / observe_only, maintain hook)
 ✓ Tool-loop World Simulator
-✓ Causal replay
+✓ Causal, counterfactual, and no-maintenance replay
 ✓ Pack-level aggregation
-✓ Hierarchical bootstrap
+✓ Hierarchical bootstrap (Instance units for generated packs)
 
 ✓ External stdio / HTTP Agent Adapter
 ✓ Hidden evaluation infrastructure
@@ -571,44 +588,47 @@ MIB v0.1 currently includes:
 ✓ Signed jobs and signed results
 ✓ Leaderboard + paired comparison
 
-✓ Fixture Calibration
-  36 / 36 official Templates pass structural calibration
-  (plumbing only: fixture Agents are hand-written to pass or
-  fail each Template; this establishes nothing about difficulty)
+✓ Six fixture Agents that order as the design predicts
+  StructuredMemoryAgent   flat retention, content tracking 1.0
+  WindowMemoryAgent       decays along the ladder
+  ConsolidatingAgent      the window fixture whose maintain() pays off
+  RecencyAgent            stale adoption, authority confusion, cannot forget
+  OvergeneralizingAgent   negative transfer on the non-matching task
+  NoMemoryAgent           low score, dependence not assessable
+  (plumbing only: they establish nothing about difficulty)
 
-✓ Same-Model Empirical Harness
+✓ 24 static v0.1 Public Dev Templates, still executable as a superset
 
 ✓ Transfer Intelligence diagnostics
-  Formation / Routing / Uptake, transfer distance D0–D3,
-  near-match and unsupported negative controls
   supplemental only: no MIB Score changes
 
 ○ MIB-R Reality Track
   prototype; its own result family, no official score,
   never ranked against MIB-Core
 
-○ Real fixed-model empirical calibration
+○ Real fixed-model calibration at every rung
   pending
 
-○ MIB v0.1 leaderboard pack freeze
+○ MIB-L ladders whose rungs exceed any working context
+  pending (MIB-M reaches 1,000 interference events, about 8k tokens)
+
+○ MIB v0.2 leaderboard pack freeze
   pending empirical calibration
 ```
 
-What v0.1 can and cannot claim today:
+What v0.2 can and cannot claim today:
 
-- Every public Scenario is **MIB-S**: a few dozen events, far below any
-  model's context window. At this scale the benchmark measures whether an
-  Agent uses memory *semantics* correctly in context (current vs historical,
-  source vs claim, applicable vs inapplicable Skill). It does not yet
-  discriminate memory *systems*: a stateless full-context model saturates the
-  relevant-memory ablation, because removing an event from the replay removes
-  the information, not a retrieval step. That discrimination needs the
-  MIB-M/L history sizes that are still pending.
-- The reference Agent is a deterministic fixture whose heuristics are keyed to
-  the public Templates' wording. Its 100.0 on the dev pack exercises the
-  Runner; it is not a baseline.
-- The causal metrics have been validated on fixtures only. No real model has
-  been calibrated yet.
+- Every shipped Program is inside a modern context window: the MIB-S ladder
+  tops out at 100 interference events, MIB-M at 1,000 (about 8k tokens). The ladder and the counterfactual
+  swap together identify *memory* rather than *reading* — an Agent must retain
+  the content at a distance and must follow it when it changes — but a
+  full-context model can still pass rung 2 by reading. Rungs beyond the
+  working context are what turn the retention curve into a memory-system
+  comparison, and they are pending.
+- The fixture Agents are keyed to the generated language. Their ordering
+  (Structured > Window > NoMemory; Recency shows stale adoption) exercises
+  the Runner and the scoring; it is not a baseline.
+- No real model has been calibrated yet.
 
 ---
 
@@ -626,9 +646,10 @@ Every artifact has exactly one canonical location.
 ```text
 MIB/
 ├── docs/
-│   ├── MIB-Specification.md               the normative spec: scenario model,
-│   │                                      execution, scoring, causal metrics,
-│   │                                      statistics, reports (+ roadmap appendix)
+│   ├── MIB-Specification.md               the normative v0.2 spec: programs and
+│   │                                      world model, execution, scoring, causal
+│   │                                      diagnostics, ladder, reports (+ roadmap)
+│   ├── proposals/                         MIB-v0.2-Evolution.md — design rationale
 │   ├── MIB-Agent-Adapter.md               Agent Adapter protocol (stdio / HTTP)
 │   ├── MIB-Leaderboard-Evaluation-Service.md
 │   ├── MIB-v0.1-Test-Plan.md
@@ -643,10 +664,10 @@ MIB/
 │                                          submission, job manifest, attestation,
 │                                          calibration, same-model experiment)
 │
-├── scenarios/                             the public dev Scenario Packs
-│   │                                      (membership is fixed by each Profile's
+├── scenarios/                             static v0.1 Scenario Packs (superset;
+│   │                                      membership is fixed by each Profile's
 │   │                                      required_templates)
-│   ├── dev/                               MIB-Core Public Dev, 24 Templates
+│   ├── dev/                               MIB-Core v0.1 Public Dev, 24 Templates
 │   │   ├── recall/        4      ├── skill/       3
 │   │   ├── time/          4      ├── causal/      3
 │   │   ├── epistemic/     4      └── cross/       3
@@ -660,11 +681,19 @@ MIB/
 ├── src/mib_runner/                        reference Runner, evaluators,
 │   │                                      adapters, calibration, service,
 │   │                                      leaderboard
+│   ├── worldmodel.py                      bitemporal per-source world model,
+│   │                                      queries, support sets, leak proofs
+│   ├── generate/                          Programs, surface pools, interference
+│   │                                      ladder, instance builder, registry
+│   ├── agents/v2.py                       the four v0.2 fixture Agents
 │   └── experimental/                      Transfer Intelligence, Memory Adapter,
 │                                          MIB-R (never enters the MIB Score)
 ├── tests/
 │
 ├── profiles/                              benchmark profiles
+│                                          (MIB-Core-0.2-Dev.json and -Dev-M.json:
+│                                          programs, ladder, canonical rung,
+│                                          memory-dependence floor, interval method)
 ├── baselines/                             B0–B3 memory-condition definitions
 ├── prompts/                               fixed same-model prompts
 ├── fixtures/                              synthetic demo private eval store
@@ -674,10 +703,12 @@ MIB/
     ├── agents/                            reference stdio / HTTP Agents
     ├── submissions/                       Agent submission specs
     ├── runs/                              scenario + pack run artifacts
+    │                                      (MIB-Core-0.2-Dev.* is the v0.2 pack)
     ├── service/                           evaluation-service artifacts
     ├── calibration/                       calibration reports
     ├── same-model/                        fixed-model experiment artifacts
     ├── scenario-instances/                materialized Scenario instances
+    │                                      (generated/ holds one Instance per Program)
     └── validation/                        schema validation results
 ```
 
@@ -706,11 +737,32 @@ installing, invoke the same entry point directly:
 PYTHONPATH=src python -m mib_runner.cli --help
 ```
 
-The reference implementation exposes CLI workflows such as:
+Generate one Scenario Instance from a Program (seed 7, rung 1 = 20 interference events):
 
 ```bash
-mib validate scenarios/dev/time/MIB-TIME-003.json --schema schemas/mib-scenario.schema.json
+mib generate --program mib.temporal.v1 --seed 7 --rung 1 --schema schemas/mib-scenario.schema.json --output MIB-GEN-TEMPORAL-V1.json
 ```
+
+Run the v0.2 development pack — every Program, every seed, every rung — against a fixture
+Agent, and write the report, summary, and Capability Card:
+
+```bash
+mib benchmark --profile profiles/MIB-Core-0.2-Dev.json --schema schemas/mib-scenario.schema.json --report-schema schemas/mib-report.schema.json --agent mib_runner.agents:StructuredMemoryAgent --output-report report.json --output-summary summary.json --card card.md
+```
+
+Swap `StructuredMemoryAgent` for `WindowMemoryAgent`, `ConsolidatingAgent`, `RecencyAgent`,
+`OvergeneralizingAgent`, or `NoMemoryAgent` to see the ordering the design predicts, or pass
+your own `module:Class` (an in-process Agent implementing `reset` / `observe` / `respond` /
+`act`, optionally `maintain`). `profiles/MIB-Core-0.2-Dev-M.json` runs the same Programs at
+MIB-M distance with BCa intervals.
+
+Recompute every layer of a report:
+
+```bash
+mib verify-score report.json
+```
+
+The static v0.1 Templates remain runnable:
 
 ```bash
 mib run scenarios/dev/time/MIB-TIME-003.json --schema schemas/mib-scenario.schema.json
@@ -718,10 +770,6 @@ mib run scenarios/dev/time/MIB-TIME-003.json --schema schemas/mib-scenario.schem
 
 ```bash
 mib benchmark scenarios/dev --schema schemas/mib-scenario.schema.json --profile profiles/MIB-Core-0.1-Dev-M3.json
-```
-
-```bash
-mib verify-score report.json
 ```
 
 Run the test suite with:
@@ -756,7 +804,7 @@ HTTP submissions are accepted from `localhost` only. A remote `base_url` needs
 `--allow-remote-http` and `https`; the HTTP transport exists for local
 development of non-Python Agents, not for remote evaluation.
 
-The rest of the CLI — `mib validate`, `run`, `run-pack`, `benchmark`,
+The rest of the CLI — `mib validate`, `generate`, `run`, `run-pack`, `benchmark`,
 `capability-card`, `verify-score`, `public-eval-manifest`, and the non-executing
 `mib-service` subcommands — is cross-platform.
 

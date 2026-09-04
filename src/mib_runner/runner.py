@@ -10,9 +10,9 @@ import jsonschema
 from dataclasses import asdict
 from typing import Any
 
-from .evaluator import evaluate_probe
+from .evaluator import evaluate_emission_probe, evaluate_probe, recurrence_checks
 from .late_sampling import sample_probe_for_delivery
-from .scoring import scenario_score_from_probes
+from .scoring import CONDITION_BY_ABLATION_KIND, instance_key, scenario_score_from_probes
 from .types import AgentAdapter, AgentOutput, Observation, ActStep
 from .util import advance_iso_time, utc_now
 from .world import WorldState
@@ -29,6 +29,9 @@ _EVENT_TYPE_MAP = {
     "system_event": "system_event",
     "custom": "custom",
 }
+
+# Timeline event types the Runner handles itself rather than projecting.
+_HARNESS_EVENT_TYPES = {"checkpoint", "world_update", "task"}
 
 
 class RunnerError(RuntimeError):
@@ -57,19 +60,26 @@ def _actor_map(scenario: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {a["id"]: a for a in scenario.get("actors", [])}
 
 
-def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]], virtual_time: str | None) -> Observation:
+def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]], virtual_time: str | None,
+                         replacement: dict[str, Any] | None = None) -> Observation:
     actor = None
     if event.get("actor"):
         src = actors[event["actor"]]
         actor = {"id": src["id"], "kind": src.get("kind"), "display_name": src.get("display_name")}
     obs_type = _EVENT_TYPE_MAP.get(event["type"], event["type"])
+    content = event.get("content")
+    payload = event.get("payload")
+    if replacement:
+        # Counterfactual-content Ablation: same event id, same position, other content.
+        content = replacement.get("content", content)
+        payload = replacement.get("payload", payload)
     return Observation(
         observation_id=f"obs_{event['id']}",
         type=obs_type,
         virtual_time=virtual_time,
         actor=actor,
-        content=event.get("content"),
-        payload=copy.deepcopy(event.get("payload")),
+        content=content,
+        payload=copy.deepcopy(payload),
         tool_call_id=event.get("tool_call_id"),
         tool=event.get("tool"),
     )
@@ -98,6 +108,20 @@ def _tool_result_observation(call_id: str, tool: str, payload: dict[str, Any], v
     )
 
 
+def _emissions_of(response: Any) -> list[dict[str, Any]]:
+    """Normalize the ``emissions`` an Agent may return from ``observe``."""
+    if not isinstance(response, dict):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in response.get("emissions") or []:
+        if isinstance(item, str):
+            out.append({"content": item})
+        elif isinstance(item, dict):
+            content = item.get("content") or item.get("text")
+            out.append({**item, "content": content if content is not None else json.dumps(item, ensure_ascii=False)})
+    return out
+
+
 def run_condition(
     *,
     scenario: dict[str, Any],
@@ -112,13 +136,13 @@ def run_condition(
     pre_probe_injections: dict[str, list[str]] | None = None,
     close_agent_on_complete: bool = True,
 ) -> dict[str, Any]:
-    """Execute one condition of a Scenario Instance.
+    """Execute one condition of a Scenario Instance (MIB-Specification §5).
 
     ``excluded_event_ids``, ``probe_ids``, ``past_injections``,
     ``pre_probe_injections``, and ``close_agent_on_complete`` exist for
-    evaluator-only transfer diagnostic cells (M6.2).  They are not reachable
-    from Scenario content, and the ordinary ``full`` and Ablation paths never
-    set them, so core execution is unchanged.
+    evaluator-only transfer diagnostic cells.  They are not reachable from
+    Scenario content, and the ordinary ``full`` and Ablation paths never set
+    them, so core execution is unchanged.
     """
     if condition != "full" and not ablation and excluded_event_ids is None and probe_ids is None:
         raise RunnerError("non-full condition requires an ablation or an explicit diagnostic cell")
@@ -151,18 +175,28 @@ def run_condition(
     ablation_method = None
     scenario_injections: list[dict[str, Any]] = []
     scenario_injection_ids: set[str] = set()
+    replacements: dict[str, dict[str, Any]] = {}
+    counterfactual_oracles: dict[str, dict[str, Any]] = {}
     if ablation:
         ablation_id = ablation["id"]
         ablation_method = ablation.get("method")
-        if ablation_method not in {"replay_excluding_events", "replay_with_injections"}:
+        if ablation_method not in {"replay_excluding_events", "replay_with_injections", "swap_parameter"}:
             raise NotImplementedError(
-                "reference Runner implements replay_excluding_events and "
-                f"replay_with_injections only, got {ablation_method!r}"
+                "reference Runner implements replay_excluding_events, replay_with_injections "
+                f"and swap_parameter only, got {ablation_method!r}"
             )
-        removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
         scored_probe_ids = set(ablation.get("probes", []))
         scenario_injections = copy.deepcopy(ablation.get("injections") or [])
         scenario_injection_ids = {str(injection["id"]) for injection in scenario_injections}
+        if ablation_method == "swap_parameter":
+            cf = ablation.get("counterfactual") or {}
+            replacements = copy.deepcopy(cf.get("events") or {})
+            counterfactual_oracles = copy.deepcopy(cf.get("oracle") or {})
+            for eid in (ablation.get("targets") or {}).get("event_ids", []):
+                if str(eid) not in replacements:
+                    raise RunnerError(f"swap_parameter Ablation {ablation_id} has no replacement for {eid}")
+        else:
+            removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
 
     probes_by_trigger: dict[str, list[dict[str, Any]]] = {}
     for p in scenario.get("probes", []):
@@ -175,25 +209,33 @@ def run_condition(
 
     probe_results: list[dict[str, Any]] = []
     run_action_trace: list[dict[str, Any]] = []
+    experience_trace: dict[str, list[dict[str, Any]]] = {}
+    task_results: list[dict[str, Any]] = []
+    emission_log: list[dict[str, Any]] = []
+    pending_emission_probes: list[tuple[dict[str, Any], int]] = []
+    run_warnings: list[str] = []
     probe_variant_digests: dict[str, str] = {}
     request_counter = 0
+    observation_counter = 0
 
     def req_id() -> str:
         nonlocal request_counter
         request_counter += 1
         return f"req_{request_counter:06d}"
 
-    def deliver_observation(obs: Observation) -> None:
-        agent.observe(run_id=run_id, request_id=req_id(), observation=obs)
+    def deliver_observation(obs: Observation) -> int:
+        nonlocal observation_counter
+        observation_counter += 1
+        index = observation_counter
+        response = agent.observe(run_id=run_id, request_id=req_id(), observation=obs)
+        emissions = _emissions_of(response)
+        if emissions:
+            emission_log.append({"index": index, "observation_id": obs.observation_id, "emissions": emissions})
+        return index
 
     def deliver_injection(content: str) -> None:
         """Deliver an evaluator-supplied memory artifact through the ordinary
-        observation channel.
-
-        Routing an artifact means surfacing it, the way a memory system surfaces
-        a recalled Skill.  Using the same channel for every system keeps the
-        AA/OA/OO cells paired between black-box and decomposable Agents.
-        """
+        observation channel (transfer diagnostics)."""
         nonlocal injection_counter
         injection_counter += 1
         deliver_observation(Observation(
@@ -203,9 +245,14 @@ def run_condition(
             content=content,
         ))
 
-    def append_probe_result(p: dict[str, Any], output: AgentOutput, score: float, eval_results: list[dict[str, Any]], latency_ms: float, action_trace: list[dict[str, Any]] | None = None) -> None:
+    def probe_oracle(p: dict[str, Any]) -> dict[str, Any]:
+        return counterfactual_oracles.get(p["id"], p.get("oracle") or {})
+
+    def append_probe_result(p: dict[str, Any], output: AgentOutput | None, score: float, eval_results: list[dict[str, Any]],
+                            latency_ms: float, action_trace: list[dict[str, Any]] | None = None,
+                            extra: dict[str, Any] | None = None) -> None:
         failures = sorted({fc for e in eval_results for fc in e.get("failure_codes", [])})
-        payload = asdict(output)
+        payload = asdict(output) if output is not None else {"type": "none"}
         row = {
             "probe_id": p["id"],
             "probe_kind": p.get("kind"),
@@ -219,11 +266,20 @@ def run_condition(
             "failure_codes": failures,
             "latency_ms": latency_ms,
             "output_digest": hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest(),
+            **(extra or {}),
             **({"extensions": {"mib.runner.action_trace": copy.deepcopy(action_trace)}} if action_trace is not None else {}),
         }
         if scored_probe_ids is not None and p["id"] not in scored_probe_ids:
             row = {**row, "weight": 0.0}
         probe_results.append(row)
+
+    def counterfactual_extra(p: dict[str, Any], output: AgentOutput, context: dict[str, Any], score: float) -> dict[str, Any]:
+        """Under swap_parameter, record whether the answer tracked the counterfactual or stayed with the original."""
+        if p["id"] not in counterfactual_oracles:
+            return {}
+        original = {**p, "oracle": p.get("oracle") or {}}
+        stale_score, _ = evaluate_probe(output, original, evaluator_map, context)
+        return {"counterfactual": {"tracks": score >= 1.0, "stale": stale_score >= 1.0}}
 
     def execute_respond_probe(p: dict[str, Any]) -> None:
         started_ns = time.perf_counter_ns()
@@ -234,27 +290,27 @@ def run_condition(
             input_data=copy.deepcopy(p.get("input") or {}),
             virtual_time=virtual_time,
         )
-        score, eval_results = evaluate_probe(output, p, evaluator_map, {"world": world, "action_trace": []})
-        append_probe_result(p, output, score, eval_results, (time.perf_counter_ns() - started_ns) / 1_000_000)
+        scored = {**p, "oracle": probe_oracle(p)}
+        context = {"world": world, "action_trace": []}
+        score, eval_results = evaluate_probe(output, scored, evaluator_map, context)
+        extra = counterfactual_extra(p, output, context, score)
+        traps = sorted(set((scored["oracle"].get("failure_code_by_value") or {}).values()))
+        if traps:
+            extra["traps"] = traps   # the memory failures this Probe could elicit; eligibility for §7.9 rates
+        append_probe_result(p, output, score, eval_results, (time.perf_counter_ns() - started_ns) / 1_000_000, extra=extra)
 
-    def execute_act_probe(p: dict[str, Any]) -> None:
-        started_ns = time.perf_counter_ns()
-        inp = copy.deepcopy(p.get("input") or {})
-        goal = inp.get("goal") or inp.get("content")
-        allowed = inp.get("available_tools")
+    def run_act_loop(*, task_id: str, goal: str | None, allowed: list[str] | None, constraints: list[str],
+                     turns: int) -> tuple[ActStep | None, list[dict[str, Any]]]:
         tool_defs = world.exposed_tools(allowed)
         available_names = {t["name"] for t in tool_defs}
         if allowed:
             missing = set(allowed) - available_names
             if missing:
-                raise RunnerError(f"probe {p['id']} references unavailable tools: {sorted(missing)}")
-        constraints = list(inp.get("constraints") or [])
-        task_id = f"task_{p['id']}"
+                raise RunnerError(f"{task_id} references unavailable tools: {sorted(missing)}")
         trace: list[dict[str, Any]] = []
         seen_calls: set[str] = set()
         final_step: ActStep | None = None
-
-        for turn in range(max_agent_turns):
+        for turn in range(turns):
             step = agent.act(
                 run_id=run_id,
                 request_id=req_id(),
@@ -292,24 +348,82 @@ def run_condition(
                     "result": copy.deepcopy(execution_result.result),
                 }
                 trace.append(row)
-                run_action_trace.append({"probe_id": p["id"], **copy.deepcopy(row)})
+                run_action_trace.append({"task_id": task_id, **copy.deepcopy(row)})
                 deliver_observation(_tool_result_observation(step.tool_call_id, step.tool, execution_result.result, virtual_time))
                 continue
             if step.type in {"final", "abstention"}:
                 final_step = step
                 break
             raise AgentBehaviourError("agent_protocol_violation", f"unsupported ActStep type: {step.type!r}")
-
         if final_step is None:
-            raise AgentBehaviourError("trajectory_collapse", "act probe did not terminate within max_agent_turns")
+            raise AgentBehaviourError("trajectory_collapse", f"{task_id} did not terminate within max_agent_turns")
+        return final_step, trace
+
+    def execute_act_probe(p: dict[str, Any]) -> None:
+        started_ns = time.perf_counter_ns()
+        inp = copy.deepcopy(p.get("input") or {})
+        final_step, trace = run_act_loop(
+            task_id=f"task_{p['id']}", goal=inp.get("goal") or inp.get("content"), allowed=inp.get("available_tools"),
+            constraints=list(inp.get("constraints") or []), turns=max_agent_turns,
+        )
         output = AgentOutput(
             type="abstention" if final_step.type == "abstention" else ("structured" if final_step.value is not None else "message"),
             content=final_step.content,
             value=final_step.value,
             attribution=final_step.attribution,
         )
-        score, eval_results = evaluate_probe(output, p, evaluator_map, {"world": world, "action_trace": trace})
-        append_probe_result(p, output, score, eval_results, (time.perf_counter_ns() - started_ns) / 1_000_000, trace)
+        scored = {**p, "oracle": probe_oracle(p)}
+        context = {"world": world, "action_trace": trace}
+        score, eval_results = evaluate_probe(output, scored, evaluator_map, context)
+        extra = counterfactual_extra(p, output, context, score)
+        recurrence = recurrence_checks(trace, scored.get("oracle") or {})
+        if recurrence is not None:
+            extra["recurrence"] = recurrence
+        append_probe_result(p, output, score, eval_results, (time.perf_counter_ns() - started_ns) / 1_000_000, trace, extra=extra)
+
+    def execute_task(event: dict[str, Any]) -> None:
+        """A lived task in the past: the Agent's own trajectory becomes its experience (§5.3)."""
+        task = event.get("task") or {}
+        task_id = f"task_{event['id']}"
+        try:
+            _, trace = run_act_loop(
+                task_id=task_id, goal=task.get("goal"), allowed=task.get("available_tools"),
+                constraints=list(task.get("constraints") or []), turns=int(task.get("max_agent_turns", max_agent_turns)),
+            )
+        except AgentBehaviourError as exc:
+            # A lived failure is still experience; it is recorded, never scored.
+            trace = [r for r in run_action_trace if r.get("task_id") == task_id]
+            run_warnings.append(f"task {event['id']}: {exc.code}: {exc}")
+        experience_trace[event["id"]] = copy.deepcopy(trace)
+        if task.get("oracle") and task.get("evaluators"):
+            # A trial oracle makes the lived task a learning-curve sample (§7.9). It never enters a score.
+            pseudo = {"id": task_id, "kind": "experience", "oracle": task["oracle"], "evaluators": list(task["evaluators"])}
+            try:
+                score, results = evaluate_probe(AgentOutput(type="message", content=""), pseudo, evaluator_map,
+                                                {"world": world, "action_trace": trace})
+            except Exception as exc:  # a broken trial oracle is a warning, not a run failure
+                run_warnings.append(f"task {event['id']}: trial oracle failed: {exc!r}")
+                score, results = 0.0, []
+            task_results.append({
+                "task_id": event["id"], "index": len(task_results), "score": float(score), "succeeded": float(score) >= 1.0,
+                "failure_codes": sorted({fc for r in results for fc in r.get("failure_codes", [])}),
+            })
+
+    def execute_observe_only_probe(p: dict[str, Any]) -> None:
+        spec = copy.deepcopy((p.get("input") or {}).get("observation") or {})
+        actor = None
+        if spec.get("actor") and spec["actor"] in actor_by_id:
+            src = actor_by_id[spec["actor"]]
+            actor = {"id": src["id"], "kind": src.get("kind"), "display_name": src.get("display_name")}
+        index = deliver_observation(Observation(
+            observation_id=f"obs_probe_{p['id']}",
+            type=spec.get("type", "environment_event"),
+            virtual_time=virtual_time,
+            actor=actor,
+            content=spec.get("content"),
+            payload=copy.deepcopy(spec.get("payload")),
+        ))
+        pending_emission_probes.append((p, index))
 
     def execute_probe(p: dict[str, Any]) -> None:
         sampled, variant_digest = sample_probe_for_delivery(scenario=scenario, probe=p, repetition=repetition)
@@ -320,8 +434,10 @@ def run_condition(
                 execute_respond_probe(sampled)
             elif sampled.get("delivery") == "act":
                 execute_act_probe(sampled)
+            elif sampled.get("delivery") == "observe_only":
+                execute_observe_only_probe(sampled)
             else:
-                raise NotImplementedError(f"reference Runner implements respond/act Probes, got {sampled.get('delivery')!r}")
+                raise NotImplementedError(f"reference Runner implements respond/act/observe_only Probes, got {sampled.get('delivery')!r}")
         except AgentBehaviourError as exc:
             # Cognitive failure: the Probe was executed and the Agent failed it.
             row = {
@@ -361,6 +477,22 @@ def run_condition(
             if scored_probe_ids is not None and sampled["id"] not in scored_probe_ids:
                 row = {**row, "weight": 0.0}
             probe_results.append(row)
+
+    def score_pending_emission_probes() -> None:
+        for p, index in pending_emission_probes:
+            scored = {**p, "oracle": probe_oracle(p)}
+            score, eval_results = evaluate_emission_probe(scored, evaluator_map, emission_log, index)
+            append_probe_result(p, None, score, eval_results, 0.0)
+
+    def maintain(event: dict[str, Any]) -> None:
+        hook = getattr(agent, "maintain", None)
+        if not callable(hook):
+            return
+        payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+        try:
+            hook(run_id=run_id, request_id=req_id(), budget=payload.get("budget"), virtual_time=virtual_time)
+        except Exception as exc:  # a broken maintenance hook must not fail the run
+            run_warnings.append(f"maintenance {event['id']}: {exc!r}")
 
     def close_agent() -> None:
         # A transport-backed Adapter may own one subprocess per condition.  It
@@ -426,11 +558,19 @@ def run_condition(
         nonlocal virtual_time
         virtual_time = _virtual_time_for_event(event, virtual_time)
         if not injected:
+            # World updates apply in every condition: memory is the only treatment variable.
             for update in event.get("world_updates", []):
                 world.apply(update)
-        if event["id"] not in removed_ids and event.get("visibility") in {"agent", "both"}:
-            if event["type"] not in {"checkpoint", "world_update"}:
-                deliver_observation(_project_observation(event, actor_by_id, virtual_time))
+        if event["id"] in removed_ids or event.get("visibility") not in {"agent", "both"}:
+            return
+        if event["type"] == "task":
+            execute_task(event)
+            return
+        if event["type"] in _HARNESS_EVENT_TYPES:
+            return
+        deliver_observation(_project_observation(event, actor_by_id, virtual_time, replacements.get(str(event["id"]))))
+        if event["type"] == "maintenance_window":
+            maintain(event)
 
     try:
         # Reset inside the guarded region: any failure after this point must
@@ -448,6 +588,7 @@ def run_condition(
                 for content in pre_probe_injections.get(p["id"], ()):
                     deliver_injection(content)
                 execute_probe(p)
+        score_pending_emission_probes()
 
         expected_probe_ids = {
             p["id"] for p in scenario.get("probes", [])
@@ -471,7 +612,7 @@ def run_condition(
     instance = scenario.get("instantiation") or {}
     result = {
         "run_id": run_id,
-        "scenario_instance_id": f"{scenario['id']}:{instance.get('seed', 'instance')}",
+        "scenario_instance_id": instance_key(scenario),
         "scenario_instance_version": scenario.get("version"),
         "template_id": instance.get("template_id", scenario["id"]),
         "template_version": instance.get("template_version", scenario.get("version")),
@@ -486,11 +627,15 @@ def run_condition(
         "completed_at": completed,
         "scenario_score": scenario_score_from_probes(probe_results),
         "probe_results": probe_results,
+        **({"task_results": task_results} if task_results else {}),
         "validity": {"causal_pair_valid": True, "runner_valid": True, "notes": []},
+        **({"warnings": run_warnings} if run_warnings else {}),
         "extensions": {
             "mib.runner.world_state": copy.deepcopy(world.state),
             "mib.runner.world_state_digest": hashlib.sha256(json.dumps(world.state, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest(),
             "mib.runner.action_trace": run_action_trace,
+            "mib.runner.experience_trace": experience_trace,
+            "mib.runner.emissions": emission_log,
             "mib.runner.probe_variant_digests": probe_variant_digests,
         },
     }
@@ -503,21 +648,13 @@ def run_condition(
 def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: bool = True, repetition: int = 0, agent_seed: int | str | None = None) -> list[dict[str, Any]]:
     runs = [run_condition(scenario=scenario, agent=agent_factory(), condition="full", repetition=repetition, agent_seed=agent_seed)]
     if include_ablations:
-        kind_to_condition = {
-            "relevant_memory": "relevant_ablation",
-            "irrelevant_memory": "irrelevant_ablation",
-            "no_memory": "no_memory",
-            "stale_memory": "stale_memory",
-            "harmful_memory": "harmful_memory",
-            "counterexample": "counterexample",
-        }
         for a in scenario.get("ablations", []):
-            if a.get("method") not in {"replay_excluding_events", "replay_with_injections"}:
+            if a.get("method") not in {"replay_excluding_events", "replay_with_injections", "swap_parameter"}:
                 continue
             runs.append(run_condition(
                 scenario=scenario,
                 agent=agent_factory(),
-                condition=kind_to_condition.get(a["kind"], "custom"),
+                condition=CONDITION_BY_ABLATION_KIND.get(a["kind"], "custom"),
                 ablation=a,
                 repetition=repetition,
                 agent_seed=agent_seed,

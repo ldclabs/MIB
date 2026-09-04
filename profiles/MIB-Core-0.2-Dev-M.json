@@ -1,0 +1,85 @@
+{
+  "mib": "0.2",
+  "kind": "BenchmarkProfile",
+  "id": "MIB-Core-0.2-Dev-M",
+  "version": "0.2.0",
+  "description": "Generated MIB-Core development pack at MIB-M distance: the same seven programs with a 0 / 100 / 1000 interference-event ladder, capability read at rung 2, BCa intervals. Development only; never an official score.",
+  "track": "integrated_agent",
+  "scale": "MIB-M",
+  "official": false,
+  "scenario_pack": {
+    "id": "MIB-v0.2-Generated-Dev-M",
+    "version": "0.2.0"
+  },
+  "programs": [
+    {
+      "id": "mib.recall.v1"
+    },
+    {
+      "id": "mib.temporal.v1"
+    },
+    {
+      "id": "mib.epistemic.v1"
+    },
+    {
+      "id": "mib.experience.v1"
+    },
+    {
+      "id": "mib.skill.v1"
+    },
+    {
+      "id": "mib.prospective.v1"
+    },
+    {
+      "id": "mib.forgetting.v1"
+    }
+  ],
+  "instance_seeds": [
+    101,
+    202,
+    303
+  ],
+  "ladder": [
+    0,
+    100,
+    1000
+  ],
+  "canonical_rung": 2,
+  "repetitions": 1,
+  "dimensions": {
+    "retention_retrieval": {
+      "weight": 0.15
+    },
+    "temporal_memory": {
+      "weight": 0.15
+    },
+    "epistemic_memory": {
+      "weight": 0.18
+    },
+    "experience_memory": {
+      "weight": 0.15
+    },
+    "skill_learning_transfer": {
+      "weight": 0.14
+    },
+    "prospective_self_memory": {
+      "weight": 0.12
+    },
+    "selective_forgetting": {
+      "weight": 0.11
+    }
+  },
+  "required_coverage": 1.0,
+  "memory_dependence": {
+    "metric": "content_tracking_rate",
+    "floor": 0.5
+  },
+  "statistics": {
+    "confidence_level": 0.95,
+    "bootstrap_method": "hierarchical_bootstrap_percentile",
+    "bootstrap_resamples": 1000,
+    "preserve_causal_pairs": true,
+    "min_templates_per_dimension": 3,
+    "interval_method": "bca"
+  }
+}

@@ -22,7 +22,10 @@
   "properties": {
     "mib": {
       "type": "string",
-      "const": "0.1",
+      "enum": [
+        "0.1",
+        "0.2"
+      ],
       "description": "MIB report format family."
     },
     "kind": {
@@ -110,6 +113,143 @@
         "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"
       },
       "additionalProperties": true
+    },
+    "retention": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "template_id",
+          "rungs"
+        ],
+        "properties": {
+          "template_id": {
+            "type": "string"
+          },
+          "canonical_rung": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rungs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "rung",
+                "full_score",
+                "n"
+              ],
+              "properties": {
+                "rung": {
+                  "type": "integer"
+                },
+                "interference_count": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "full_score": {
+                  "type": "number"
+                },
+                "n": {
+                  "type": "integer"
+                },
+                "interference_tokens": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "distance_hours": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "retention_index": {
+            "type": "number"
+          },
+          "half_distance": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "half_distance_beyond_ladder": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "memory_dependence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "content_tracking_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "stale_adoption_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "memory_benefit": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "headroom_normalized_memory_benefit": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "harm_resistance": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "consolidation_benefit": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "error_recurrence_rate": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "floor": {
+          "type": "number"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "eligible": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "eligible_n": {
+          "type": "integer"
+        },
+        "total_n": {
+          "type": "integer"
+        }
+      }
     }
   },
   "$defs": {
@@ -592,6 +732,9 @@
               "memory_hallucination",
               "irrelevant_memory_interference",
               "authority_confusion",
+              "agent_protocol_violation",
+              "error_recurrence",
+              "premature_trigger",
               "execution_failure",
               "timeout",
               "rate_limited",
@@ -657,7 +800,10 @@
             "stale_memory",
             "counterexample",
             "full_context",
-            "custom"
+            "custom",
+            "counterfactual_content",
+            "no_maintenance",
+            "negative_transfer_control"
           ]
         },
         "repetition": {
@@ -728,6 +874,7 @@
               "authority_confusion",
               "agent_protocol_violation",
               "error_recurrence",
+              "premature_trigger",
               "execution_failure",
               "timeout",
               "rate_limited",
@@ -750,6 +897,37 @@
         },
         "usage": {
           "$ref": "#/$defs/UsageMetrics"
+        },
+        "counterfactual": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tracks": {
+              "type": "boolean"
+            },
+            "stale": {
+              "type": "boolean"
+            }
+          }
+        },
+        "recurrence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "eligible": {
+              "type": "boolean"
+            },
+            "recurred": {
+              "type": "boolean"
+            }
+          }
+        },
+        "traps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Memory failures this Probe's Oracle could elicit (eligibility for §7.9 rates)."
         }
       },
       "allOf": [
@@ -818,7 +996,10 @@
             "stale_memory",
             "counterexample",
             "full_context",
-            "custom"
+            "custom",
+            "counterfactual_content",
+            "no_maintenance",
+            "negative_transfer_control"
           ]
         },
         "ablation_id": {
@@ -904,6 +1085,43 @@
           "minimum": 0,
           "maximum": 1,
           "description": "Scenario-declared tolerance of this run's Ablation, carried so paired IMS/HRS can be re-verified from the report alone."
+        },
+        "task_results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "task_id",
+              "index",
+              "score",
+              "succeeded"
+            ],
+            "properties": {
+              "task_id": {
+                "type": "string"
+              },
+              "index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "succeeded": {
+                "type": "boolean"
+              },
+              "failure_codes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "Lived-trial outcomes (§5.3, §7.9): learning-curve samples, never scores."
         }
       }
     },
@@ -949,7 +1167,10 @@
               "stale_memory",
               "counterexample",
               "full_context",
-              "custom"
+              "custom",
+              "counterfactual_content",
+              "no_maintenance",
+              "negative_transfer_control"
             ]
           },
           "additionalProperties": {
@@ -971,6 +1192,22 @@
           "items": {
             "$ref": "#/$defs/CausalMetric"
           }
+        },
+        "rung": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interference_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interference_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "distance_hours": {
+          "type": "number",
+          "minimum": 0
         }
       }
     },
@@ -1301,7 +1538,9 @@
             "stale_adoption_rate",
             "source_attribution_accuracy",
             "authority_confusion_rate",
-            "self_limitation_continuity"
+            "self_limitation_continuity",
+            "content_tracking_rate",
+            "consolidation_benefit"
           ]
         },
         "value": {
@@ -1348,7 +1587,10 @@
             "stale_memory",
             "counterexample",
             "full_context",
-            "custom"
+            "custom",
+            "counterfactual_content",
+            "no_maintenance",
+            "negative_transfer_control"
           ]
         },
         "comparison_condition": {
@@ -1362,7 +1604,10 @@
             "stale_memory",
             "counterexample",
             "full_context",
-            "custom"
+            "custom",
+            "counterfactual_content",
+            "no_maintenance",
+            "negative_transfer_control"
           ]
         },
         "eligible_n": {
@@ -1572,7 +1817,9 @@
                   "stale_adoption_rate",
                   "source_attribution_accuracy",
                   "authority_confusion_rate",
-                  "self_limitation_continuity"
+                  "self_limitation_continuity",
+                  "content_tracking_rate",
+                  "consolidation_benefit"
                 ]
               },
               "value": {

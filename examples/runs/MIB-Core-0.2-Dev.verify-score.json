@@ -1,0 +1,4249 @@
+{
+  "valid": true,
+  "verification_level": "full",
+  "stored_base_score": 100.0,
+  "recomputed_base_score": 100.0,
+  "stored_final_score": 100.0,
+  "recomputed_final_score": 100.0,
+  "difference": 0.0,
+  "run_checks": [
+    {
+      "run_id": "run_8885eeaa7ee64dd3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0f5c386266af432e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7c1c0febff19452f",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_44d5f9f670224018",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2b157fe19dee4f49",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cd28da94681f43ed",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_365c3e76eb844e83",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7e886eb372df423f",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_accafe46209445a2",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ace7c477c41a45db",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_61e35be13e784f69",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c4b55da56fb14ee5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e6930605bfcc4e8b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a759468fcfd44a50",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_383f7332c94c4e5c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bfbb32e079fb43f8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_939fd06ffbde4ada",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7f8e3b6acd6a469a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_75fe26f79f7d4082",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f072ee55853a41f1",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1d95734b97d246d2",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_18f7d8ffbbe14cec",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fc31fe112acd4f9e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_29e17b841ea24f08",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5a2d15a675f44816",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_90628af0dbac4d76",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ec526ab279044b86",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8e17ac6654114053",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ab8cadd3506c450f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_066927026b9c475b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_028573abb38845bc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_18316b238f084125",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1cea6954599e4712",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3095e8454c074229",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d113a492068a4c29",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dbc3a8c93ef54ddd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c8ab0041c52b4fb2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e4a47ac775154320",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bbee4d08d7e74707",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6a72a74c334d4afb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_10066db44e834d15",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_565b803d358a4d83",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d28081a0a2224f77",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_08cf2eb8580e4407",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6851a1e5267a4fda",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1337e8eb53954ba3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b8cff8b5c8904aed",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7e3b4b2a60ee4399",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1466c934535a43c7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_23964944f7594640",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_791e789480b64a33",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c9c48baea12c47de",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_99af221b00c74c3a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a54beab008764ef2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a267fb866d5a4e59",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7d769f315ad9410e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8493e0600619409a",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_550962bd01c6451a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0d503923d8984a77",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5f0f3d3f9efc4d54",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_82e182b409d140d0",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0719b39e61254dbf",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_61d7746cec9840ee",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9d21cd32d2d64214",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6fb2e0ec38554fcb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_33610a65037b4004",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4342a8854ba64458",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_996e95a0e1f2402a",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0359210df1524142",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d144561f2ab542e6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2313c5960b624cef",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7392e2b814f74d48",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f2df680bff3340a7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7bfc1e6d1d764c21",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_204c675120164ff6",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_23e6c65d84e64263",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3d824e08f39247e7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9c6cbbb3d3704c1f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b4e3da4a991d452c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f5a4e774eed948e9",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cd7a17b7c0164a11",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_de97dbd58def4962",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_56a2f4bae44048c9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8d9f5812bdd048e1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f622be6afa294679",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_64c9ea5bdaa44f10",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e5ec672aa53a4fe2",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc40d89891c2480d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b7edd1777a6b46e2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f02a6fab7fe14b62",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_52940b5145334b7a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fd2568f99e1d4430",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_86092e43f101422c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_460e216f2ca946fe",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_f0a58ce826da40e9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_880fc1776de24cf5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9b9f2cec69534b2e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_88ea6fb05e0244d5",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_0a4c19410e134495",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_856e5f666d4945eb",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_68cd927db3224253",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_19933f1db6024b75",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ad5ad6fad5104bda",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7a0ac554b3264f39",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_dff06598b1f645dd",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_846ab06d84a445c6",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_660b0350c8604488",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d339231e6668459b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_964ef6f258df4eaa",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9da00b1c5a79421d",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_9507ed19e33b444c",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_208c3d6584b34ee7",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_c01d32bbcb1346d0",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_83af4e773d284baa",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9915c5b65794491f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_20fb372169ea4472",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_ae5eb5afacfa4613",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_7cf46678b6a54b99",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_d7e8dc0825f4436a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_335f0f5fe60140ae",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b10f60eebc4f481f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_711e984a95bd457f",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_7a614fe9ffd34b30",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_c936f7a0797c415b",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_086981167214463c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9768ce26f77b45be",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_95053c95719a4dde",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_37dbd8180ec34dce",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_dfdcbc42dded418c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_40b9b296903140f1",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_5420d8f54efe42de",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1821742aaf5d4770",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_690ef17453d5473e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f9dc68d3ac3d4ce0",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_56277da20ea9427b",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7b061063138e4df4",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_ca8ccc265b0049d3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3b54544ad58f4c36",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d796703804764d4c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dd06ccd36eb94791",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_627df71c3a344727",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_41cf16525ae54366",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_4f3e6fe81d4c41fd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_11e67b5a5ba14a89",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cbd67501895f445e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b736b64e2d4b4f6d",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_681e891da3494248",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3e5822d1c75c4c96",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_d263a1bbe7134398",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_34d8f8cee4df43e3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8ea3b900c41a4bfb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e850723a3ec849b0",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_d21dc955383f4b7d",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cb554d895e314579",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_8c8c96b08c3241db",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_79c0052b4cec4a08",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_303f1407ab4c4dba",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_779a47061d3c4654",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_226c2afef05942f9",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4d8c068f920145f9",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_98f7bf3b9570445a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_82886c42806648d0",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6bc01c9bc0ee4e00",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ad769f6d71cc4816",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_12cd97aea462445f",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_43ed6cf1f4004e84",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_e8ef3d4b57064914",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_96c2f655f12c4981",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5b002c70097e4c4c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1108456222b74571",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_fe2a7f12fb044dba",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_3865ecb20f5a4931",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_f32b04a1448b4fee",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1610e525992e4393",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e9e0753703464e56",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9bcdd0dfe5504ea8",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_208f9451f8d449df",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_c76c4d41c09b4d0c",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_aeecf4773b27495f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8dfee938cb464c0c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ed8db18021834c43",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8524dacd9fe949dc",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_a0221b715e1041f5",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_7a81e7cd31d04f62",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b4147b86e67e4529",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e74837f7f1224cd4",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0fc30fa2148549b4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_76442ea447ea4409",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f309b1cdde8248f9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_36c57854ea6c450e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_994cb48d3da04b24",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_663b4266c5464243",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_9f3d1d42a0ab4dc1",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_3585888482ec4866",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f314f32cd1b64228",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e5afb293223d4572",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_418fedc391544696",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2ad7e50d8f494219",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_87f28f66f4e24701",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c13bd8988dee4f76",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2be184e6ab2e4e0f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9a4be78ee1e04b81",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_2d4d6b91ffde470a",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_6d74da9286694c83",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8ec9cd1a31074c16",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c73ab4c246384802",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d6f6e65096454198",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4f9fbecaaa18447d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ee826fe49fad40f5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_29d4e369f0474e17",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0725f2a007e44a8a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_13d11825eb9742e3",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_4b59f3f3383a4491",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_54cfe072d0ca4ed6",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ce48fd6674214a07",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8d30faf25cae4b80",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_01deb8cf8043452d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6d2b4432365e4802",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b99b0402cdcd4edd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3b838e9b1cb74906",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1db989a0afa64de2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_20965e57eeeb400c",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_8636f084dcef4fd4",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc04cca0b22c4ea3",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_30ed456e6cdb46c1",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3b6c0895d017429f",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_38a5281888f74176",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1f26a485a291468a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e5347d64888e4f94",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1ac192c4748b4354",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f80322a1eeb646e3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5fca117a94a84e33",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_c01a7f16d29942be",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_fbb13773bc9c4f28",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_89e763e522784fd2",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_359d190b5cca485a",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_337dbf858fef4d87",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_85581357a0fd4e0e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_276d34df7b7b4b2e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fdfeb2004b694d18",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5190cdc426154136",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2ad8fa914b0442c9",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc6ac1b751ed4499",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_83551aac47594fc7",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3f9d57a38cb34387",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5ea6fc10c46540f4",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fc9f909e24344be4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_63897a8aa9ab4acb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_edc8593f0dce4d12",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_daa4261d6fa0414c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4544ec43b4e74579",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d1a9fae460aa4e6a",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_24edae589e2f4196",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_5f4c46979f4743f9",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_de168c3d7fca4042",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a426132778cc470c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f97acbede3c141d6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7442a04e43a44513",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f42ff083bfbc48de",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f2cfce1ae1124b36",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_aeab602b5f22490b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d9f565ad75384b01",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_71a8898945874de4",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_28362b53f82d4257",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a8b89c1cc1ba4546",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_61c4cabc78074fea",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_876602d140344ce4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4861a69f115346eb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a008333883dc42dc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b33215bfaf8342be",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_40005a347b9d4228",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7b670c6ccacd4ac5",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_922d2f5a3d6a456d",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_687637bccd93449b",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fe95bbd7ca794cab",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ee384e81556c4ee0",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_01db8a7a02874e6d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_084101d184ea4fcc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4f598c608cab445c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9ffae5c7ebcd40bc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0e317e5fe2b14511",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8111ed6ccf514f67",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc7f670d9147472a",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_d7cce86e89484e84",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3bd90d1b667f43e8",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bc453148946e4261",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ec6ed303bb06448d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b4c024df83794228",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_66f46c516cdb4caa",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_984645de96ec4660",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_534834a28e7c4238",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4d7803ee8f1d4d9b",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_2e42df276b844eee",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_0577158745de4368",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d789bb97991d4c54",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bb3bc9c6ba6b4306",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a1254b0361fa43a1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a325b998c79a4d39",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fbe555d2ba924f76",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ee2f9cb481b14df3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_56ae216ecce945c4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ab7605e9d9a342c0",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_f0b11261e9834e1d",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_a2191861e8594717",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a3e3c3beec284ceb",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d7047a1c3ad04674",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d61e4c05b83d4b33",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2e7676d6ed8d4fcf",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b21fc3ad97324d99",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c4c41c310dc34540",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cac442158a504903",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6dc945c732c44fcd",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_1bc0636ce64f4feb",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_486ddcaf34054162",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4763149bd25e405b",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3ae83da9746f43a1",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dd4f0d201e914fa0",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f416c2107b9e4cd8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_97f8775d8af342a5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_df347e506f204404",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0c62804f4e724595",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_936ea43a565f4564",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_4c762a52b1a94693",
+      "stored": 0.2,
+      "recomputed": 0.2,
+      "valid": true
+    },
+    {
+      "run_id": "run_3dfa9d4020b947a4",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_56269ecc08a24699",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6763af51bb8d4eaa",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0c3e6aac0da944bd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2b652c8d616d4e2e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0be2284ebb444b3d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_54846a10cd274768",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_49e6f705d3764339",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_725192ac1ce146b8",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_28985928fbed4c23",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_466fcb4301de40e4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4827cd5aab254342",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_3c9984f116d649b8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6ccae223b7a54ebc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c00c8451fd23467d",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_42bd0c8d1f2e4309",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_af42b2859eec43ce",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3ce88ade88054c01",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_b37c1d2529024938",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0cdc56d6cc9a42d5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0df726c0aa1e411f",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_5db1b89cd8144ed3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b4761ccf1ebf4831",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c95175d731004e56",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_010e55c5858444c3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ac02e4d669264d2b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d31cfa070adf4e01",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_f7f8fbbd83f345f6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a39a583ff0244b9c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8f4d6a149ebf4442",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_b1f4bd538c1249b8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c6631b654ccc4b81",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_79344dcaf6894715",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_a40d428dd58541be",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6809794901d9433c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c8ac607f5d3a4d13",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_03c72066aa2f498a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0fdf34afaf5e46fc",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_db070caa0f114790",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_66e245fd9df24338",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b11e1dc08e6442b2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0aece9abbf054d9d",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_8a883dc55c4c4fe3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_def0b9ed963f4df7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_de5fe89a03fb4c8f",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_8d738eef80e84694",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0ba7551d065c4b8e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_598469dda6824402",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_3a5cea6e994b4af4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_784786cf6bee4bfa",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_704219296dd54376",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_0dbbd9d36c6a40e1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_816ff7b0d27a466a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a8663a3a6c5e499f",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_f009a2adad1e437a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_41fa53d04cb94b95",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1ecdc20aed274827",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fa3b57a388ca43eb",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_38181cd830244a17",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e2fabfaaa9ec4417",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a85170854ffb44a4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9747a9a7f2dd4c00",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_a899220d04134d57",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_65c75b104abe42fd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d263567a078e425b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3f56a73a582a44b3",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_a796a10407254664",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d4f30b8ca8754ee6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_78572c39cb804de7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_048227ed9b804005",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_5653698cf936437f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7297bf3c51eb48c1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2e4add5820d046e8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a82ec4d7647f4a7a",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_f5d7917befc84bf4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a1ab8508047e43a6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ef3ec292dfb740bd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_92ca989585b64da4",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_475cc272afd54257",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_16bb3db545344747",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4ba3f018aa524190",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dd056900e5c54067",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_e006862f63c5485a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f1d4de9fb07b4ae7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_891101f2d09a4ca9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_fee6f07923d94dd7",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_3164067175714a99",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_32cd21d7c4c74459",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_887b523937004c96",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_11e96d78364a4af9",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_c70810bb4c8f4df9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_12369bc7ed714db7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6ad7810b0f484b4b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6d5a24a7c5794f84",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_c47516f961994efb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6301d5849e0347da",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ce5ca1aee7464983",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_210f1460d03c471f",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_b7ebda9aa5004a3e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_321d15f1539c43e9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ced9c6df9b564e71",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e1d4819ab09345bc",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_847e605dbb4f4331",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ac7fd4c2d9e245c4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5a5a83dafd11468e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_4c67e4d3d4c44f2b",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_077217d334bc4787",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d37add98c8f642f9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dccb402a14274aab",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d30f2c584f85430a",
+      "stored": 0.6,
+      "recomputed": 0.6,
+      "valid": true
+    },
+    {
+      "run_id": "run_d70fdbc0bd0e460b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_deb78f6c3eb54dd7",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_54b0c3ac03234b17",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_04e073be3c9d4a3b",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_deaaff2426074b0a",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_b55a5e99e82e4ce3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8be4252abde240fa",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1efd741aa3a04922",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_35bb9f50f7e24323",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_e2f11d4d90904c10",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_54a802217f9a427b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_149947044dd24baf",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_eb7130f2bd58442d",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_b513e2e929164fe3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3a1f4efa2e374d1f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b74610f1fe514317",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0f16970e9d9f4724",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_674320eade154568",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b7ad57a05ba14e24",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cd2a13ecb9f64f38",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_256dc7dcbc154368",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_3724bdf84d284181",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_48d68dccf425499b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_38bbceb3714943ed",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_34cf848f3ff64e50",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_62360b9536144904",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_410b5a318e2d42d3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e668d5ac905b42ef",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c7f12e73c75642f3",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_b8c937d4552d4b3b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_49f45ed49dc549df",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d01e45bcc63540bd",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d2bf42d7f42c4eb7",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_3855990d01f64f02",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_80fdd4dc2aed414f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_514810a88e554c4a",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_37621583f27541ca",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_a5783e2a9cc0446f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ea95fc9f375c4160",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0a9b2cae217f43a9",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3de9e112adbc4ae9",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_823c40c6e19e48e1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9e1c30cff1294f05",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d99b086207a34a08",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_986c5f92f51341b0",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_55c9836addc34624",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e2422fb89d9f4872",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_01385b315864478e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bea4008ce2124d30",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_e97178a65cb348c4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_220c4e0698d14a0d",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2967d4e42ec94063",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c2c266086f3c4380",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_8897165ca01b4c9a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5b3b5499fcab46f2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_67fa72f5b18046ff",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e5859934f59742cd",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_7f7b82256ada4a9e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6e7f529acd5f4357",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_57a45a008c5c4eae",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b3dfc280dcb741ca",
+      "stored": 0.5,
+      "recomputed": 0.5,
+      "valid": true
+    },
+    {
+      "run_id": "run_03405806ce1746f4",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bda84e9374054d30",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b2fc640926f94137",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bfc03ed5bdc84e08",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c71349a16b3748b7",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc67e949c4bc485e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e038bc95e85b41cb",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_746ae852bf8a4ad6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e65526809365496b",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2a4bb1d7763a413e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d020957173cd48ac",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_892b6ba2c9be4907",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_967312d661ad43d1",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dbcfd2fb9d044198",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b678d2bbfb7b4f38",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cc672e4b8718489c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_667be7c948ae4447",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_892442c7764249c5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3bc30e6cea044d74",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9a4131d8ab44462e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_01975784b0f441a3",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_986b1adad2664b83",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_de8781c649d4451e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_413d3c71df5a4f8a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_10d5e399f30b4022",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8edc64be9da14c43",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1c76192634814979",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9ac9f1f79df84cfe",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_df8cebd96399428d",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_19abaace62c94a52",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e2b49a31e58e4bb2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b9a7108bfa8f4d9e",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a7141dd0561d407f",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_bb8927d95fb54b6c",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1da7f41f5ac74a44",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d406dd0e76114459",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2b25983a858c4711",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_844fc9b61791470c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d6a9925c62064cd7",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_476158b60e054755",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_94db519c0b194387",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f68a5eb7c86741a6",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b681da9b42194cce",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_dc062c99ecbd4db3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8d44b080d83b48bf",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b187933fee0b4713",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_04a01452df2a4b2e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f19274fe98cf45fd",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_a3de6658c04d4134",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2674f1eb307d445b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_41cbb6a9e52948cd",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3bf98d39077a40c3",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d3832c1535484dfb",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0c025a0496074892",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2d76c913b8f4424f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_217ac30442b846f8",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2d64bca8635942e1",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_cb7b05ad2a7c4bc4",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_2ec3fd747e5c42bb",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c98b08e266994581",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_75a1e987d6504c5a",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f8cbccaef1d744a5",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5ca4dd2a93de4ea0",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7257b7e3b9de48dc",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3411895f88f24d43",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9368d5e672744a55",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_5b6c27c907004a37",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d181bf9ce4c040a0",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c49a7b6a5cf5440f",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_8727ef1166664791",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_371efd8e4d2f42f1",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_82b390aa22394547",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_0c1e6724c2a24a0f",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e15271379f554635",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7346b4ed985b4aa5",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_f141e1ee6d1f47d0",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_d9b05329d988479d",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_1fc8c99b92f34c2b",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_c0e09fb9a939448c",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7361f85103964b86",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_7a5700fe73f343d8",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_e9611bcc8f27428e",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_3d2906400dd74c51",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ff68ee0425154289",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_26ab6645b5b04ad3",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_993c55303f404ab2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_135ff3e4dd3547dd",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_6eecbef373d348c7",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_b368b7622cb14c09",
+      "stored": 0.0,
+      "recomputed": 0.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_ec6f517539954be9",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    },
+    {
+      "run_id": "run_9ef97ef3876a46a2",
+      "stored": 1.0,
+      "recomputed": 1.0,
+      "valid": true
+    }
+  ],
+  "instance_checks": [
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EPISTEMIC-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-EXPERIENCE-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-FORGETTING-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-PROSPECTIVE-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-RECALL-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-SKILL-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:101:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:101:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:101:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:202:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:202:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:202:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:303:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:303:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:303:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:404:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:404:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:404:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:505:r0",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:505:r1",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    },
+    {
+      "scenario_instance_id": "MIB-GEN-TEMPORAL-V1:505:r2",
+      "full_score_valid": true,
+      "causal_metrics_valid": true,
+      "dimension_scores_valid": true
+    }
+  ],
+  "template_checks": [
+    {
+      "template_id": "MIB-GEN-EPISTEMIC-V1",
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-EXPERIENCE-V1",
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-FORGETTING-V1",
+      "dimension": "selective_forgetting",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-PROSPECTIVE-V1",
+      "dimension": "prospective_self_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-RECALL-V1",
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-SKILL-V1",
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "template_id": "MIB-GEN-TEMPORAL-V1",
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "dimension_checks": [
+    {
+      "dimension": "retention_retrieval",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "temporal_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "epistemic_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "experience_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "skill_learning_transfer",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "prospective_self_memory",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    },
+    {
+      "dimension": "selective_forgetting",
+      "stored": 100.0,
+      "recomputed": 100.0,
+      "valid": true
+    }
+  ],
+  "errors": []
+}

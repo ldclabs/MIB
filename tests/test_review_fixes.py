@@ -100,7 +100,7 @@ def _ret001():
 @pytest.mark.parametrize("mutate,needle", [
     (lambda s: s["evaluators"][0].__setitem__("type", "exact"), "evaluator type"),
     (lambda s: s["probes"][0].__setitem__("trigger", {"at_sequence": 99}), "trigger"),
-    (lambda s: s["probes"][0].__setitem__("delivery", "observe_only"), "delivery"),
+    (lambda s: s["probes"][0].__setitem__("delivery", "batch"), "delivery"),
     (lambda s: s["ablations"][0].__setitem__("method", "memory_mask"), "ablation method"),
     (lambda s: s["timeline"].insert(0, {
         "id": "batch", "stage": "interference", "type": "distractor_batch", "at": {"sequence": 0},

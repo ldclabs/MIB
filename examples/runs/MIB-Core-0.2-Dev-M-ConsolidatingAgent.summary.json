@@ -1,0 +1,108 @@
+{
+  "profile": "MIB-Core-0.2-Dev-M",
+  "programs": [
+    "mib.recall.v1",
+    "mib.temporal.v1",
+    "mib.epistemic.v1",
+    "mib.experience.v1",
+    "mib.skill.v1",
+    "mib.prospective.v1",
+    "mib.forgetting.v1"
+  ],
+  "template_count": 7,
+  "instance_count": 63,
+  "run_count": 351,
+  "repetitions": 1,
+  "instance_seeds": [
+    101,
+    202,
+    303
+  ],
+  "ladder": [
+    0,
+    100,
+    1000
+  ],
+  "canonical_rung": 2,
+  "mib_score": 100.0,
+  "coverage": 1.0,
+  "dimensions": {
+    "retention_retrieval": 100.0,
+    "temporal_memory": 100.0,
+    "epistemic_memory": 100.0,
+    "experience_memory": 100.0,
+    "skill_learning_transfer": 100.0,
+    "prospective_self_memory": 100.0,
+    "selective_forgetting": 100.0
+  },
+  "causal_metrics": {
+    "area_under_learning_curve": 0.8000000000000002,
+    "authority_confusion_rate": 0.0,
+    "consolidation_benefit": 0.6333333333333334,
+    "content_tracking_rate": 1.0,
+    "error_avoidance_score": 1.0,
+    "error_recurrence_rate": 0.0,
+    "headroom_normalized_memory_benefit": 1.0,
+    "historical_fidelity": 1.0,
+    "learning_gain": 0.4000000000000001,
+    "memory_benefit": 0.7592063492063492,
+    "memory_induced_error_rate": 0.0,
+    "negative_transfer": 0.0,
+    "negative_transfer_rate": 0.0,
+    "negative_transfer_resistance": 1.0,
+    "self_limitation_continuity": 1.0,
+    "source_attribution_accuracy": 1.0,
+    "stale_adoption_rate": 0.0
+  },
+  "retention": {
+    "MIB-GEN-EPISTEMIC-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-EXPERIENCE-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-FORGETTING-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-PROSPECTIVE-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-RECALL-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-SKILL-V1": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "MIB-GEN-TEMPORAL-V1": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "memory_dependence": {
+    "content_tracking_rate": 1.0,
+    "stale_adoption_rate": 0.0,
+    "memory_benefit": 0.7592063492063492,
+    "headroom_normalized_memory_benefit": 1.0,
+    "harm_resistance": null,
+    "consolidation_benefit": 0.6333333333333334,
+    "error_recurrence_rate": 0.0,
+    "metric": "content_tracking_rate",
+    "floor": 0.5,
+    "eligible": true,
+    "eligible_n": 4,
+    "total_n": 4
+  }
+}

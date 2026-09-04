@@ -22,7 +22,10 @@
   "properties": {
     "mib": {
       "type": "string",
-      "const": "0.1",
+      "enum": [
+        "0.1",
+        "0.2"
+      ],
       "description": "MIB Scenario format family."
     },
     "kind": {
@@ -31,7 +34,7 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^MIB-(RET|TIME|EPI|EXP|SKILL|FORGET|PROS|SELF|CAUSAL|ADV|X)-[A-Z0-9][A-Z0-9-]{0,63}$"
+      "pattern": "^MIB-(GEN|RET|TIME|EPI|EXP|SKILL|FORGET|PROS|SELF|CAUSAL|ADV|X)-[A-Z0-9][A-Z0-9-]{0,63}$"
     },
     "version": {
       "$ref": "#/$defs/SemVer"
@@ -42,7 +45,8 @@
         "draft",
         "candidate",
         "stable",
-        "deprecated"
+        "deprecated",
+        "generated"
       ],
       "default": "draft"
     },
@@ -346,6 +350,34 @@
             "dollar_brace"
           ],
           "default": "dollar_brace"
+        },
+        "program": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "$ref": "#/$defs/SemVer"
+            },
+            "ladder": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/JsonValue"
+              }
+            }
+          }
         }
       }
     },
@@ -371,6 +403,30 @@
         },
         "generator_version": {
           "type": "string"
+        },
+        "program": {
+          "type": "string"
+        },
+        "program_version": {
+          "$ref": "#/$defs/SemVer"
+        },
+        "rung": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interference_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "interference_tokens": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Whitespace tokens of the interference block (distance in tokens, §8.1)."
+        },
+        "distance_hours": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Virtual hours between the last formation event and the probe checkpoint (§8.1)."
         }
       }
     },
@@ -766,7 +822,8 @@
             "checkpoint",
             "feedback",
             "document",
-            "custom"
+            "custom",
+            "task"
           ]
         },
         "at": {
@@ -812,6 +869,51 @@
         "extensions": {
           "type": "object",
           "additionalProperties": true
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "goal"
+          ],
+          "properties": {
+            "goal": {
+              "type": "string"
+            },
+            "available_tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "constraints": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "max_agent_turns": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "oracle": {
+              "$ref": "#/$defs/Oracle",
+              "description": "Trial oracle: makes the lived task a learning-curve sample (§7.9); never a score."
+            },
+            "evaluators": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "tool": {
+          "type": "string",
+          "description": "For tool_result events: the tool operation the result belongs to."
+        },
+        "tool_call_id": {
+          "type": "string"
         }
       }
     },
@@ -885,6 +987,33 @@
           "items": {
             "type": "string"
           }
+        },
+        "answer_schema": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
+        },
+        "observation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type"
+          ],
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "actor": {
+              "type": "string"
+            },
+            "content": {
+              "type": "string"
+            },
+            "payload": {
+              "$ref": "#/$defs/JsonValue"
+            }
+          }
         }
       },
       "anyOf": [
@@ -896,6 +1025,11 @@
         {
           "required": [
             "goal"
+          ]
+        },
+        {
+          "required": [
+            "observation"
           ]
         }
       ]
@@ -915,7 +1049,8 @@
             "before",
             "after",
             "max_occurrences",
-            "min_occurrences"
+            "min_occurrences",
+            "no_recurrence"
           ]
         },
         "action": {
@@ -936,6 +1071,9 @@
           "additionalProperties": {
             "$ref": "#/$defs/JsonValue"
           }
+        },
+        "without_prior": {
+          "type": "string"
         }
       }
     },
@@ -985,6 +1123,35 @@
         },
         "notes": {
           "type": "string"
+        },
+        "expected_emission": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "must_contain": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "must_not_emit": {
+              "type": "boolean"
+            },
+            "topic": {
+              "type": "string"
+            },
+            "window": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "failure_code_by_value": {
+          "type": "object",
+          "description": "Why each forbidden value is wrong (a failure code per forbidden surface form); MIB-Specification §4.7.",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "minProperties": 1
@@ -1032,7 +1199,8 @@
           "type": "string",
           "enum": [
             "respond",
-            "act"
+            "act",
+            "observe_only"
           ]
         },
         "input": {
@@ -1081,6 +1249,29 @@
         "extensions": {
           "type": "object",
           "additionalProperties": true
+        },
+        "query": {
+          "type": "object",
+          "required": [
+            "op"
+          ],
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "current",
+                "as_of",
+                "said_by",
+                "first_stated",
+                "known",
+                "status",
+                "hop"
+              ]
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          }
         }
       }
     },
@@ -1102,7 +1293,9 @@
             "set_match",
             "world_state",
             "trajectory",
-            "composite"
+            "composite",
+            "structured",
+            "emission"
           ]
         },
         "description": {
@@ -1197,7 +1390,10 @@
             "stale_memory",
             "harmful_memory",
             "counterexample",
-            "custom"
+            "custom",
+            "counterfactual_content",
+            "no_maintenance",
+            "negative_transfer"
           ]
         },
         "probes": {
@@ -1212,7 +1408,8 @@
           "type": "string",
           "enum": [
             "replay_excluding_events",
-            "replay_with_injections"
+            "replay_with_injections",
+            "swap_parameter"
           ]
         },
         "targets": {
@@ -1231,7 +1428,8 @@
             "neutral",
             "improve",
             "resist",
-            "informational"
+            "informational",
+            "track"
           ]
         },
         "tolerance": {
@@ -1250,6 +1448,37 @@
           "type": "boolean",
           "default": false,
           "description": "Set when the Probe's accepted Oracle value legitimately remains visible in a surviving event after this Ablation, and the Ablation is nonetheless expected to change a competent Agent's answer (for example a planned-versus-completed transition, or a remembered policy that overrides the surface-plausible source). Suppresses the authoring-time leakage warning and records that the design was reviewed. Do not set it to silence a genuine leak: verify first that the Ablation actually degrades."
+        },
+        "counterfactual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "events",
+            "oracle"
+          ],
+          "properties": {
+            "events": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "$ref": "#/$defs/JsonValue"
+                  }
+                }
+              }
+            },
+            "oracle": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/Oracle"
+              }
+            }
+          }
         }
       }
     },
@@ -1334,5 +1563,5 @@
       }
     }
   },
-  "$comment": "v0.1 executable subset: every enumeration here is something the reference Runner executes. Roadmap constructs (other evaluator types, triggers, ablation methods, generated distractor batches, penalties, integrity digests) are listed in docs/MIB-Specification.md Appendix A and are not accepted."
+  "$comment": "v0.2: every enumeration here is executed by the reference Runner. Generated Scenarios carry instantiation.program/rung; Probes may carry a world-model query; observe_only Probes score emissions; swap_parameter Ablations carry a counterfactual. Roadmap constructs are listed in docs/MIB-Specification.md Appendix A and are not accepted."
 }

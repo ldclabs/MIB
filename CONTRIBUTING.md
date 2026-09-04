@@ -134,6 +134,12 @@ mib run scenarios/dev/<family>/MIB-<FAMILY>-NNN.json \
   --schema schemas/mib-scenario.schema.json
 ```
 
+Static Templates are v0.1 material. New MIB-Core evidence is a **Program**
+(`src/mib_runner/generate/programs.py`): register it in `generate/registry.py`, give it a
+test in `tests/test_v02.py` proving that its Instances are schema-valid, deterministic,
+and leak-free at every rung, and add its id to the Profile's `programs`
+(`profiles/MIB-Core-0.2-Dev.json`).
+
 If the Template is added to the pack, add its id to the Profile's
 `required_templates` (`profiles/*.json`); the Profile is the only definition of
 pack membership, and `mib benchmark` refuses a directory whose Templates do not

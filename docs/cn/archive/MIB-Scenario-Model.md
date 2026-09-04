@@ -1,5 +1,7 @@
 # MIB 场景模型规范
 
+> **已废弃的设计草案。** 仅保留用于设计推导背景与历史记录。规范文本见 [`docs/cn/MIB-Specification.md`](../MIB-Specification.md)；若二者存在分歧，以 Specification 和参考实现为准。
+
 ## 记忆智能基准的记忆片段程序模型（Memory Episode Program）
 
 **版本：** 0.1-draft

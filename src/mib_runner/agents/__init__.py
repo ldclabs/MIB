@@ -1,4 +1,5 @@
 from .reference_memory import ReferenceMemoryAgent
+from .v2 import ConsolidatingAgent, NoMemoryAgent, OvergeneralizingAgent, RecencyAgent, StructuredMemoryAgent, WindowMemoryAgent
 from ..experimental.transfer_fixtures import (
     BadFormationAgent,
     BadRoutingAgent,
@@ -11,6 +12,12 @@ from ..experimental.transfer_fixtures import (
 
 __all__ = [
     "ReferenceMemoryAgent",
+    "StructuredMemoryAgent",
+    "ConsolidatingAgent",
+    "OvergeneralizingAgent",
+    "WindowMemoryAgent",
+    "RecencyAgent",
+    "NoMemoryAgent",
     "TransferFixtureAgent",
     "PerfectFormationPerfectRoutingAgent",
     "BadFormationAgent",
