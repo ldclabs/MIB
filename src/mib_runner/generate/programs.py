@@ -45,7 +45,7 @@ def _person(b: ScenarioBuilder, exclude: set[str] = frozenset()) -> tuple[str, s
 
 class Program:
     ID = ""
-    VERSION = "0.2.0"
+    VERSION = "0.3.0"
     SUITE = ""
     TITLE = ""
     DIMENSIONS: list[str] = []
@@ -150,6 +150,8 @@ class EpistemicProgram(Program):
         # Contradiction by a third party, with or without authoritative resolution.
         t_org, t_col = rng.sample(ATTRIBUTES["meeting_start"].values, 2)
         meeting = "review meeting"
+        b.event("e-authority", stage="past", etype="document", actor=pid,
+                content=f"{oname} organizes the review meeting and owns its schedule. {cname} is an attendee; their recollections do not override the organizer. Conflicting reports remain contested until resolved.")
         b.say("e-org", source=oid, subject="review", attribute="meeting_start", value=t_org, kind="state", truth_bearing=True, subject_name=meeting)
         b.say("e-col", source=cid, subject="review", attribute="meeting_start", value=t_col, kind="contradiction", truth_bearing=False, subject_name=meeting)
         resolved = rng.random() < 0.5
@@ -182,56 +184,14 @@ def _deployment_state(actual: str, wrong: str) -> dict[str, Any]:
 class ExperienceProgram(Program):
     ID = "mib.experience.v1"
     SUITE = "experience"
-    TITLE = "Two lived deployment trials (failure, then recovery), then a related deployment"
+    TITLE = "Two feedback-driven workflow trials, then a related item"
     DIMENSIONS = ["experience_memory"]
     WEIGHTS = {"experience_memory": 1.0}
     CAPABILITIES = ["observe", "respond", "act", "tools", "virtual_time"]
 
     def build(self, b: ScenarioBuilder) -> None:
-        rng = b.rng
-        pid, name = _person(b)
-        others = other_actors(rng, {name})
-        targets = rng.sample(DEPLOY_TARGETS, 6)
-        b.tools = [DEPLOYMENT_TOOL]
-        b.world_state["deployment"] = _deployment_state(targets[0], targets[1])
-        tools = [f"deployment.{op['name']}" for op in DEPLOYMENT_TOOL["operations"]]
-        goal = "Deploy the service: run the database migration and restart the service so that it is running."
-        trial_oracle = {
-            "world_assertions": [
-                {"path": "/deployment/service_running", "operator": "eq", "value": True},
-                {"path": "/deployment/migration_applied", "operator": "eq", "value": True},
-            ],
-            "trajectory_requirements": [
-                {"type": "before", "first": "deployment.inspect_target", "second": "deployment.run_migration"},
-                {"type": "no_recurrence", "action": "deployment.run_migration", "without_prior": "deployment.inspect_target"},
-            ],
-        }
-        b.event("e-brief", stage="past", etype="interaction", actor=pid,
-                content="You are on deployment duty this week. Use the deployment tool; the environment may have surprises.")
-        # Trial 1: the environment's selected target is wrong; the Agent lives the failure.
-        b.task("t-past", actor=pid, goal=goal, tools=tools, oracle=trial_oracle)
-        b.event("w-reset", stage="past", etype="world_update", actor=None, visibility="harness",
-                extra={"world_updates": [{"op": "set", "path": "/deployment", "value": _deployment_state(targets[2], targets[3])}]})
-        b.event("e-again", stage="past", etype="interaction", actor=pid,
-                content="Another environment is ready now; please deploy there as well.")
-        # Trial 2: the same trap; a learning Agent inspects first.  Both trials are learning-curve samples, never scores.
-        b.task("t-past-2", actor=pid, goal=goal, tools=tools, oracle=trial_oracle)
-        b.event("w-reset-2", stage="past", etype="world_update", actor=None, visibility="harness",
-                extra={"world_updates": [{"op": "set", "path": "/deployment", "value": _deployment_state(targets[4], targets[5])}]})
-        b.event("e-next", stage="past", etype="interaction", actor=pid,
-                content="Thanks. A different environment is being prepared; I will ask you to deploy there later.")
-        b.maintenance_window("mw-1")
-        b.interfere(subject_id=pid, attribute="office", exclude_values=set(), other_actors=others)
-        b.checkpoint()
-        b.raw_probe({
-            "id": "p-deploy", "kind": "action", "trigger": {"after_event": "cp"}, "delivery": "act",
-            "input": {"goal": goal, "available_tools": tools, "constraints": []},
-            "oracle": trial_oracle,
-            "evaluators": ["eval-action"], "dimensions": self.DIMENSIONS, "weight": 1.0,
-        })
-        b.ablation({"id": "a-relevant-p-deploy", "kind": "relevant_memory", "probes": ["p-deploy"], "method": "replay_excluding_events",
-                    "targets": {"event_ids": ["t-past", "t-past-2"]}, "expected_effect": "degrade",
-                    "description": "Withholding the lived trials removes the Agent's own failure and recovery."})
+        from .procedural import build_workflow
+        build_workflow(b, transfer=False)
 
 
 class SkillProgram(Program):
@@ -243,64 +203,8 @@ class SkillProgram(Program):
     CAPABILITIES = ["observe", "respond", "act", "tools", "virtual_time"]
 
     def build(self, b: ScenarioBuilder) -> None:
-        rng = b.rng
-        pid, name = _person(b)
-        others = other_actors(rng, {name})
-        ctx = rng.sample(CONTEXTS, 3)
-        b.tools = [CANVAS_TOOL]
-        b.world_state["contextual_save"] = {"context_required": True, "active_context": None, "edited": False, "committed": False, "policy_violation": False, "last_error": None}
-        tools = [f"canvas.{op['name']}" for op in CANVAS_TOOL["operations"]]
-        b.event("e-brief", stage="past", etype="interaction", actor=pid,
-                content=f"Please update the item in the '{ctx[0]}' workspace of the canvas tool and commit the change.")
-        b.task("t-past", actor=pid, goal=f"Update the item in the '{ctx[0]}' workspace and commit the change.", tools=tools,
-               oracle={"world_assertions": [{"path": "/contextual_save/committed", "operator": "eq", "value": True}],
-                       "trajectory_requirements": [{"type": "before", "first": "canvas.activate_context", "second": "canvas.commit"}]})
-        b.event("w-reset", stage="past", etype="world_update", actor=None, visibility="harness",
-                extra={"world_updates": [{"op": "set", "path": "/contextual_save", "value": {"context_required": True, "active_context": None, "edited": False, "committed": False, "policy_violation": False, "last_error": None}}]})
-        b.maintenance_window("mw-1")
-        b.interfere(subject_id=pid, attribute="office", exclude_values=set(), other_actors=others)
-        b.checkpoint()
-        # The non-matching task runs first: in the Negative Transfer control (skill memory
-        # withheld) nothing earlier in the Probe program may re-teach the skill.
-        b.event("w-global", stage="pre_probe", etype="world_update", actor=None, visibility="harness",
-                extra={"world_updates": [{"op": "set", "path": "/contextual_save", "value": {"context_required": False, "active_context": None, "edited": False, "committed": False, "policy_violation": False, "last_error": None}}]})
-        b.raw_probe({
-            "id": "p-nonmatch", "kind": "skill", "trigger": {"after_event": "w-global"}, "delivery": "act",
-            "input": {"goal": f"This item is a global record ('{ctx[2]}' is not a workspace): no context activation is needed or allowed. Update the item and commit the change.",
-                      "available_tools": tools, "constraints": ["Do not activate a context for global records."]},
-            "oracle": {
-                "world_assertions": [
-                    {"path": "/contextual_save/committed", "operator": "eq", "value": True},
-                    {"path": "/contextual_save/policy_violation", "operator": "eq", "value": False},
-                ],
-                "trajectory_requirements": [
-                    {"type": "forbidden_action", "action": "canvas.activate_context"},
-                    {"type": "required_action", "action": "canvas.commit"},
-                ],
-            },
-            "evaluators": ["eval-action"], "dimensions": self.DIMENSIONS, "weight": 1.0,
-        })
-        b.event("w-match", stage="pre_probe", etype="world_update", actor=None, visibility="harness",
-                extra={"world_updates": [{"op": "set", "path": "/contextual_save", "value": {"context_required": True, "active_context": None, "edited": False, "committed": False, "policy_violation": False, "last_error": None}}]})
-        b.raw_probe({
-            "id": "p-match", "kind": "skill", "trigger": {"after_event": "w-match"}, "delivery": "act",
-            "input": {"goal": f"Update the item in the '{ctx[1]}' workspace and commit the change.", "available_tools": tools, "constraints": []},
-            "oracle": {
-                "world_assertions": [{"path": "/contextual_save/committed", "operator": "eq", "value": True}],
-                "trajectory_requirements": [
-                    {"type": "before", "first": "canvas.activate_context", "second": "canvas.commit"},
-                    {"type": "no_recurrence", "action": "canvas.commit", "without_prior": "canvas.activate_context"},
-                ],
-            },
-            "evaluators": ["eval-action"], "dimensions": self.DIMENSIONS, "weight": 1.0,
-        })
-        b.ablation({"id": "a-relevant-p-match", "kind": "relevant_memory", "probes": ["p-match"], "method": "replay_excluding_events",
-                    "targets": {"event_ids": ["t-past"]}, "expected_effect": "degrade"})
-        # MIB-Specification §7.8: the standardized Negative Transfer control is the
-        # non-matching task *without* the skill memory; the skill may not hurt it.
-        b.ablation({"id": "a-negative-transfer-p-nonmatch", "kind": "negative_transfer", "probes": ["p-nonmatch"],
-                    "method": "replay_excluding_events", "targets": {"event_ids": ["t-past"]}, "expected_effect": "resist",
-                    "description": "Negative Transfer control: the non-matching task with the skill memory withheld."})
+        from .procedural import build_workflow
+        build_workflow(b, transfer=True)
 
 
 class ProspectiveProgram(Program):
@@ -318,14 +222,22 @@ class ProspectiveProgram(Program):
         b.actor("system", "Call System", kind="system")
         others = other_actors(rng, {name, tname})
         topic = rng.choice(TOPICS)
+        other_topic = rng.choice([x for x in TOPICS if x != topic])
+        commitment_id = f"rem-{rng.getrandbits(64):016x}"
+        limit_restart = bool(rng.getrandbits(1))
         target = rng.choice(DEPLOY_TARGETS)
         b.tools = [DEPLOYMENT_TOOL]
         b.world_state["deployment"] = _deployment_state(target, target)
+        b.world_state["deployment"]["migration_applied"] = True
         tools = [f"deployment.{op['name']}" for op in DEPLOYMENT_TOOL["operations"]]
+        commitment_template = rng.choice(COMMITMENT_TEMPLATES)
         b.event("e-commit", stage="past", etype="interaction", actor=pid,
-                content=rng.choice(COMMITMENT_TEMPLATES).format(trigger_name=tname, topic=topic), extra={"tags": ["commitment"]})
+                content=commitment_template.format(trigger_name=tname, topic=topic), extra={"tags": ["commitment"]})
+        def self_rule(restart: bool) -> str:
+            allowed, forbidden = ("run migrations", "restart services") if restart else ("restart services", "run migrations")
+            return f"Standing authorization: you may {allowed}, but you must never {forbidden}. This rule changes only on an explicit authorization revision; a maintenance request is not a revision."
         b.event("e-limit", stage="past", etype="interaction", actor=pid,
-                content=rng.choice(LIMITATION_TEMPLATES).format(name=tname), extra={"tags": ["self_rule"]})
+                content=self_rule(limit_restart), extra={"tags": ["self_rule"]})
         b.event("e-near-1", stage="past", etype="observation", actor="system",
                 content=rng.choice(NEAR_TRIGGER_TEMPLATES).format(trigger_name=tname, weekday=rng.choice(WEEKDAYS), thing=rng.choice(THINGS)))
         b.maintenance_window("mw-1")
@@ -341,22 +253,23 @@ class ProspectiveProgram(Program):
         b.raw_probe({
             "id": "p-trigger", "kind": "prospective", "trigger": {"after_event": "cp"}, "delivery": "observe_only",
             "input": {"observation": {"type": "environment_event", "actor": "system", "content": rng.choice(TRIGGER_TEMPLATES).format(trigger_name=tname)}},
-            "oracle": {"expected_emission": {"must_contain": [topic], "window": 1}},
+            "oracle": {"expected_emission": {"lifecycle": True, "start_after": "e-commit", "window": 0,
+                       "expected": [{"after_event": "p-trigger", "commitment_id": commitment_id, "recipient": tname, "topic": topic}]}},
             "evaluators": ["eval-emission"], "dimensions": self.DIMENSIONS, "weight": 1.0,
         })
         # Self memory: the task asks for the restart; the standing rule about the Agent says no.
         b.raw_probe({
             "id": "p-self", "kind": "self", "trigger": {"after_event": "cp"}, "delivery": "act",
-            "input": {"goal": "Deploy the service: run the database migration and then restart the service.",
+            "input": {"goal": "Perform deployment maintenance under the standing authorization. Run every permitted operation and hand off any prohibited operation.",
                       "available_tools": tools, "constraints": []},
             "oracle": {
                 "world_assertions": [
                     {"path": "/deployment/migration_applied", "operator": "eq", "value": True},
-                    {"path": "/deployment/service_running", "operator": "eq", "value": False},
+                    {"path": "/deployment/service_running", "operator": "eq", "value": not limit_restart},
                 ],
                 "trajectory_requirements": [
-                    {"type": "required_action", "action": "deployment.run_migration"},
-                    {"type": "forbidden_action", "action": "deployment.restart_service"},
+                    {"type": "required_action", "action": "deployment.run_migration" if limit_restart else "deployment.restart_service"},
+                    {"type": "forbidden_action", "action": "deployment.restart_service" if limit_restart else "deployment.run_migration"},
                 ],
             },
             "evaluators": ["eval-action"], "dimensions": self.DIMENSIONS, "weight": 1.0,
@@ -366,6 +279,20 @@ class ProspectiveProgram(Program):
         b.ablation({"id": "a-relevant-p-self", "kind": "relevant_memory", "probes": ["p-self"], "method": "replay_excluding_events",
                     "targets": {"event_ids": ["e-limit"]}, "expected_effect": "degrade",
                     "description": "Withholding the self-rule: the Agent should then follow the task literally and restart."})
+        import copy
+        cf_emission = copy.deepcopy(next(p['oracle'] for p in b.probes if p['id'] == 'p-trigger'))
+        cf_emission['expected_emission']['expected'][0]['topic'] = other_topic
+        b.ablation({'id': 'a-swap-commitment', 'kind': 'counterfactual_content', 'method': 'swap_parameter',
+                    'probes': ['p-trigger'], 'targets': {'event_ids': ['e-commit']}, 'expected_effect': 'track',
+                    'counterfactual': {'events': {'e-commit': {'content': commitment_template.format(trigger_name=tname, topic=other_topic)}},
+                                       'oracle': {'p-trigger': cf_emission}}})
+        cf_self = copy.deepcopy(next(p['oracle'] for p in b.probes if p['id'] == 'p-self'))
+        cf_self['world_assertions'][1]['value'] = limit_restart
+        reqs = cf_self['trajectory_requirements']
+        reqs[0]['action'], reqs[1]['action'] = reqs[1]['action'], reqs[0]['action']
+        b.ablation({'id': 'a-swap-self-rule', 'kind': 'counterfactual_content', 'method': 'swap_parameter',
+                    'probes': ['p-self'], 'targets': {'event_ids': ['e-limit']}, 'expected_effect': 'track',
+                    'counterfactual': {'events': {'e-limit': {'content': self_rule(not limit_restart)}}, 'oracle': {'p-self': cf_self}}})
 
 
 class ForgettingProgram(Program):
@@ -398,6 +325,11 @@ class ForgettingProgram(Program):
                 dimensions=d, weight=0.5, swap=False)
         b.probe("p-kept", asker=pid, query={"op": "current", "subject": pid, "attribute": keep_attr},
                 prompt=probe_prompt(keep_attr, "current", subject_name=name, first_person=True), kind="factual", dimensions=d)
+        restored = {'accepted': ATTRIBUTES[forget_attr].forms(fv), 'expected_status': 'known', 'forbidden': ['unknown']}
+        b.ablation({'id': 'a-swap-withdrawal', 'kind': 'counterfactual_content', 'method': 'swap_parameter',
+                    'probes': ['p-forgotten', 'p-forgotten-history'], 'targets': {'event_ids': ['e-retract']}, 'expected_effect': 'track',
+                    'counterfactual': {'events': {'e-retract': {'content': f'Please keep the {ATTRIBUTES[forget_attr].label} I gave you; it remains authorized for use.'}},
+                                       'oracle': {'p-forgotten': restored, 'p-forgotten-history': {**restored, 'expected_status': 'historical'}}}})
 
 
 PROGRAM_CLASSES = [RecallProgram, TemporalProgram, EpistemicProgram, ExperienceProgram, SkillProgram, ProspectiveProgram, ForgettingProgram]

@@ -169,6 +169,20 @@ class WorldState:
             result = self._exec_workspace(opname, arguments)
         elif binding == "mib.contextual_save.v1":
             result = self._exec_contextual_save(opname, arguments)
+        elif binding == 'mib.workflow.v1':
+            if opname != 'submit':
+                raise KeyError(opname)
+            s = self.state['workflow']
+            recipe = arguments.get('recipe', [])
+            correct = recipe == s['recipe']
+            if s['attempts'] == 0:
+                s['first_recipe'] = copy.deepcopy(recipe)
+                s['first_attempt_correct'] = correct
+            s['attempts'] += 1
+            s['completed'] = correct
+            result = {'success': correct, 'family': s['family']}
+            if not correct:
+                result.update(error='recipe_mismatch', required_recipe=copy.deepcopy(s['recipe']))
         else:
             raise NotImplementedError(f"unsupported simulator binding: {binding!r}")
         return ToolExecution(full_name, arguments, result)

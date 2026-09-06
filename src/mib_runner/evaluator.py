@@ -80,15 +80,21 @@ def _match_value(actual: str, oracle: dict[str, Any], mode: str, match: str) -> 
     return (any(_contains_value(actual, a) for a in accepted) if accepted else False), hit
 
 
-def _score_value(actual: str, *, abstained: bool, oracle: dict[str, Any], mode: str, match: str) -> tuple[float, list[str], dict[str, Any]]:
+def _score_value(actual: str, *, abstained: bool, oracle: dict[str, Any], mode: str, match: str,
+                 forbidden_hit: str | None) -> tuple[float, list[str], dict[str, Any]]:
     """The one value-scoring policy shared by set_match and structured (MIB-Specification §4.7)."""
     expected_status = oracle.get("expected_status")
-    accepted_match, forbidden_hit = _match_value(actual, oracle, mode, match)
+    accepted_match, _ = _match_value(actual, oracle, mode, match)
+    # Forbidden detection comes from observable values, never the serialized
+    # syntax of `actual` (which can itself be a JSON container).
     forbidden_match = forbidden_hit is not None
     # The Oracle may say why a wrong value is wrong (stale, corrected, non-authoritative, never asserted).
     forbidden_code = (oracle.get("failure_code_by_value") or {}).get(forbidden_hit, "stale_memory_adoption") if forbidden_match else None
     failure_codes: list[str] = []
-    if expected_status == "unknown":
+    if forbidden_match:
+        score = 0.0
+        failure_codes.append(forbidden_code or "stale_memory_adoption")
+    elif expected_status == "unknown":
         # A correct abstention scores 1; an unsupported definite claim is false certainty.
         score = 1.0 if (abstained or (accepted_match and not forbidden_match)) else 0.0
         if score == 0.0:
@@ -113,6 +119,17 @@ def _score_value(actual: str, *, abstained: bool, oracle: dict[str, Any], mode: 
     return score, failure_codes, {"accepted_match": accepted_match, "forbidden_match": forbidden_match}
 
 
+def _disclosure(output: AgentOutput, oracle: dict[str, Any], mode: str) -> str | None:
+    """Disclosure is observable even in an abstention or an auxiliary field."""
+    visible = [*_content_values(output.content), *_visible_values(output.value, envelope=True),
+               *_visible_values(output.attribution)]
+    for value in visible:
+        _, forbidden = _match_value(normalize(value, mode), oracle, mode, "contains")
+        if forbidden is not None:
+            return forbidden
+    return None
+
+
 def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict[str, Any] | None) -> dict[str, Any]:
     """Score a short answer against accepted / forbidden value sets.
 
@@ -131,7 +148,14 @@ def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict
         raise ValueError(f"unsupported set_match mode: {match}")
     abstained = output.type == "abstention"
     actual = normalize(output_text(output), mode)
-    score, failure_codes, details = _score_value(actual, abstained=abstained, oracle=oracle, mode=mode, match=match)
+    parsed = parse_structured(output)
+    envelope = output.value if output.type == 'structured' else None
+    if parsed['source'] == 'json':
+        envelope = json.loads(output.content)
+    if parsed['source'] == 'fields' or isinstance(envelope, dict) and ('value' in envelope or 'answer' in envelope):
+        actual = normalize(parsed['value'], mode)
+    score, failure_codes, details = _score_value(actual, abstained=abstained, oracle=oracle, mode=mode, match=match,
+                                               forbidden_hit=_disclosure(output, oracle, mode))
     return {
         "score": score,
         "passed": score == 1.0,
@@ -164,6 +188,51 @@ def _as_float(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return f if 0.0 <= f <= 1.0 else None
+
+
+def _is_answer_metadata(key: str, value: Any) -> bool:
+    """Only valid root-level rubric metadata is exempt from disclosure checks."""
+    if key == 'status':
+        return isinstance(value, str) and value.strip().casefold() in _STATUS_CLASS
+    return key == 'confidence' and not isinstance(value, bool) and _as_float(value) is not None
+
+
+def _visible_values(value: Any, *, envelope: bool = False):
+    """Inspect values, without turning JSON keys or null placeholders into claims."""
+    if isinstance(value, dict):
+        envelope = envelope and ('value' in value or 'answer' in value)
+        for key, child in value.items():
+            if not (envelope and _is_answer_metadata(key, child)):
+                yield from _visible_values(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _visible_values(child)
+    elif value is not None:
+        yield value
+
+
+def _content_values(content: str | None):
+    if content is None:
+        return
+    try:
+        obj = json.loads(content)
+    except (ValueError, TypeError):
+        obj = None
+    if isinstance(obj, (dict, list)):
+        yield from _visible_values(obj, envelope=True)
+        return
+    lines = content.splitlines()
+    fields = [_FIELD_LINE.match(line) for line in lines]
+    if any(m and m.group(1).casefold() in {'value', 'answer'} for m in fields):
+        for line, field in zip(lines, fields):
+            if field:
+                key, value = field.group(1).casefold(), field.group(2)
+                if not _is_answer_metadata(key, value):
+                    yield value
+            else:
+                yield line
+    else:
+        yield content
 
 
 def parse_structured(output: AgentOutput) -> dict[str, Any]:
@@ -229,26 +298,38 @@ def evaluate_structured(output: AgentOutput, oracle: dict[str, Any], config: dic
     expected_status = oracle.get("expected_status") or "known"
     value_text = normalize(parsed["value"], mode) if parsed["value"] is not None else ""
     abstained = output.type == "abstention" or parsed["status"] == "unknown" or value_text == "unknown"
-    value_score, failure_codes, details = _score_value(value_text, abstained=abstained, oracle=oracle, mode=mode, match=match)
+    forbidden = _disclosure(output, oracle, mode)
+    value_score, failure_codes, details = _score_value(value_text, abstained=abstained, oracle=oracle, mode=mode, match=match,
+                                                     forbidden_hit=forbidden)
 
-    components: list[tuple[str, float, float]] = [("value", float(weights.get("value", 0.8)), value_score)]
-    status_score: float | None = None
+    # The evaluator, never the answer, determines the rubric's denominator.
+    status_score = float(parsed["status"] in _STATUS_CLASS.get(expected_status, {expected_status}))
+    components = [("value", float(weights.get("value", 0.8)), value_score),
+                  ("status", float(weights.get("status", 0.2)), status_score)]
     if parsed["status"] is not None:
-        status_score = 1.0 if parsed["status"] in _STATUS_CLASS.get(expected_status, {expected_status}) else 0.0
-        components.append(("status", float(weights.get("status", 0.2)), status_score))
         if status_score == 0.0 and expected_status == "unknown" and "false_certainty" not in failure_codes:
             failure_codes.append("false_certainty")
     calibration: float | None = None
     if parsed["confidence"] is not None:
         calibration = 1.0 - (parsed["confidence"] - value_score) ** 2
-        if float(weights.get("confidence", 0.0)) > 0:
-            components.append(("confidence", float(weights["confidence"]), calibration))
+    if float(weights.get("confidence", 0.0)) > 0:
+        components.append(("confidence", float(weights["confidence"]), calibration if calibration is not None else 0.0))
     total_w = sum(w for _, w, _ in components)
     score = sum(w * s for _, w, s in components) / total_w if total_w else value_score
+    inconsistent = parsed["status"] == "unknown" and parsed["value"] is not None and value_text not in {"", "unknown", "null"}
+    if forbidden is not None or inconsistent:
+        score = 0.0
+        value_score = 0.0
+        calibration = 1.0 - parsed["confidence"] ** 2 if parsed["confidence"] is not None else None
+        if forbidden is not None:
+            details["forbidden_match"] = True
+            failure_codes.append((oracle.get("failure_code_by_value") or {}).get(forbidden, "stale_memory_adoption"))
+        if inconsistent:
+            failure_codes.append("false_certainty")
     return {
         "score": score,
         "passed": score == 1.0,
-        "failure_codes": failure_codes,
+        "failure_codes": sorted(set(failure_codes)),
         "details": {
             "parsed": parsed,
             "actual_normalized": value_text,
@@ -272,10 +353,45 @@ def evaluate_emission(emission_log: list[dict[str, Any]], trigger_index: int, or
                       config: dict[str, Any] | None) -> dict[str, Any]:
     """Prospective memory: did the Agent emit on its trigger and not before? (MIB-Specification §4.6)"""
     spec = oracle.get("expected_emission") or {}
+    if spec.get("lifecycle"):
+        indices = (config or {}).get("observation_indices") or {}
+        start = int(indices.get(spec.get("start_after"), 0))
+        emitted = [(int(row["index"]), em) for row in emission_log if int(row["index"]) >= start
+                   for em in row.get("emissions", [])]
+        expected = list(spec.get("expected") or [])
+        used: set[int] = set()
+        matched = 0
+        for item in expected:
+            at = indices.get(item["after_event"])
+            if at is None:
+                continue
+            for i, (index, emission) in enumerate(emitted):
+                if i in used or not at <= index <= at + int(spec.get("window", 0)):
+                    continue
+                payload = emission.get("payload")
+                structured = emission.get("type") == "reminder" and isinstance(payload, dict) and all(
+                    payload.get(k) == item[k] for k in ["commitment_id", "recipient", "topic"])
+                text = normalize(emission.get("content") or "", "answer_normalized")
+                canonical = normalize(f"Reminder: ask {item['recipient']} about the {item['topic']}.", "answer_normalized")
+                if (structured and (not emission.get("content") or text == canonical)) or text == canonical:
+                    used.add(i)
+                    matched += 1
+                    break
+        false_alarms = len(emitted) - len(used)
+        misses = len(expected) - matched
+        score = float(false_alarms == 0 and misses == 0)
+        failures = (["premature_trigger"] if false_alarms else []) + (["commitment_miss"] if misses else [])
+        return {"score": score, "passed": bool(score), "failure_codes": failures,
+                "details": {"expected": len(expected), "matched": matched, "misses": misses,
+                            "false_alarms": false_alarms, "lifecycle_start": start}}
     window = int(spec.get("window", 1))
     tokens = list(spec.get("must_contain") or ([spec["topic"]] if spec.get("topic") else []))
     in_window = [e for e in emission_log if trigger_index <= int(e["index"]) <= trigger_index + window]
-    matching = [em["content"] for e in in_window for em in e.get("emissions", []) if _emission_matches(em.get("content", ""), tokens)]
+    # Legacy topic matching historically accepted a serialized payload. Keep
+    # that rendering local to this evaluator, out of lifecycle text validation.
+    texts = [em.get("content") or json.dumps(em, ensure_ascii=False)
+             for e in in_window for em in e.get("emissions", [])]
+    matching = [text for text in texts if _emission_matches(text, tokens)]
     if spec.get("must_not_emit"):
         score = 0.0 if matching else 1.0
         failures = ["premature_trigger"] if matching else []
@@ -290,13 +406,15 @@ def evaluate_emission(emission_log: list[dict[str, Any]], trigger_index: int, or
 
 
 def evaluate_emission_probe(probe: dict[str, Any], evaluator_map: dict[str, dict[str, Any]],
-                            emission_log: list[dict[str, Any]], trigger_index: int) -> tuple[float, list[dict[str, Any]]]:
+                            emission_log: list[dict[str, Any]], trigger_index: int,
+                            observation_indices: dict[str, int] | None = None) -> tuple[float, list[dict[str, Any]]]:
     results = []
     for eid in probe.get("evaluators", []):
         spec = evaluator_map[eid]
         if spec["type"] != "emission":
             raise NotImplementedError(f"observe_only Probes require an emission evaluator, got {spec['type']!r}")
-        r = evaluate_emission(emission_log, trigger_index, probe.get("oracle") or {}, spec.get("config"))
+        config = {**(spec.get("config") or {}), "observation_indices": observation_indices or {}}
+        r = evaluate_emission(emission_log, trigger_index, probe.get("oracle") or {}, config)
         results.append({"evaluator_id": eid, "evaluator_type": "emission", **r})
     score = sum(float(x["score"]) for x in results) / len(results) if results else 0.0
     return score, results

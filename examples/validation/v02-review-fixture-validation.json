@@ -1,0 +1,81 @@
+{
+  "mib": "0.2",
+  "kind": "MIBReviewFixtureValidation",
+  "version": "0.3.0",
+  "empirical": false,
+  "release_eligible": false,
+  "results": [
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "agent": "StructuredMemoryAgent",
+      "score": 100.0,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 105,
+      "runs": 861
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "agent": "WindowMemoryAgent",
+      "score": 29.476,
+      "dependence_eligible": false,
+      "verified": true,
+      "instances": 105,
+      "runs": 861
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "agent": "NoMemoryAgent",
+      "score": 14.975999999999999,
+      "dependence_eligible": false,
+      "verified": true,
+      "instances": 105,
+      "runs": 861
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "agent": "OvergeneralizingAgent",
+      "score": 96.5,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 105,
+      "runs": 861
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev-M",
+      "agent": "ConsolidatingAgent",
+      "score": 100.0,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 105,
+      "runs": 861
+    },
+    {
+      "profile": "MIB-Core-0.2-Expanded-Dev",
+      "agent": "StructuredMemoryAgent",
+      "score": 100.0,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 210,
+      "runs": 1746
+    },
+    {
+      "profile": "MIB-Core-0.2-Session-Dev",
+      "agent": "StructuredMemoryAgent",
+      "score": 100.0,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 210,
+      "runs": 1746
+    },
+    {
+      "profile": "MIB-Core-0.2-Load-Dev",
+      "agent": "StructuredMemoryAgent",
+      "score": 100.0,
+      "dependence_eligible": true,
+      "verified": true,
+      "instances": 210,
+      "runs": 1866
+    }
+  ]
+}

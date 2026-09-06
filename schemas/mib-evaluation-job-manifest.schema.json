@@ -109,6 +109,9 @@
         "reality"
       ],
       "description": "Result family this job belongs to. Families are never cross-ranked."
+    },
+    "runner_source_digest": {
+      "type": "string"
     }
   }
 }

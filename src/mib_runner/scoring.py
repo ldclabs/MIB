@@ -32,6 +32,7 @@ CONDITION_BY_ABLATION_KIND = {
     "harmful_memory": "harmful_memory",
     "counterexample": "counterexample",
     "counterfactual_content": "counterfactual_content",
+    "counterfactual_policy": "counterfactual_content",
     "no_maintenance": "no_maintenance",
     "negative_transfer": "negative_transfer_control",
 }
@@ -223,14 +224,17 @@ def validate_causal_pairs(runs: list[dict[str, Any]]) -> tuple[bool, list[str], 
                 if full.get(key) != r.get(key):
                     pair_ok = False
                     notes.append(f"pair mismatch {key}: full={full.get(key)!r} variant={r.get(key)!r}")
+            if full.get('validity', {}).get('instance_spec_digest') != r.get('validity', {}).get('instance_spec_digest'):
+                pair_ok = False
+                notes.append('pair mismatch instance specification digest')
             full_probe_ids = {p["probe_id"] for p in full.get("probe_results", [])}
             variant_probe_ids = {p["probe_id"] for p in r.get("probe_results", [])}
             if not variant_probe_ids.issubset(full_probe_ids):
                 pair_ok = False
                 notes.append(f"variant probes not subset of full probes: {sorted(variant_probe_ids - full_probe_ids)}")
             # Late/hidden-late Probe sampling must be identical across causal conditions.
-            full_variants = (full.get("extensions") or {}).get("mib.runner.probe_variant_digests", {})
-            var_variants = (r.get("extensions") or {}).get("mib.runner.probe_variant_digests", {})
+            full_variants = (full.get("extensions") or {}).get("mib.runner.probe_variant_digests", full.get('validity', {}).get('probe_input_digests', {}))
+            var_variants = (r.get("extensions") or {}).get("mib.runner.probe_variant_digests", r.get('validity', {}).get('probe_input_digests', {}))
             for pid in variant_probe_ids:
                 if full_variants.get(pid) != var_variants.get(pid):
                     pair_ok = False
@@ -264,6 +268,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
     hmb: list[float] = []
     ims: list[float] = []
     harms: list[float] = []
+    harm_references: set[str] = set()
     hrs: list[float] = []
     tracking: list[float] = []
     tracking_total = 0
@@ -292,6 +297,12 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         full = full_by_rep.get(int(variant["repetition"]))
         if not full:
             continue
+        if variant.get('reference_ablation_id'):
+            reference = next((r for r in runs if r.get('ablation_id') == variant['reference_ablation_id']
+                              and r['repetition'] == variant['repetition']), None)
+            if reference is None or not reference.get('validity', {}).get('causal_pair_valid', True):
+                continue
+            full = reference
         probe_ids = _scored_probe_ids(variant)
         if cond == "no_memory":
             probe_ids -= relevant_probe_ids_by_rep.get(int(variant["repetition"]), set())
@@ -311,6 +322,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         elif cond == "irrelevant_ablation":
             ims.append(tolerant_stability(f - v, tau))
         elif cond in {"harmful_memory", "stale_memory"}:
+            harm_references.add(full['condition'])
             harm = max(0.0, f - v)
             harms.append(harm)
             hrs.append(tolerant_harm_resistance(harm, tau))
@@ -348,7 +360,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
             pass
 
     out: list[dict[str, Any]] = []
-    if tracking_total:
+    if tracking:
         out.append({
             "name": "content_tracking_rate", "value": mean(tracking) if tracking else 0.0, "unit": "normalized",
             "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "counterfactual_content",
@@ -404,9 +416,10 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
             "eligible_n": len(ims), "total_n": len(ims), "coverage": 1.0,
         })
     if harms:
+        reference = next(iter(harm_references)) if len(harm_references) == 1 else 'custom'
         out.extend([
-            {"name": "memory_harm", "value": mean(harms), "unit": "percentage_points", "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
-            {"name": HRS, "value": mean(hrs), "unit": "normalized", "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "harmful_memory", "eligible_n": len(hrs), "total_n": len(hrs), "coverage": 1.0},
+            {"name": "memory_harm", "value": mean(harms), "unit": "percentage_points", "scope": "scenario_instance", "reference_condition": reference, "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
+            {"name": HRS, "value": mean(hrs), "unit": "normalized", "scope": "scenario_instance", "reference_condition": reference, "comparison_condition": "harmful_memory", "eligible_n": len(hrs), "total_n": len(hrs), "coverage": 1.0},
         ])
     mb = next((m["value"] for m in out if m["name"] == "memory_benefit"), None)
     mh = next((m["value"] for m in out if m["name"] == "memory_harm"), None)
@@ -513,7 +526,7 @@ def behaviour_metrics(full_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             out.append({"name": name, "value": mean([float(p.get("score", 0.0)) for p in rows]), **base,
                         "eligible_n": len(rows), "total_n": len(probes), "coverage": len(rows) / len(probes) if probes else 0.0})
 
-    rate("memory_induced_error_rate", probes, lambda p: bool(MEMORY_INDUCED_CODES & set(p.get("failure_codes") or [])))
+    rate("memory_related_error_rate", probes, lambda p: bool(MEMORY_INDUCED_CODES & set(p.get("failure_codes") or [])))
     rate("authority_confusion_rate", [p for p in probes if "authority_confusion" in (p.get("traps") or [])],
          lambda p: "authority_confusion" in (p.get("failure_codes") or []))
     accuracy("historical_fidelity", "historical")
@@ -581,6 +594,8 @@ def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]
         "repetitions": len(full_runs),
         "causal_pair_ids": pair_ids,
         "causal_metrics": metrics,
+        "dependence_evidence": counterfactual_evidence(runs),
+        "counterfactual_counts": counterfactual_counts(runs),
     }
 
 
@@ -626,7 +641,58 @@ def retention_block(instance_aggs: list[dict[str, Any]], canonical_rung: int | N
     return out
 
 
-def memory_dependence(causal_metrics: list[dict[str, Any]], profile: dict[str, Any]) -> dict[str, Any]:
+def counterfactual_evidence(runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Counts retain unassessable opportunities; independent units are Instances."""
+    full = {r['repetition']: {p['probe_id']: p for p in r.get('probe_results', [])} for r in runs if r['condition'] == 'full'}
+    rows: dict[str, list[bool | None]] = defaultdict(list)
+    for run in runs:
+        if run['condition'] != 'counterfactual_content' or not run.get('validity', {}).get('causal_pair_valid', True):
+            continue
+        for p in run.get('probe_results', []):
+            if p.get('weight', 1) <= 0:
+                continue
+            base = full.get(run['repetition'], {}).get(p['probe_id'], {})
+            tracked = float(p.get('score', 0)) >= 1.0 if float(base.get('score', 0)) >= 1.0 else None
+            for d in p.get('dimensions', []):
+                rows[d].append(tracked)
+    return [{'dimension': d, 'total_n': len(values), 'eligible_n': sum(x is not None for x in values),
+             'successes': sum(x is True for x in values), 'instance_count': 1,
+             'eligible_instances': int(any(x is not None for x in values)),
+             'tracking_instances': int(any(x is not None for x in values) and all(x is not False for x in values))}
+            for d, values in sorted(rows.items())]
+
+
+def counterfactual_counts(runs: list[dict[str, Any]]) -> dict[str, int]:
+    """Physical pair counts, without duplicating probes tagged to several dimensions."""
+    full = {r['repetition']: {p['probe_id']: p for p in r.get('probe_results', [])} for r in runs if r['condition'] == 'full'}
+    counts = {'eligible_n': 0, 'total_n': 0, 'successes': 0}
+    for run in runs:
+        if run['condition'] != 'counterfactual_content' or not run.get('validity', {}).get('causal_pair_valid', True):
+            continue
+        for p in run.get('probe_results', []):
+            if p.get('weight', 1) <= 0:
+                continue
+            counts['total_n'] += 1
+            if float(full.get(run['repetition'], {}).get(p['probe_id'], {}).get('score', 0)) >= 1:
+                counts['eligible_n'] += 1
+                counts['successes'] += int(float(p.get('score', 0)) >= 1)
+    return counts
+
+
+def aggregate_dependence_evidence(instances: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: dict[str, dict[str, Any]] = {}
+    for inst in instances:
+        for item in inst.get('dependence_evidence', []):
+            d = item['dimension']
+            row = rows.setdefault(d, {'dimension': d, **{k: 0 for k in item if k != 'dimension'}})
+            for k, value in item.items():
+                if k != 'dimension':
+                    row[k] += value
+    return [rows[d] for d in sorted(rows)]
+
+
+def memory_dependence(causal_metrics: list[dict[str, Any]], profile: dict[str, Any],
+                      evidence: list[dict[str, Any]] | None = None, totals: dict[str, int] | None = None) -> dict[str, Any]:
     """MIB-Specification §7.10: is the capability score earned through memory?
 
     Eligibility uses the benchmark-level content tracking rate: a system whose
@@ -640,7 +706,7 @@ def memory_dependence(causal_metrics: list[dict[str, Any]], profile: dict[str, A
     gate = by.get(metric_name)
     value = float(gate["value"]) if gate else None
     eligible: bool | None = None if value is None else value >= floor
-    return {
+    result = {
         "content_tracking_rate": float(by["content_tracking_rate"]["value"]) if "content_tracking_rate" in by else None,
         "stale_adoption_rate": float(by["stale_adoption_rate"]["value"]) if "stale_adoption_rate" in by else None,
         "memory_benefit": float(by["memory_benefit"]["value"]) if "memory_benefit" in by else None,
@@ -652,6 +718,41 @@ def memory_dependence(causal_metrics: list[dict[str, Any]], profile: dict[str, A
         "eligible_n": int(gate.get("eligible_n", 0)) if gate else 0,
         "total_n": int(gate.get("total_n", 0)) if gate else 0,
     }
+    if evidence is not None:
+        from statistics import NormalDist
+        level = float(policy.get('confidence_level', 0.95))
+        z = NormalDist().inv_cdf(0.5 + level / 2)
+        by_dim = {row['dimension']: row for row in evidence}
+        dimensions = []
+        for d, spec in (profile.get('dimensions') or {}).items():
+            if float(spec.get('weight', 0)) <= 0:
+                continue
+            counts = by_dim.get(d, {})
+            n = int(counts.get('eligible_instances', 0))
+            successes = int(counts.get('tracking_instances', 0))
+            lower = None
+            if n:
+                p = successes / n
+                lower = (p + z*z/(2*n) - z * math.sqrt(p*(1-p)/n + z*z/(4*n*n))) / (1 + z*z/n)
+            eligible_n, total_n = int(counts.get('eligible_n', 0)), int(counts.get('total_n', 0))
+            coverage = eligible_n / total_n if total_n else 0.0
+            ok = None if not n else (n >= int(policy.get('min_instances', 5)) and coverage >= float(policy.get('min_coverage', 0.5))
+                                    and lower >= floor)
+            dimensions.append({'dimension': d, 'eligible': ok, 'eligible_n': eligible_n, 'total_n': total_n,
+                               'coverage': coverage, 'eligible_instances': n, 'tracking_instances': successes,
+                               'content_tracking_rate': counts.get('successes', 0) / eligible_n if eligible_n else None,
+                               'instance_tracking_lower_bound': lower, 'confidence_level': level})
+        result['dimensions'] = dimensions
+        result['eligible_n'] = sum(int(x.get('eligible_n', 0)) for x in evidence)
+        result['total_n'] = sum(int(x.get('total_n', 0)) for x in evidence)
+        if not result['eligible_n']:
+            result['eligible'] = None
+            result['content_tracking_rate'] = None
+        if policy.get('require_per_dimension'):
+            result['eligible'] = (all(x['eligible'] is True for x in dimensions) if any(x['eligible'] is not None for x in dimensions) else None)
+    if totals is not None:
+        result['eligible_n'], result['total_n'] = totals['eligible_n'], totals['total_n']
+    return result
 
 
 def instance_pair_notes(runs: list[dict[str, Any]]) -> list[str]:

@@ -2,8 +2,22 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+
+def runner_source_digest() -> str:
+    """Bind executable Python sources; runtime caches never affect identity."""
+    root = Path(__file__).resolve().parent
+    digest = hashlib.sha256()
+    for path in sorted(root.rglob('*.py')):
+        digest.update(str(path.relative_to(root)).encode())
+        digest.update(b'\0')
+        digest.update(path.read_bytes())
+        digest.update(b'\0')
+    return 'sha256:' + digest.hexdigest()
 
 _DURATION = re.compile(
     r"^P(?:(?P<weeks>\d+)W)?(?:(?P<days>\d+)D)?"

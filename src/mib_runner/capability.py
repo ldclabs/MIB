@@ -99,7 +99,7 @@ def _behaviour_lines(report: dict[str, Any]) -> list[str]:
         ("source_attribution_accuracy", "Source Attribution", "score"),
         ("authority_confusion_rate", "Authority Confusion", "rate"),
         ("self_limitation_continuity", "Self-Rule Continuity", "score"),
-        ("memory_induced_error_rate", "Memory-Induced Errors", "rate"),
+        ("memory_related_error_rate", "Memory-Related Error Patterns (descriptive)", "rate"),
     ]
     present = [(n, l, f) for n, l, f in rows if _metric(report, n)]
     if not present:
@@ -140,13 +140,29 @@ def _dependence_lines(report: dict[str, Any]) -> list[str]:
         return []
     value = dep.get(dep.get("metric", "content_tracking_rate"))
     shown = f"{100*float(value):5.1f}" if value is not None else "  n/a"
-    verdict = {True: "earned through memory", False: "BELOW FLOOR — not a memory score", None: "not assessable"}[dep.get("eligible")]
-    return [
+    verdict = {True: "meets the declared dependence policy", False: "insufficient evidence or below a policy threshold", None: "not assessable"}[dep.get("eligible")]
+    lines = [
         "",
         "Memory Dependence",
-        f"  {dep.get('metric', 'content_tracking_rate'):28s} {shown}  floor {100*float(dep.get('floor', 0.0)):5.1f}  ({dep.get('eligible_n', 0)}/{dep.get('total_n', 0)} programs with counterfactual pairs)",
+        f"  {dep.get('metric', 'content_tracking_rate'):28s} {shown}  floor {100*float(dep.get('floor', 0.0)):5.1f}  ({dep.get('eligible_n', 0)}/{dep.get('total_n', 0)} eligible changed-probe pairs)",
         f"  {verdict}",
     ]
+    for row in dep.get('dimensions', []):
+        lower = row.get('instance_tracking_lower_bound')
+        bound = f'{100*lower:.1f}%' if lower is not None else 'n/a'
+        status = {True: 'pass', False: 'below policy', None: 'unassessable'}[row['eligible']]
+        lines.append(f"  {DISPLAY.get(row['dimension'], row['dimension']):28s} {row['eligible_instances']} Instances; "
+                     f"{row['eligible_n']}/{row['total_n']} pairs; lower bound {bound}; {status}")
+    regime = report.get('evaluation_policy', {}).get('profile', {}).get('measurement_regime', {})
+    if regime:
+        lines.append(f"  Regime: {regime.get('kind')}; internal mechanism is not independently identified.")
+    operations = report.get('efficiency', {}).get('runner_measured', {}).get('operations', {})
+    if operations:
+        lines += ['', 'Runner operations (all evaluation conditions; UTF-8 bytes, not tokens)']
+        for name, row in sorted(operations.items()):
+            lines.append(f"  {name:16s} {int(row['calls']):6d} calls; {row['latency_ms']:.1f} ms; "
+                         f"{int(row['input_bytes'])} input bytes; {int(row['output_bytes'])} output bytes")
+    return lines
 
 
 def _transfer_lines(report: dict[str, Any]) -> list[str]:
@@ -163,7 +179,7 @@ def _transfer_lines(report: dict[str, Any]) -> list[str]:
     rows = [
         ("natural_transfer_gain", "Natural Transfer Gain", "pp"),
         ("formation_efficiency", "Formation Efficiency", "score"),
-        ("routing_efficiency", "Routing Efficiency", "score"),
+        ("routing_efficiency", "Historical Artifact Availability", "score"),
         ("natural_transfer_efficiency", "Natural Transfer Efficiency", "score"),
         ("oracle_routed_score", "Oracle-Routed Score", "score"),
         ("supported_transfer_success_rate", "Supported Transfer", "score"),

@@ -1,5 +1,8 @@
 # MIB v0.1 Same-Model Empirical Baseline Harness
 
+> The v0.1 examples below remain legacy material. Implementation 0.10.0 also executes generated v0.2 Programs at every rung. Use `same-model-generated.stub.json` for engineering validation or `same-model-generated.external-http.json` for real fixed-model calibration. The revised adapter persists completed task transcripts for B1–B3, discards them for B0, and supports observe-time decisions, maintenance, and explicit session boundaries. Optional recent-window and privileged oracle-supported references are separate diagnostics and never enter a release gate. See `MIB-v0.2-Review-Resolution.md` for the current procedure and remaining empirical requirements.
+
+
 **Version:** 0.1-draft  
 **Status:** Implementation Candidate / Release-Calibration Infrastructure  
 **Profile target:** `MIB-Core-0.1`

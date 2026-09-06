@@ -40,9 +40,20 @@ def leaderboard(db: ServiceDB, *, cycle_id: str | None = None, profile_id: str |
         raise ValueError("no active evaluation cycle")
     rows = db.latest_results_for_cycle(cycle["id"])
     entries = []
-    for rank, row in enumerate(rows, 1):
+    profile = _load_report(cycle['profile_path'])
+    excluded = []
+    for row in rows:
+        from .report import verify_score
+        report = _load_report(row['public_report_path'])
+        score = report.get('aggregates', {}).get('mib_score', {})
+        failures = float(report.get('execution', {}).get('execution_failure_rate', 0))
+        if (not score.get('official') or score.get('partial') or row.get('track') != profile.get('track', 'integrated_agent')
+                or report['benchmark']['profile'] != {'id': profile['id'], 'version': profile['version']}
+                or failures > float(profile.get('max_execution_failure_rate', 0)) or not verify_score(report)['valid']):
+            excluded.append(row['id'])
+            continue
         entries.append({
-            "rank": rank,
+            "rank": len(entries) + 1,
             "submission_id": row["submission_id"],
             "display_name": row["display_name"],
             "owner": row.get("owner"),
@@ -63,6 +74,7 @@ def leaderboard(db: ServiceDB, *, cycle_id: str | None = None, profile_id: str |
         "result_family": family,
         "cross_family_ranking": False,
         "entries": entries,
+        "excluded_ineligible_count": len(excluded),
     }
 
 
@@ -79,75 +91,89 @@ def _instance_map(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *, resamples: int = 5000, seed: int | str = 20260819, confidence_level: float = 0.95) -> dict[str, Any]:
-    """Paired hierarchical comparison using public aggregate evidence.
-
-    Public M4/M5 reports retain per-instance dimension scores but redact raw runs.
-    We pair on opaque instance aliases, resample Templates then Instances, and
-    preserve the same paired instance in both systems.
-    """
-    family_a = result_family(report_a["benchmark"]["profile"]["id"])
-    family_b = result_family(report_b["benchmark"]["profile"]["id"])
+    """Bootstrap the same canonical score functional used to publish the points."""
+    from .aggregation import canonical_instances, score_aggregates
+    import copy
+    if resamples < 1 or not 0 < confidence_level < 1:
+        raise ValueError("positive resamples and a confidence level inside (0, 1) are required")
+    family_a = result_family(report_a['benchmark']['profile']['id'])
+    family_b = result_family(report_b['benchmark']['profile']['id'])
     if family_a != family_b:
         raise ValueError(f"cannot compare across result families: {family_a} vs {family_b}")
-    a = _instance_map(report_a); b = _instance_map(report_b)
-    common_ids = sorted(set(a) & set(b))
-    if not common_ids:
-        raise ValueError("reports have no common paired Scenario Instance aliases")
-    by_template: dict[str, list[str]] = {}
-    for iid in common_ids:
-        ta, tb = a[iid]["template_id"], b[iid]["template_id"]
-        if ta != tb:
-            continue
-        by_template.setdefault(ta, []).append(iid)
-    if not by_template:
-        raise ValueError("reports have no common paired Template/Instance evidence")
-
-    weights = _profile_weights(report_a)
-    dims = sorted(weights)
+    for key in ['profile', 'track', 'scale', 'scenario_pack', 'scoring_spec_version']:
+        if report_a['benchmark'].get(key) != report_b['benchmark'].get(key):
+            raise ValueError(f"paired comparison requires identical {key}")
+    if report_a.get('evaluation_policy') != report_b.get('evaluation_policy'):
+        raise ValueError('paired comparison requires identical evaluation policies')
+    if _profile_weights(report_a) != _profile_weights(report_b):
+        raise ValueError('paired comparison requires identical dimension weights')
+    if report_a.get('retention') or report_b.get('retention'):
+        canonical_a = {x['template_id']: x.get('canonical_rung') for x in report_a.get('retention', [])}
+        canonical_b = {x['template_id']: x.get('canonical_rung') for x in report_b.get('retention', [])}
+        if canonical_a != canonical_b or len(set(canonical_a.values())) != 1:
+            raise ValueError('paired comparison requires identical canonical rungs')
+        canonical = next(iter(canonical_a.values()))
+    else:
+        canonical = None
+    policy = report_a.get('evaluation_policy') or {}
+    profile = copy.deepcopy(policy.get('profile') or {'dimensions': {d: {'weight': w} for d, w in _profile_weights(report_a).items()}})
+    profile['canonical_rung'] = canonical
+    generated = bool(profile.get('programs')) or canonical is not None
+    templates = policy.get('templates') or [{'id': t['template_id'], 'version': t.get('template_version'),
+                  'scoring': {'dimension_weights': t.get('dimension_weights', {})}}
+                 for t in report_a['aggregates']['templates']]
+    a = {x['scenario_instance_id']: x for x in canonical_instances(report_a['aggregates']['scenario_instances'], profile)}
+    b = {x['scenario_instance_id']: x for x in canonical_instances(report_b['aggregates']['scenario_instances'], profile)}
+    if not a or set(a) != set(b):
+        raise ValueError('paired comparison requires complete identical Scenario Instance coverage')
+    by_template = {}
+    for iid in sorted(a):
+        if a[iid]['template_id'] != b[iid]['template_id']:
+            raise ValueError('paired Template mismatch')
+        by_template.setdefault(a[iid]['template_id'], []).append(iid)
+    tids = [t['id'] for t in templates]
+    if set(tids) != set(by_template):
+        raise ValueError('paired comparison requires every required Template')
+    template_map = {t['id']: t for t in templates}
+    def score(rows, ts):
+        return score_aggregates(rows, ts, profile)
+    point_a, point_b = score(list(a.values()), templates), score(list(b.values()), templates)
+    for report, point in [(report_a, point_a), (report_b, point_b)]:
+        if not math.isclose(point['score'], float(report['aggregates']['mib_score']['final_score']), abs_tol=1e-9):
+            raise ValueError('published score does not match paired evidence')
     rng = random.Random(str(seed))
-
-    def sampled_delta() -> tuple[float, dict[str, float]]:
-        sampled_templates = [rng.choice(list(by_template)) for _ in range(len(by_template))]
-        dim_values: dict[str, list[float]] = {d: [] for d in dims}
-        for tid in sampled_templates:
-            ids = by_template[tid]
-            sampled_ids = [rng.choice(ids) for _ in range(len(ids))]
-            for d in dims:
-                vals=[]
-                for iid in sampled_ids:
-                    da=(a[iid].get("dimension_scores") or {}).get(d)
-                    db=(b[iid].get("dimension_scores") or {}).get(d)
-                    if da is not None and db is not None:
-                        vals.append(100.0*(float(da)-float(db)))
-                if vals:
-                    dim_values[d].append(sum(vals)/len(vals))
-        dd={d:(sum(v)/len(v) if v else 0.0) for d,v in dim_values.items()}
-        denom=sum(weights.values()) or 1.0
-        overall=sum(weights[d]*dd[d] for d in dims)/denom
-        return overall,dd
-
-    boot=[]; boot_dims={d:[] for d in dims}
-    for _ in range(resamples):
-        x, dd=sampled_delta(); boot.append(x)
-        for d in dims: boot_dims[d].append(dd[d])
-    alpha=1-confidence_level
-    point=float(report_a["aggregates"]["mib_score"]["final_score"])-float(report_b["aggregates"]["mib_score"]["final_score"])
-    ci={"lower":percentile(boot,alpha/2),"upper":percentile(boot,1-alpha/2),"level":confidence_level,"method":"paired_hierarchical_bootstrap_public_aggregates","resamples":resamples,"seed":seed}
-    return {
-        "kind":"MIBPairedSystemComparison",
-        "profile_id":report_a["benchmark"]["profile"]["id"],
-        "result_family":family_a,
-        "cycle_compatible": report_a["benchmark"]["scenario_pack"]["id"] == report_b["benchmark"]["scenario_pack"]["id"],
-        "paired_template_count":len(by_template),
-        "paired_instance_count":sum(len(v) for v in by_template.values()),
-        "mib_score_delta_a_minus_b":point,
-        "paired_ci":ci,
-        "statistically_distinguishable_95": not (ci["lower"] <= 0 <= ci["upper"]),
-        "dimension_deltas":{
-            d:{"mean_bootstrap_delta":sum(boot_dims[d])/len(boot_dims[d]),"ci":{"lower":percentile(boot_dims[d],alpha/2),"upper":percentile(boot_dims[d],1-alpha/2)}}
-            for d in dims
-        },
-    }
+    boot, boot_dims = [], {d: [] for d in _profile_weights(report_a)}
+    attempts = 0
+    while len(boot) < resamples and attempts < resamples * 1000:
+        attempts += 1
+        chosen = tids if generated else [rng.choice(tids) for _ in tids]
+        ts, ra, rb = [], [], []
+        for index, tid in enumerate(chosen):
+            alias = f'draw-{index}'
+            ts.append({**template_map[tid], 'id': alias})
+            for iid in [rng.choice(by_template[tid]) for _ in by_template[tid]]:
+                ra.append({**a[iid], 'template_id': alias})
+                rb.append({**b[iid], 'template_id': alias})
+        sa, sb = score(ra, ts), score(rb, ts)
+        if any(d['weight'] > 0 and d['coverage'] == 0 for d in sa['dimensions']):
+            continue
+        boot.append(sa['score'] - sb['score'])
+        db = {d['dimension']: d['score'] for d in sb['dimensions']}
+        for d in sa['dimensions']:
+            boot_dims[d['dimension']].append(d['score'] - db[d['dimension']])
+    if len(boot) != resamples:
+        raise ValueError('insufficient complete bootstrap draws')
+    alpha = 1 - confidence_level
+    ci = {'lower': percentile(boot, alpha/2), 'upper': percentile(boot, 1-alpha/2), 'level': confidence_level,
+          'method': 'paired_canonical_instance_bootstrap' if generated else 'paired_hierarchical_bootstrap_public_aggregates',
+          'resamples': resamples, 'seed': seed}
+    return {'kind': 'MIBPairedSystemComparison', 'profile_id': report_a['benchmark']['profile']['id'],
+            'result_family': family_a, 'cycle_compatible': True, 'paired_template_count': len(tids),
+            'paired_instance_count': len(a), 'mib_score_delta_a_minus_b': point_a['score'] - point_b['score'],
+            'paired_ci': ci, 'statistically_distinguishable': not(ci['lower'] <= 0 <= ci['upper']),
+            **({'statistically_distinguishable_95': not(ci['lower'] <= 0 <= ci['upper'])} if confidence_level == 0.95 else {}),
+            'dimension_deltas': {d: {'mean_bootstrap_delta': sum(v)/len(v),
+                'ci': {'lower': percentile(v, alpha/2), 'upper': percentile(v, 1-alpha/2)}} for d, v in boot_dims.items()}}
 
 
 def compare_results(db: ServiceDB, result_a: str, result_b: str, **kwargs) -> dict[str, Any]:

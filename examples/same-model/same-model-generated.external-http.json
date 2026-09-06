@@ -1,0 +1,68 @@
+{
+  "mib": "0.2",
+  "kind": "MIBSameModelExperiment",
+  "id": "MIB-v0.2-generated-fixed-model-calibration",
+  "pack": "../../profiles",
+  "scenario_schema": "../../schemas/mib-scenario.schema.json",
+  "profile": "../../profiles/MIB-Core-0.2-Calibration-Dev.json",
+  "model": {
+    "client": "http_json",
+    "model_id": "REPLACE_WITH_IMMUTABLE_MODEL_ID",
+    "endpoint": "http://127.0.0.1:9001/complete",
+    "api_key_env": "MIB_MODEL_API_KEY",
+    "parameters": {
+      "temperature": 0,
+      "max_tokens": 768
+    },
+    "seed_policy": "paired_per_call"
+  },
+  "agent": {
+    "system_prompt": "../../prompts/same-model-agent-v0.2.txt",
+    "reasoning_policy": "../../prompts/reasoning-policy-v0.1.txt",
+    "retrieval_top_k": 4,
+    "structured_top_k": 10,
+    "structured_salient_k": 6,
+    "parse_retries": 1,
+    "memory_char_limits": {
+      "B0": null,
+      "B1": null,
+      "B2": null,
+      "B3": null
+    },
+    "observe_decisions": true,
+    "maintenance_decisions": true
+  },
+  "calibration": {
+    "instance_seeds": [
+      101,
+      202,
+      303,
+      404,
+      505
+    ],
+    "repetitions": 2,
+    "bootstrap_resamples": 2000,
+    "bootstrap_seed": "mib-same-model-smoke",
+    "causal_baseline": "B3",
+    "causal_instance_seeds": [
+      101,
+      202,
+      303,
+      404,
+      505
+    ],
+    "causal_repetitions": 2,
+    "thresholds": {
+      "full_context_min": 0.8,
+      "no_memory_max": 0.6,
+      "mdi_min": 0.25,
+      "baseline_span_min": 0.2,
+      "irrelevant_stability_min": 0.9,
+      "causal_memory_benefit_min": 0.2
+    },
+    "additional_baselines": {
+      "recent_window": 12,
+      "oracle_reference": true
+    }
+  }
+}

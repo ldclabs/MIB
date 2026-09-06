@@ -39,6 +39,7 @@ def _describe(name: str, memory: bool) -> dict[str, Any]:
             "observe": True, "respond": True, "act": True, "spontaneous_emissions": memory,
             "maintenance": memory, "runner_managed_tools": True, "structured_output": True,
             "virtual_time": True, "seedable": True,
+            "session_boundary": True,
         },
         "state": {"run_isolation": "hard", "observe_visibility": "read_after_write", "request_idempotency": True},
     }
@@ -58,6 +59,18 @@ class _ActPolicies:
     def _call(self, tool: str, arguments: dict[str, Any] | None = None) -> ActStep:
         self.tool_call_counter += 1
         return ActStep(type="tool_call", tool_call_id=f"call_{self.tool_call_counter:04d}", tool=tool, arguments=arguments or {})
+
+    def _workflow(self, task_id: str, state: dict[str, Any], recipe: list[str] | None, recover: bool) -> ActStep:
+        last = self._last_result(task_id)
+        if last is not None:
+            if last.get('success') or not recover:
+                return ActStep(type='final', content='Workflow attempt complete.')
+            recipe = list(last.get('required_recipe') or [])
+        else:
+            recipe = list(recipe or [])
+            if 'reverse order' in state['goal']:
+                recipe.reverse()
+        return self._call('workflow.submit', {'recipe': recipe})
 
     def _last_result(self, task_id: str) -> dict[str, Any] | None:
         rows = [o for o in self.observations if o.type == "tool_result" and (o.observation_id in self.task_results.get(task_id, set()))]
@@ -168,8 +181,21 @@ class StructuredMemoryAgent(_ActPolicies):
     def _model(self) -> WorldModel:
         model = WorldModel()
         last_by_source: dict[tuple[str, str, str], str] = {}
+        record_ids: dict[str, str] = {}
         for seq, o in enumerate(self._memory(), start=1):
             actor_id = (o.actor or {}).get("id")
+            if isinstance(o.payload, dict) and o.payload.get('kind') in {'temporal_record', 'authority_record'}:
+                data = o.payload
+                source = actor_id or 'registry'
+                if source not in model.sources:
+                    model.add_source(Source(source))
+                if data['kind'] == 'authority_record':
+                    model.add(Assertion(o.observation_id, seq, source, data['subject'], 'authority.' + data['attribute'], data['source']))
+                else:
+                    model.add(Assertion(o.observation_id, data['recorded_at'], source, data['subject'], data['attribute'], data['value'],
+                                        data['assertion_kind'], True, record_ids.get(data.get('supersedes')), valid_from=data['valid_from']))
+                    record_ids[data['record_id']] = o.observation_id
+                continue
             if o.type == "tool_result" and isinstance(o.payload, dict) and o.payload.get("kind") == "lookup":
                 tool = str(o.payload.get("tool") or o.tool or "tool")
                 if tool not in model.sources:
@@ -240,12 +266,23 @@ class StructuredMemoryAgent(_ActPolicies):
                 continue
             c = _COMMITMENT.match(o.content.strip())
             if c and c.group("name").lower() == name.lower() and o.observation_id not in self.fired:
+                cancellation = f"Cancel the reminder for {name} about the {c.group('topic')}.".casefold()
+                memories = self._memory()
+                position = next((i for i, x in enumerate(memories) if x.observation_id == o.observation_id), -1)
+                if any((x.content or '').casefold() == cancellation for x in memories[position + 1:]):
+                    continue
                 self.fired.add(o.observation_id)
                 return [{"type": "reminder", "content": f"Reminder: ask {name} about the {c.group('topic')}."}]
         return []
 
     def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
         return {"accepted": True, "consolidated": len(self.observations)}
+
+    def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        self.task_states = {}; self.task_results = {}; self.current_task = None
+        if self.window:
+            self.observations = []
+        return {'accepted': True}
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
         key = (run_id, request_id)
@@ -258,6 +295,15 @@ class StructuredMemoryAgent(_ActPolicies):
     def _answer(self, input_data: dict[str, Any]) -> AgentOutput:
         prompt = str(input_data.get("content") or "")
         asker = str((input_data.get("context") or {}).get("actor") or "")
+        temporal = re.fullmatch(r'At valid time (\d+), using records received by time (\d+), what was my office\?', prompt)
+        authority = prompt == 'According to the decision owner, what is my office?'
+        if temporal or authority:
+            query = {'op': 'according_to_authority', 'subject': asker, 'attribute': 'office'}
+            if temporal:
+                query.update(op='bitemporal', valid_at=int(temporal.group(1)), recorded_at=int(temporal.group(2)))
+            result = self._model().evaluate(query)
+            return AgentOutput(type='structured', value={'value': result.value if result.kind == 'value' else 'unknown',
+                               'status': ('historical' if temporal else 'known') if result.kind == 'value' else 'unknown', 'confidence': 0.95})
         pp = parse_prompt(prompt)
         if pp is None:
             return AgentOutput(type="abstention", content="unknown")
@@ -272,6 +318,7 @@ class StructuredMemoryAgent(_ActPolicies):
             value, _ = model.hop(subject, ["project", "schedule_zone", "utc"])
         elif pp.which == "current":
             value, _ = model.current(subject, attr)
+            status = "contested" if model.status(subject, attr) == "contested" else "known"
         elif pp.which == "before":
             rows = model.truth_series(subject, attr)
             value = rows[-2][1] if len(rows) >= 2 else None
@@ -303,7 +350,16 @@ class StructuredMemoryAgent(_ActPolicies):
         state = self._task_state(task_id, goal, tools)
         errors = self._experience_errors() if self.learns else set()
         names = state["tools"]
-        if any(n.startswith("deployment.") for n in names):
+        if 'workflow.submit' in names:
+            family = re.search(r'family (F-[0-9a-f]+)', state['goal'])
+            known = [o.payload for o in self._memory() if o.type == 'tool_result' and isinstance(o.payload, dict)
+                     and 'required_recipe' in o.payload and o.observation_id not in self.task_results.get(task_id, set())
+                     and (getattr(self, 'overgeneralizes', False) or (family and o.payload.get('family') == family.group(1)))] if self.learns else []
+            recipe = known[0 if getattr(self, 'overgeneralizes', False) else -1]['required_recipe'] if known else None
+            step = self._workflow(task_id, state, recipe, self.recovers)
+        elif any(n.startswith("deployment.") for n in names):
+            if any("must never run migrations" in (o.content or "").lower() for o in self._memory()):
+                state["plan"] = state["plan"] or ["restart"]
             # A past wrong-target failure teaches inspect-first; the current task's own error is recovery, not learning.
             past_errors = {str(o.payload.get("error")) for o in self._memory()
                            if o.type == "tool_result" and isinstance(o.payload, dict) and o.payload.get("success") is False
@@ -375,6 +431,7 @@ class OvergeneralizingAgent(StructuredMemoryAgent):
     the fixture that the Negative Transfer control (§7.8) is designed to catch."""
 
     NAME = "MIB Overgeneralizing Fixture"
+    overgeneralizes = True
 
     def _canvas(self, task_id: str, state: dict[str, Any], learned_context: bool, recover: bool) -> ActStep:
         if learned_context and state["plan"] is None:
@@ -411,6 +468,10 @@ class NoMemoryAgent(_ActPolicies):
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
         return AgentOutput(type="abstention", content="unknown")
 
+    def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        self.observations = []; self.task_states = {}; self.task_results = {}; self.current_task = None
+        return {'accepted': True}
+
     def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str],
             tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
         key = (run_id, request_id)
@@ -419,7 +480,9 @@ class NoMemoryAgent(_ActPolicies):
         self.current_task = task_id
         state = self._task_state(task_id, goal, tools)
         names = state["tools"]
-        if any(n.startswith("deployment.") for n in names):
+        if 'workflow.submit' in names:
+            step = self._workflow(task_id, state, None, False)
+        elif any(n.startswith("deployment.") for n in names):
             step = self._deployment(task_id, state, learned_inspect=False, recover=False)
         elif any(n.startswith("canvas.") for n in names):
             step = self._canvas(task_id, state, learned_context=False, recover=False)

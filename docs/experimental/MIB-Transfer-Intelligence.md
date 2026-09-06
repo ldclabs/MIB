@@ -296,7 +296,7 @@ OO  supporting Experience removed, the canonical oracle artifact surfaced
     at task time                              (black-box compatible)
 ```
 
-`OA` and `OO` both carry oracle content and differ only in *when* it is available, which is what isolates Routing. `AA` and `AO` both carry automatic content and differ only in routing, which is what isolates Formation.
+`OA` and `OO` carry oracle content at different times. For a black-box Agent this contrast can include formation, survival, consolidation, freshness, and retrieval; it measures historical artifact availability, not isolated routing. `AA` versus `AO` retains automatic content but changes how it is surfaced. Interpreting these cells as a pure mechanism decomposition requires additional assumptions or the Memory Adapter, and the assumptions must be reported.
 
 Oracle content **replaces** the Experience it stands in for. If the natural support stayed in place, `OA` would measure "natural memory plus a hint" rather than routing.
 
@@ -403,7 +403,7 @@ Signed. Positive is useful transfer; negative is harmful evolution. Never take a
 FE = (AO - B) / (OO - B)
 ```
 
-## 9.3 Routing Efficiency
+## 9.3 Historical Artifact Availability (legacy key: routing_efficiency)
 
 ```text
 RE = (OA - B) / (OO - B)
@@ -514,7 +514,7 @@ The Capability Card gains two optional blocks, rendered only when the diagnostic
 Transfer Diagnostics
   Natural Transfer Gain  +18.4 pp
   Formation Efficiency     81.0
-  Routing Efficiency       64.0
+  Artifact Availability    64.0
   Oracle-Routed Score      92.0
   Negative Transfer Rate    9.8%
 

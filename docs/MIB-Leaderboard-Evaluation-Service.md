@@ -1,5 +1,8 @@
 # MIB Leaderboard / Evaluation Service
 
+> Updated for implementation 0.10.0. The external-Agent job service accepts Track B only; controlled Track A uses the evaluator-owned same-model harness. Generated private-store manifests list Programs, parameters, instance counts, a default ladder, and optional per-Program ladder overrides. Their effective per-Program ladders must match the evaluation Profile, along with parameters and session regime. Execution also validates Instance interference counts and complete per-Program rung coverage. Secret generation seeds are replaced by keyed aliases before Agent reset. Job signatures additionally bind the executable Python source digest.
+
+
 **Version:** 0.5.0  
 **Status:** Reference service prototype
 
@@ -287,7 +290,7 @@ Changing either Report after evaluation invalidates verification.
 
 The reference leaderboard selects:
 
-> the most recent successful Result for each Submission in one evaluation Cycle.
+> the most recent successful Result for each Submission in one evaluation Cycle, retaining only verified, official, non-partial results that satisfy the Profile track and execution-failure policy.
 
 Then ranks by:
 
@@ -304,7 +307,7 @@ Public Report
 Result Attestation signature
 ```
 
-Different cycles are not silently mixed.
+Different cycles, tracks, Profile versions, packs, and measurement regimes are not silently mixed. Internal reports are fully verified before redaction. A service signature authenticates the artifact; it does not establish scientific validity or hardware attestation.
 
 ## 12. Paired System Comparison
 
@@ -312,7 +315,7 @@ Ranking and statistical distinguishability are different questions.
 
 When two systems were evaluated on the same hidden cycle, their public reports retain matching opaque Scenario Instance aliases.
 
-The service performs a paired hierarchical bootstrap over:
+For static packs the service performs a paired hierarchical bootstrap over:
 
 ```text
 Template
@@ -320,7 +323,7 @@ Template
 paired Instance
 ```
 
-while using the same hidden Instance on both sides.
+while using the same hidden Instance on both sides. For generated packs it fixes the Program set and resamples only paired canonical-rung Instances. All other rungs are excluded from this score comparison. Complete matching evidence, Profile/version, track, pack, policy, and weights are required; missing dimensions are not replaced with zero deltas. Point estimates and intervals use the shared score functional.
 
 Output includes:
 

@@ -143,6 +143,18 @@ class EvaluationService:
 
     def register_cycle(self, cycle_id: str, *, store_path: str|Path, profile_path: str|Path, activate: bool=False) -> dict[str,Any]:
         store_path=Path(store_path).resolve(); profile_path=Path(profile_path).resolve(); store=HiddenEvalStore(store_path); profile=load_json(profile_path)
+        if profile.get('programs'):
+            from .generate.registry import resolve_program_config
+            required = {c['id']: c for e in profile['programs']
+                        for c in [resolve_program_config(e, profile.get('ladder'))]}
+            actual = {c['id']: c for e in store.manifest.get('programs', [])
+                      for c in [resolve_program_config(e, store.manifest.get('ladder'))]}
+            if {pid: c['ladder'] for pid, c in required.items()} != {pid: c['ladder'] for pid, c in actual.items()}:
+                raise ServiceConfigError('generated store Programs/ladder differ from the Profile')
+            if bool(profile.get('measurement_regime', {}).get('session_boundary')) != bool(store.manifest.get('session_boundary')):
+                raise ServiceConfigError('generated store session regime differs from the Profile')
+            if {pid: c['params'] for pid, c in required.items()} != {pid: c['params'] for pid, c in actual.items()}:
+                raise ServiceConfigError('generated store parameters differ from the Profile')
         row={"id":cycle_id,"profile_id":profile["id"],"store_path":str(store_path),"profile_path":str(profile_path),
              "store_digest":tree_digest(store_path),"profile_digest":file_digest(profile_path),"public_manifest":store.public_manifest(),"status":"registered",
              "transfer_digest":store.transfer_digest()}
@@ -153,6 +165,7 @@ class EvaluationService:
     def activate_cycle(self, cycle_id:str)->dict[str,Any]: self.db.activate_cycle(cycle_id); return self.db.cycle(cycle_id)
 
     def _job_manifest(self, *, job_id:str, submission:dict[str,Any], cycle:dict[str,Any], backend:str)->dict[str,Any]:
+        from .util import runner_source_digest
         manifest={"mib":"0.1","kind":"MIBEvaluationJobManifest","version":"0.1.0","job_id":job_id,"submission_id":submission["id"],
                 "submission_spec_digest":submission["spec_digest"],"cycle_id":cycle["id"],"profile_id":cycle["profile_id"],
                 "private_store_digest":cycle["store_digest"],"profile_digest":cycle["profile_digest"],"scenario_schema_digest":file_digest(self.config.scenario_schema),
@@ -164,6 +177,7 @@ class EvaluationService:
         # attestation; `diagnostic_mode` means something else entirely in
         # `mib.transfer_diagnostics.v1`.
         manifest["result_family"]=result_family(cycle["profile_id"])
+        manifest['runner_source_digest'] = runner_source_digest()
         # Bind the evaluator-private transfer metadata by digest, never by value.
         # A silent post-enqueue edit to Ability support, an oracle artifact, or a
         # transfer relation then breaks manifest verification.
@@ -177,6 +191,11 @@ class EvaluationService:
         if not sub or sub["status"]!="accepted": raise ValueError("submission is not accepted")
         cycle=self.db.cycle(cycle_id) if cycle_id else self.db.active_cycle()
         if not cycle: raise ValueError("no active evaluation cycle")
+        profile = load_json(cycle['profile_path'])
+        if sub['track'] != profile.get('track', 'integrated_agent'):
+            raise ValueError('submission track differs from evaluation Profile')
+        if sub['track'] == 'memory_system':
+            raise ValueError('Hosted external-Agent jobs are Track B. Track A requires the evaluator-owned same-model harness.')
         jid="job_"+uuid.uuid4().hex[:20]; backend=backend or self.config.backend
         manifest=self._job_manifest(job_id=jid,submission=sub,cycle=cycle,backend=backend)
         jsonschema.Draft202012Validator(load_json(self.config.job_manifest_schema)).validate(manifest)
@@ -199,8 +218,13 @@ class EvaluationService:
         if digest_json({k:v for k,v in load_submission_spec(sub["spec_path"]).items() if not k.startswith("_")}) != manifest["submission_spec_digest"]: raise RuntimeError("submission spec changed after job enqueue")
         if tree_digest(cycle["store_path"]) != manifest["private_store_digest"]: raise RuntimeError("private evaluation store changed after job enqueue")
         if file_digest(cycle["profile_path"]) != manifest["profile_digest"]: raise RuntimeError("profile changed after job enqueue")
+        from .util import runner_source_digest
+        if manifest.get('runner_source_digest') != runner_source_digest():
+            raise RuntimeError('Runner sources changed after job enqueue')
 
         schema=load_json(self.config.scenario_schema); report_schema=load_json(self.config.report_schema); profile=load_json(cycle["profile_path"]); store=HiddenEvalStore(cycle["store_path"])
+        if sub['track'] != profile.get('track', 'integrated_agent'):
+            raise RuntimeError('submission track changed or differs from the signed evaluation Profile')
         templates,instances,aliases=store.materialize_instances(schema=schema,evaluation_key=self.eval_key,cycle_id=cycle["id"])
         spec=load_submission_spec(sub["spec_path"])
         # Hidden-store masking is an evaluator decision, never a submission one.
@@ -226,6 +250,8 @@ class EvaluationService:
             bootstrap_resamples=int((profile.get("statistics") or {}).get("bootstrap_resamples",0)),bootstrap_seed=f"{cycle['id']}|{sub['id']}")
         report.setdefault("provenance",{})["notes"]=f"MIB Evaluation Service job={job['id']}; cycle={cycle['id']}; submission={sub['id']}; backend=local_namespace."
         validate_report(report,report_schema)
+        if not verify_score(report)['valid']:
+            raise RuntimeError('internal report verification failed')
         public=redact_report_for_public(report,aliases=aliases,redaction_key=self.redaction_key)
         validate_report(public,report_schema)
         checked=verify_score(public)

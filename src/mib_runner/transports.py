@@ -182,6 +182,17 @@ class StdioAgentAdapter:
         body = _check_response(self._rpc(req), req)
         return ActStep(**body["result"])
 
+    def _lifecycle(self, operation: str, *, run_id: str, request_id: str, virtual_time: str | None, **body) -> dict[str, Any]:
+        req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id,
+               "operation": operation, "virtual_time": virtual_time, "body": body}
+        return _check_response(self._rpc(req), req)
+
+    def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('maintain', run_id=run_id, request_id=request_id, virtual_time=virtual_time, budget=budget)
+
+    def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
+
     def close(self, *, run_id: str | None = None) -> None:
         try:
             if run_id and self.proc.poll() is None:
@@ -245,6 +256,17 @@ class HttpAgentAdapter:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id, "operation": "act", "virtual_time": virtual_time, "body": {"task_id": task_id, "goal": goal, "constraints": constraints, "tools": tools, "continuation": continuation}}
         body = _check_response(self._request("act", req), req)
         return ActStep(**body["result"])
+
+    def _lifecycle(self, operation: str, *, run_id: str, request_id: str, virtual_time: str | None, **body) -> dict[str, Any]:
+        req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": request_id, "run_id": run_id,
+               "operation": operation, "virtual_time": virtual_time, "body": body}
+        return _check_response(self._request(operation, req), req)
+
+    def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('maintain', run_id=run_id, request_id=request_id, virtual_time=virtual_time, budget=budget)
+
+    def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
 
     def close(self, *, run_id: str | None = None) -> None:
         if not run_id:

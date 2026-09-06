@@ -52,6 +52,8 @@ class ScenarioBuilder:
         capabilities: list[str],
         start_time: str = "2026-01-01T09:00:00Z",
         instance_index: int = 0,
+        session_boundary: bool = False,
+        parameters: dict[str, Any] | None = None,
     ) -> None:
         self.program_id = program_id
         self.program_version = program_version
@@ -59,11 +61,18 @@ class ScenarioBuilder:
         self.rung = rung
         self.interference_count = interference_count
         self.rng = random.Random(stable_seed(program_id, program_version, seed))
+        self.surface_rng = random.Random(stable_seed(program_id, program_version, seed, "surface"))
+        self.clock_rng = random.Random(stable_seed(program_id, program_version, seed, "clock"))
+        self.interference_hours = 24.0
         self.title = title
         self.suite = suite
         self.dimensions = list(dimensions)
         self.dimension_weights = dict(dimension_weights)
         self.capabilities = list(capabilities)
+        self.session_boundary = session_boundary
+        self.parameters = dict(parameters or {})
+        if session_boundary:
+            self.capabilities.append('session_boundary')
         self.model = WorldModel()
         self.actors: dict[str, dict[str, Any]] = {}
         self.events: list[dict[str, Any]] = []
@@ -81,7 +90,7 @@ class ScenarioBuilder:
     # ------------------------------------------------------------ primitives
     def _next(self, stage: str, minutes: tuple[int, int] = (5, 240)) -> tuple[int, str]:
         self._seq += 1
-        self._clock += timedelta(minutes=self.rng.randint(*minutes))
+        self._clock += timedelta(minutes=self.clock_rng.randint(*minutes) if minutes != (0, 0) else 0)
         return self._seq, self._clock.isoformat().replace("+00:00", "Z")
 
     def actor(self, actor_id: str, name: str, kind: str = "person", authority: float = 0.5) -> str:
@@ -107,12 +116,12 @@ class ScenarioBuilder:
 
     def say(self, event_id: str, *, source: str, subject: str, attribute: str, value: str | None, kind: str = "state",
             truth_bearing: bool | None = None, supersedes: str | None = None, stage: str = "past",
-            subject_name: str | None = None) -> str:
+            subject_name: str | None = None, minutes: tuple[int, int] = (5, 240)) -> str:
         spec = ATTRIBUTES[attribute]
         first_person = source == subject
         name = subject_name or self.actors.get(subject, {}).get("display_name") or subject
-        text, index = realize(spec, kind, value or "", subject_name=name, first_person=first_person, rng=self.rng)
-        self.event(event_id, stage=stage, etype="interaction", actor=source, content=text)
+        text, index = realize(spec, kind, value or "", subject_name=name, first_person=first_person, rng=self.surface_rng)
+        self.event(event_id, stage=stage, etype="interaction", actor=source, content=text, minutes=minutes)
         tb = truth_bearing if truth_bearing is not None else (first_person and kind in ("state", "update", "correction"))
         self.model.add(Assertion(event_id, self._seq, source, subject, attribute, value if kind != "retraction" else None, kind, tb, supersedes))
         self._realization[event_id] = {"spec": attribute, "kind": kind, "first_person": first_person, "name": name, "index": index}
@@ -144,24 +153,32 @@ class ScenarioBuilder:
         for actor_id, actor_name in other_actors:
             if actor_id not in self.actors:
                 self.actor(actor_id, actor_name)
-        planned = interf.plan(self.rng, count, subject_id=subject_id, subject_name=subject_name, spec=spec,
+        noise_rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "interference", prefix))
+        planned = interf.plan(noise_rng, count, subject_id=subject_id, subject_name=subject_name, spec=spec,
                               exclude_values=exclude_values, other_actors=other_actors, mix=mix)
+        noise_start = self._clock
         ids = []
         for i, item in enumerate(planned, start=1):
             eid = f"{prefix}-{i:04d}"
-            self.event(eid, stage="interference", etype="distractor", actor=item.actor, content=item.content, minutes=(2, 90))
+            self._clock = noise_start + timedelta(hours=self.interference_hours * i / max(1, count))
+            self.event(eid, stage="interference", etype="distractor", actor=item.actor, content=item.content, minutes=(0, 0))
             if item.assertion:
                 a = item.assertion
                 self.model.add(Assertion(eid, self._seq, a["source"], a["subject"], a["attribute"], a["value"], a["kind"], a["truth_bearing"]))
             ids.append(eid)
+        self._clock = noise_start + timedelta(hours=self.interference_hours)
         return ids
 
     def checkpoint(self, event_id: str = "cp") -> str:
         return self.event(event_id, stage="pre_probe", etype="checkpoint", actor=None, visibility="harness", minutes=(1, 5))
 
-    def maintenance_window(self, event_id: str, budget: str = "PT1H") -> str:
-        return self.event(event_id, stage="consolidation", etype="maintenance_window", actor=None,
-                          payload={"budget": budget}, visibility="agent")
+    def maintenance_window(self, event_id: str, budget: str = "PT1H", *, minutes: tuple[int, int] = (5, 240)) -> str:
+        result = self.event(event_id, stage="consolidation", etype="maintenance_window", actor=None,
+                            payload={"budget": budget}, visibility="agent", minutes=minutes)
+        if self.session_boundary:
+            self.event(event_id + '-session', stage='consolidation', etype='session_boundary', actor=None,
+                       content='A new session begins. Persistent memory remains available; clear the previous working conversation.', minutes=minutes)
+        return result
 
     # ---------------------------------------------------------------- probes
     def probe(self, probe_id: str, *, query: dict[str, Any], prompt: str, kind: str, dimensions: list[str],
@@ -189,7 +206,7 @@ class ScenarioBuilder:
                                 "max_agent_turns": max_agent_turns}
         if oracle:
             body["oracle"] = oracle
-            body["evaluators"] = ["eval-action"]
+            body["evaluators"] = ["eval-action" if oracle.get('trajectory_requirements') else "eval-world"]
         return self.event(event_id, stage=stage, etype="task", actor=actor, extra={"task": body})
 
     def raw_probe(self, probe: dict[str, Any]) -> str:
@@ -247,7 +264,7 @@ class ScenarioBuilder:
             elif x.truth_bearing and x.kind in ("state", "update", "observation"):
                 put(x.value, "stale_memory_adoption")
         for x in rows:
-            if (x.subject, x.attribute) == (subject, attribute) and x.kind == "contradiction":
+            if (x.subject, x.attribute) == (subject, attribute) and x.asserts() and not x.truth_bearing:
                 put(x.value, "authority_confusion")
         for x in rows:
             if (x.subject, x.attribute) == (subject, attribute) and x.kind in ("question", "hypothetical"):
@@ -261,6 +278,28 @@ class ScenarioBuilder:
             if "query" not in p:
                 continue
             p["oracle"], results[p["id"]] = self._oracle(self.model, p)
+
+        # Matched added observations separate semantic harm from added length.
+        if self.probes and self.events:
+            anchor = next((e['id'] for e in self.events if e['id'] == 'cp'), self.events[-1]['id'])
+            actor = next(a for a in self.actors if self.actors[a].get('kind') == 'person')
+            question = 'Should every family use an empty recipe from now on?'
+            for p in self.probes:
+                query = p.get('query') or {}
+                spec = ATTRIBUTES.get(query.get('attribute'))
+                if spec and results.get(p['id']) and results[p['id']].kind == 'value':
+                    alternatives = [v for v in spec.values if v != results[p['id']].value]
+                    if alternatives:
+                        question = f'Is my {spec.label} {alternatives[0]}?'
+                        actor = query['subject'] if query.get('subject') in self.actors else actor
+                        break
+            placebo = ' '.join(['Perhaps'] * (len(question.split()) - 1) + ['weather?'])
+            for aid, kind, content in [('a-placebo', 'irrelevant_memory', placebo), ('a-questioning', 'harmful_memory', question)]:
+                self.ablations.append({'id': aid, 'kind': kind, 'probes': [p['id'] for p in self.probes],
+                    'method': 'replay_with_injections', 'expected_effect': 'neutral' if aid == 'a-placebo' else 'resist',
+                    **({'reference_ablation': 'a-placebo'} if aid == 'a-questioning' else {}),
+                    'injections': [{'id': 'extra-observation', 'stage': 'interference', 'type': 'interaction',
+                                    'at': {'after_event': anchor}, 'visibility': 'agent', 'actor': actor, 'content': content}]})
 
         # Relevant-memory ablations from support sets, with a leak proof.
         for p in self.probes:
@@ -300,11 +339,10 @@ class ScenarioBuilder:
             # Prefer a value nothing in the timeline mentioned; at long distances the
             # interference block may have mentioned every pool value, and a mentioned
             # (never asserted) value is still a valid twin: only the pivot changes.
-            pool = [v for v in spec.values if v not in seen and v != results[p["id"]].value] \
-                or [v for v in spec.values if v != results[p["id"]].value]
+            pool = [v for v in spec.values if v != results[p["id"]].value]
             if not pool:
                 continue
-            alt = self.rng.choice(pool)
+            alt = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "twin", pivot)).choice(pool)
             twin = self.model.with_value(pivot, alt)
             changed: dict[str, dict[str, Any]] = {}
             for q in self.probes:
@@ -324,7 +362,9 @@ class ScenarioBuilder:
                     changed[q["id"]] = oracle_cf
             if p["id"] not in changed:
                 continue
-            if "tool" in realization:
+            if 'record_payload' in realization:
+                replacement = {'payload': {**realization['record_payload'], 'value': alt}}
+            elif "tool" in realization:
                 replacement: dict[str, Any] = {"payload": tool_payload(realization["tool"], realization["subject"], attribute, alt)}
             else:
                 text, _ = realize(spec, realization["kind"], alt, subject_name=realization["name"],
@@ -403,7 +443,7 @@ class ScenarioBuilder:
 
 
 def template_id_for(program_id: str) -> str:
-    return "MIB-GEN-" + program_id.replace("mib.", "").replace(".", "-").upper()
+    return "MIB-GEN-" + program_id.replace("mib.", "").replace(".", "-").replace('_', '-').upper()
 
 
 def probe_prompt(attribute: str, which: str, *, subject_name: str, first_person: bool, source_name: str | None = None) -> str:

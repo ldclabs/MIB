@@ -170,77 +170,13 @@ Privacy Boundaries
 
 ## Memory Must Make a Causal Difference
 
-MIB treats retrieval quality as useful but insufficient.
+MIB reports capability and causal evidence separately. Relevant-history ablation asks whether withholding the past changes later performance. Content twins ask whether answers follow changed historical content. Policy twins change a latent workflow convention consistently in acquisition feedback and future verification; they test learned behavior under matched rule worlds.
 
-A central evaluation pattern is paired intervention:
+The revised development Profiles require evidence in **every weighted dimension**. The gate retains eligible/total probe counts and independent Instance counts. By default each dimension needs five eligible Instances, 50% probe coverage, and a 95% Wilson lower bound of at least 0.5 on Instance tracking success. Missing evidence remains unassessable.
 
-```text
-Full Memory
-    vs
-Relevant Memory Ablated
-```
+Diagnostics include Memory Benefit, Content Tracking, matched-control Memory Harm, Irrelevant Stability, Negative Transfer, Consolidation Benefit, first-attempt behavior, and learning curves. Full-run memory-related error patterns are descriptive; an error label alone does not prove memory caused the error.
 
-If the relevant memory truly matters, removing it should reduce performance.
-
-MIB also tests the opposite:
-
-```text
-Full Memory
-    vs
-Irrelevant Memory Ablated
-```
-
-Removing irrelevant history should leave performance approximately stable.
-
-And for stale or harmful memories:
-
-```text
-Clean / Current Condition
-    vs
-Harmful or Stale Memory Condition
-```
-
-A capable memory system should resist avoidable memory-induced errors.
-
-The adversarial scenario family (`MIB-ADV-*`) pushes the harmful memory condition to its purest form: the injected events consist **solely of questions** that presuppose an unestablished habit, date, or procedure. Because questions assert nothing, oracle answers remain identical across both conditions — any paired performance drop reveals that questioning alone installed unverified facts into memory, measured directly via the standard Memory Harm and Harm Resistance metrics.
-
-Removal shows that *something* in an event mattered. v0.2 adds the stronger test —
-**counterfactual content**: the same Instance is replayed with one event saying something
-else, and the correct answer changes with it.
-
-```text
-Full Memory
-    vs
-Same past, one event's content swapped
-```
-
-An Agent whose answers follow the swapped content was using memory. An Agent whose
-answers stay the same, however high its score, was answering from priors.
-
-This produces diagnostics such as:
-
-```text
-Memory Benefit
-Headroom-Normalized Memory Benefit
-Content Tracking Rate          ← gates memory dependence
-Stale Adoption Rate
-Irrelevant Memory Stability
-Memory Harm
-Harm Resistance
-Net Memory Gain
-Error Recurrence Rate          (lived failures, see below)
-Consolidation Benefit          (Agents that implement maintain)
-Negative Transfer / Rate       (the standardized control on a non-matching task)
-Learning Gain / Curve Area     (lived trials)
-Authority Confusion, Historical Fidelity, Source Attribution, Self-Rule Continuity
-```
-
-The main **MIB Score** measures absolute memory-enabled capability at a fixed interference
-distance. Causal diagnostics are reported alongside it rather than being mixed into an
-opaque score, and a Profile's **memory dependence** floor (content tracking rate ≥ 0.5 by
-default) decides whether that score may be called official. Negative Transfer is now
-measured by its standardized control: the non-matching task with the skill memory
-withheld, compared with the same task with it (`docs/MIB-Specification.md` §7.8).
+A retention curve and a content swap establish dependence on historical information under the declared conditions. They do not independently prove use of a particular persistent-memory mechanism. Raw history remains a legitimate memory architecture. The Session Profile separately exercises a working-context boundary, and its implementation assumptions are reported explicitly.
 
 ---
 
@@ -347,36 +283,30 @@ and:
 
 ## Benchmark Structure
 
-MIB v0.2 does not ship hand-written Scenarios. It ships **Programs**: deterministic
-generators `(seed, rung) → Scenario Instance` over an internal, bitemporal, per-source
-world model. Answers, relevant-memory ablation sets, counterfactual twins, and leak proofs
-are computed from the model, never authored.
+Generated development packs are built from deterministic **Programs** over a world model. Query answers, workflow criteria, lifecycle obligations, and interventions are derived from the generated instance. Independent tests and semantic checks validate those derivations; a computed oracle is not a correctness proof.
 
-```text
-mib.recall.v1        a fact and a two-hop chain with a decoy
-mib.temporal.v1      one or two updates: current, previous, original value
-mib.epistemic.v1     correction, contradiction with authority, tool resolution, unknown
-mib.experience.v1    a deployment the Agent itself runs and breaks, then a related one
-mib.skill.v1         a learned precondition: apply where it fits, withhold where it does not
-mib.prospective.v1   a deferred commitment, a near-trigger, the real trigger, a self-rule under pressure
-mib.forgetting.v1    a retracted fact must stay unused; its neighbour must stay known
-```
+Seven base Programs cover recall, temporal updates, epistemic distinctions, learned workflows, applicability, prospective/self rules, and operational withdrawal. Seven additional Programs cover:
 
-Every Program is executed on a **distance ladder** — the same Instance with 0, 20, and
-100 generated interference events between the past and the Probes (0 / 100 / 1000 in the
-MIB-M development profile) — so a result is a retention curve, not a point. Distance is
-recorded in events, tokens, and virtual hours. The capability score is read at the
-Profile's canonical rung; every rung feeds the curve. Every Program also consolidates
-once (a maintenance window with a paired no-maintenance control), and every lived task
-can carry a trial oracle, so learning curves come from what the Agent actually did.
+- useful facts interleaved with noise, including facts arriving after maintenance;
+- valid-time history viewed before and after delayed corrections;
+- scoped authority with identical claim wording and randomized source order;
+- revised workflows and composition of learned recipes;
+- cancelled commitments and fresh authorization after withdrawal.
 
-A pack is `programs × seeds × rungs`. Programs, surface pools, and the generator are
-public; official evaluation uses evaluator-secret seeds, so participants can inspect every
-construction and still never see an official Instance.
+A pack is `Programs × seeds × rungs`. Rungs preserve future requests and the virtual span while changing interference count. Noise is sampled independently of the correct value, so the value missing from a public pool cannot reveal the answer. Participant-visible identifiers carry no relevance or test-role labels.
 
-The 24 static Public Dev Templates of v0.1 (and the hidden v0.1 packs) remain executable
-as a superset and are useful for integration and regression testing. They are no longer
-the benchmark.
+| Profile | Programs | Purpose |
+|---|---:|---|
+| `MIB-Core-0.2-Dev` | 7 | Core development, 0 / 20 / 100 interference events |
+| `MIB-Core-0.2-Dev-M` | 7 | 0 / 100 / 1000 events, BCa intervals |
+| `MIB-Core-0.2-Expanded-Dev` | 14 | Two semantic mechanisms per dimension |
+| `MIB-Core-0.2-Session-Dev` | 14 | Explicit session-boundary protocol |
+| `MIB-Core-0.2-Load-Dev` | 14 | 64 useful facts in the interleaved recall Program |
+| `MIB-Core-0.2-Calibration-Dev` | 14 | Fixed-model calibration at every rung |
+
+`interference_tokens` is retained as a legacy field name for **whitespace words**, not tokenizer tokens. No context-overflow claim follows from it. Runner telemetry measures serialized bytes and time; model telemetry records supplied token usage separately.
+
+All these Profiles are developmental. The 24 static v0.1 public Templates remain available for integration and regression tests. Different Profile/revision scores must not be ranked together.
 
 ---
 
@@ -521,6 +451,8 @@ Track A and Track B must not share one ranking.
 
 ## Same-Model Calibration
 
+The generated harness covers every Program/rung, persists lived task transcripts, and supports observation-time decisions and maintenance. Optional recent-window and privileged oracle-supported references are reported separately and never enter the core score or release gate. Ready configurations are in `examples/same-model/same-model-generated.*.json`.
+
 Before freezing an official leaderboard pack, MIB uses a Same-Model Empirical Baseline Harness.
 
 The experimental lock keeps constant:
@@ -556,79 +488,30 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB v0.2 (implementation 0.9.0) currently includes:
+MIB uses scenario format v0.2, measurement revision **0.3.0**, and implementation **0.10.0**.
 
-```text
-✓ Benchmark architecture
-✓ World model: bitemporal, per-source, computed oracles
-✓ Seven generated Programs on a three-rung distance ladder (MIB-S and MIB-M profiles)
-✓ Support sets, leak proofs, counterfactual twins (all derived)
-✓ Lived tasks and trials (experience the Agent creates itself; learning curves)
-✓ Prospective memory scored from spontaneous emissions
-✓ Structured answers: value / status / confidence, deterministic parser
-✓ Scoring model: capability at the canonical rung + retention curve
-✓ Causal diagnostics + memory-dependence gate
-✓ Standardized Negative Transfer control
-✓ Full-run behaviour diagnostics (error recurrence, authority confusion,
-  historical fidelity, source attribution, self-rule continuity, memory-induced errors)
-✓ Consolidation windows with a paired no-maintenance control
-✓ Percentile and BCa intervals; runner-measured efficiency block
-✓ Report schema, score verification, Capability Card
+The September design-review corrections are implemented:
 
-✓ Reference Runner (respond / act / observe_only, maintain hook)
-✓ Tool-loop World Simulator
-✓ Causal, counterfactual, and no-maintenance replay
-✓ Pack-level aggregation
-✓ Hierarchical bootstrap (Instance units for generated packs)
+- forbidden disclosure fails even inside an abstention or an auxiliary output field;
+- required scoring fields keep a fixed denominator;
+- participant IDs are opaque; prospective scoring checks the complete declared lifecycle;
+- noise no longer reveals an answer through exclusion from a public value pool;
+- workflow recipes are instance-specific, learned through actual feedback, and scored on the first attempt and eventual completion;
+- content/policy twins cover all seven dimensions, with counts and eligibility reported per dimension;
+- scoring, paired comparison, and policy verification share the same aggregation;
+- task experience persists across task completion in the fixed-model memory conditions;
+- external adapters forward maintenance and session boundaries;
+- generated hidden evaluation uses secret seed aliases and verifies its Profile configuration;
+- chained corrections, validity/observation time, scoped authority, and dependent withdrawal have independent checks;
+- reports bind score-relevant policy and executable sources, and verify eligibility, retention, and intervals.
 
-✓ External stdio / HTTP Agent Adapter
-✓ Hidden evaluation infrastructure
-✓ Submission sandbox
-✓ Evaluation service
-✓ Signed jobs and signed results
-✓ Leaderboard + paired comparison
+The follow-up review of `673631a` is also resolved: interleaved noise preserves every tested actor's facts; bootstrap verification retains ablation tolerances; payload-only reminders work through the Runner and HTTP; arbitrary payload metadata cannot crash lifecycle scoring; disclosure checks distinguish answer values from valid rubric metadata; and Program ladder overrides agree across public, hidden, and calibration execution.
 
-✓ Six fixture Agents that order as the design predicts
-  StructuredMemoryAgent   flat retention, content tracking 1.0
-  WindowMemoryAgent       decays along the ladder
-  ConsolidatingAgent      the window fixture whose maintain() pays off
-  RecencyAgent            stale adoption, authority confusion, cannot forget
-  OvergeneralizingAgent   negative transfer on the non-matching task
-  NoMemoryAgent           low score, dependence not assessable
-  (plumbing only: they establish nothing about difficulty)
+The extended same-model smoke run is an engineering check. **Real fixed-model calibration, evidence-based admission thresholds, and an official generated leaderboard freeze remain pending.** A fixture's perfect score establishes neither model difficulty nor broad memory competence.
 
-✓ 24 static v0.1 Public Dev Templates, still executable as a superset
+The hosted external-Agent service accepts Track B. Track A uses the evaluator-owned same-model harness. Linux process isolation and evaluator-private packs remain environmental requirements for their respective tests.
 
-✓ Transfer Intelligence diagnostics
-  supplemental only: no MIB Score changes
-
-○ MIB-R Reality Track
-  prototype; its own result family, no official score,
-  never ranked against MIB-Core
-
-○ Real fixed-model calibration at every rung
-  pending
-
-○ MIB-L ladders whose rungs exceed any working context
-  pending (MIB-M reaches 1,000 interference events, about 8k tokens)
-
-○ MIB v0.2 leaderboard pack freeze
-  pending empirical calibration
-```
-
-What v0.2 can and cannot claim today:
-
-- Every shipped Program is inside a modern context window: the MIB-S ladder
-  tops out at 100 interference events, MIB-M at 1,000 (about 8k tokens). The ladder and the counterfactual
-  swap together identify *memory* rather than *reading* — an Agent must retain
-  the content at a distance and must follow it when it changes — but a
-  full-context model can still pass rung 2 by reading. Rungs beyond the
-  working context are what turn the retention curve into a memory-system
-  comparison, and they are pending.
-- The fixture Agents are keyed to the generated language. Their ordering
-  (Structured > Window > NoMemory; Recency shows stale adoption) exercises
-  the Runner and the scoring; it is not a baseline.
-- No real model has been calibrated yet.
+See [the specification](docs/MIB-Specification.md) and [the review resolution ledger](docs/harness/MIB-v0.2-Review-Resolution.md) for exact semantics, verification evidence, and remaining empirical work. Earlier example artifacts retain their original version identity; new and old measurement revisions are not interchangeable.
 
 ---
 
@@ -685,7 +568,7 @@ MIB/
 │   │                                      queries, support sets, leak proofs
 │   ├── generate/                          Programs, surface pools, interference
 │   │                                      ladder, instance builder, registry
-│   ├── agents/v2.py                       the four v0.2 fixture Agents
+│   ├── agents/v2.py                       the v0.2 fixture Agents
 │   └── experimental/                      Transfer Intelligence, Memory Adapter,
 │                                          MIB-R (never enters the MIB Score)
 ├── tests/
@@ -978,7 +861,7 @@ MIB is released under the **GNU General Public License v3.0**. The full text is 
 
 ## Citation
 
-A formal paper will be added when the v0.1 benchmark pack is frozen. Until then,
+A formal paper will be added when the generated benchmark pack passes empirical calibration and is frozen. Until then,
 [CITATION.cff](CITATION.cff) carries the machine-readable software citation and
 GitHub's "Cite this repository" entry resolves to it.
 

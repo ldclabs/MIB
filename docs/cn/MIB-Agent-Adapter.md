@@ -1,5 +1,10 @@
 # MIB Agent Adapter 协议规范
 
+> 参考实现 0.10.0：`reset`、`observe`、`respond`、`act`、`maintain`、`session_boundary` 与 `close` 均为可执行操作。本文档后续讨论的可选快照/检查设计并非 Core 的强制要求。参赛者可见的事件/任务/交互 ID 均为不透明标识。修订后的输出与生命周期评分由 `MIB-Specification.md` 修订版 0.3.0 定义。提醒发射可以仅包含结构化载荷（payload）；缺失的 content 保持缺省。非对象载荷元数据不会导致生命周期评分异常崩溃，且规范的标准文本提醒独立于该元数据判定为有效。
+
+参考 `maintain` 操作接受类似 `PT1H` 的虚拟时长字符串；这并不是实测的挂钟耗时或存储上限。HTTP 与 stdio 适配器均会转发该操作。`session_boundary` 携带常规的请求/运行 ID 与虚拟时间并附带空请求体，返回 `{"accepted": true}`。它在清除工作任务/对话上下文的同时保留持久记忆。要求此操作的 Profile 必须显式声明 `session_boundary: true` 能力。固定模型包装器自行强制执行其瞬态边界；任意集成的 Agent 则声明其自身实现。
+
+
 ## MIB Runner 与记忆赋能智能体之间的传输中立通信接口
 
 **版本：** 0.1-draft
@@ -1301,7 +1306,7 @@ maintenance = true
 
 Runner 会在时间线的对应位置显式调用 `maintain()` 原语。
 
-参考 Runner（0.9.0）在 Agent 暴露该操作时，会在每个 `maintenance_window` 事件处调用 `maintain`，传递窗口的 `payload.budget` 与虚拟时间，并在所有情况下均将该窗口作为 `system_event` 观察事件投递。`no_maintenance` 消融重放相同时间线但扣留整理窗口；二者配对的差异报告为 `consolidation_benefit` 巩固收益（`MIB-Specification.md` §7.2）。`maintain` 抛出的任何异常仅作为运行警告记录，绝不会导致运行失败。
+参考 Runner（0.10.0）在 Agent 暴露该操作时，会在每个 `maintenance_window` 事件处调用 `maintain`，传递窗口的 `payload.budget` 与虚拟时间，并在所有情况下均将该窗口作为 `system_event` 观察事件投递。`no_maintenance` 消融重放相同时间线但扣留整理窗口；二者配对的差异报告为 `consolidation_benefit` 巩固收益（`MIB-Specification.md` §7.2）。`maintain` 抛出的任何异常仅作为运行警告记录，绝不会导致运行失败。
 
 ---
 

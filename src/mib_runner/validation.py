@@ -22,11 +22,11 @@ from .experimental.transfer import (
 RUNNER_EVALUATOR_TYPES = {"set_match", "structured", "world_state", "trajectory", "composite", "emission"}
 RUNNER_TRIGGER_KINDS = {"after_event"}
 RUNNER_DELIVERY_MODES = {"respond", "act", "observe_only"}
-RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections", "swap_parameter"}
-RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1"}
+RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}
+RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1", "mib.workflow.v1"}
 RUNNER_EVENT_TYPES = {
     "interaction", "observation", "tool_result", "distractor", "document", "feedback",
-    "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update", "task",
+    "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update", "task", "session_boundary",
 }
 RUNNER_NORMALIZATIONS = {"none", "casefold_trim", "trim", "casefold_trim_collapse_ws", "answer_normalized"}
 RUNNER_MATCH_MODES = {"exact", "contains"}
@@ -119,6 +119,13 @@ def validate_scenario(
                 errors.append(f"semantic:{p.get('id')}: observe_only Probes need oracle.expected_emission")
             if any(e.get("type") != "emission" for e in evaluators if e.get("id") in p.get("evaluators", [])):
                 errors.append(f"semantic:{p.get('id')}: observe_only Probes are scored by emission evaluators only")
+            emission = oracle.get('expected_emission') or {}
+            if emission.get('lifecycle'):
+                if emission.get('start_after') not in timeline_ids:
+                    errors.append(f"semantic:{p.get('id')}: lifecycle start does not resolve")
+                for expected in emission.get('expected') or []:
+                    if expected.get('after_event') not in timeline_ids | probe_ids:
+                        errors.append(f"semantic:{p.get('id')}: lifecycle emission trigger does not resolve")
         for assertion in oracle.get("world_assertions") or []:
             if assertion.get("operator") not in RUNNER_WORLD_OPERATORS:
                 errors.append(f"unsupported:{p.get('id')}: world assertion operator {assertion.get('operator')!r}")
@@ -168,6 +175,36 @@ def validate_scenario(
                 warnings.append(f"semantic:{e.get('id')}: composite weights sum to {total}, Runner will normalize")
 
     for a in ablations:
+        if a.get('reference_ablation'):
+            reference = next((x for x in ablations if x.get('id') == a['reference_ablation']), None)
+            if reference is None or reference.get('kind') != 'irrelevant_memory' or set(reference.get('probes', [])) != set(a.get('probes', [])):
+                errors.append('semantic: matched harm controls require an irrelevant-memory reference on the same probes')
+            elif a.get('kind') not in {'harmful_memory', 'stale_memory'}:
+                errors.append('semantic: alternate reference is only supported for harm controls')
+        if a.get('method') == 'replay_policy_twin':
+            if a.get('kind') != 'counterfactual_policy':
+                errors.append('semantic: policy-world interventions require counterfactual_policy kind')
+            updates = (a.get('counterfactual') or {}).get('world_updates') or {}
+            for eid in (a.get('targets') or {}).get('event_ids', []):
+                if eid not in updates:
+                    errors.append(f'semantic:{eid}: missing policy twin update')
+            for eid, rows in updates.items():
+                original = next((e for e in timeline if e.get('id') == eid), {})
+                if original.get('type') != 'world_update' or original.get('visibility') != 'harness':
+                    errors.append(f'semantic:{eid}: policy twin requires a harness world update')
+                for row in rows:
+                    if row.get('op') != 'set' or row.get('path') != '/workflow':
+                        errors.append(f'semantic:{eid}: only workflow policy state replacement is supported')
+                    baseline = next((u.get('value') for u in original.get('world_updates', []) if u.get('path') == '/workflow'), {})
+                    value = row.get('value') or {}
+                    if not isinstance(value, dict) or not isinstance(value.get('recipe'), list) or any(not isinstance(x, str) for x in value.get('recipe', [])):
+                        errors.append(f'semantic:{eid}: invalid workflow policy recipe')
+                    elif {k: v for k, v in baseline.items() if k != 'recipe'} != {k: v for k, v in value.items() if k != 'recipe'}:
+                        errors.append(f'semantic:{eid}: a policy twin may change the recipe only')
+            if any(pid not in (a.get('counterfactual') or {}).get('oracle', {}) for pid in a.get('probes', [])):
+                errors.append('semantic: policy twin needs an oracle for every scored probe')
+        elif (a.get('counterfactual') or {}).get('world_updates'):
+            errors.append('semantic: content-only interventions cannot change world state')
         for pid in a.get("probes", []):
             if pid not in probe_ids:
                 errors.append(f"semantic:{a.get('id')}: unresolved probe {pid}")

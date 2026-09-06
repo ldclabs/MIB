@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .model_clients import ModelClient
+from . import __version__
 from .types import ActStep, AgentOutput, Observation
 
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+.-]*")
@@ -245,6 +246,8 @@ class SameModelAgent:
         if self.max_memory_chars is not None:
             self.max_memory_chars = int(self.max_memory_chars)
         self.parse_retries = int(self.memory_config.get("parse_retries", 1))
+        self.observe_decisions = bool(self.memory_config.get('observe_decisions', False))
+        self.maintenance_decisions = bool(self.memory_config.get('maintenance_decisions', False))
         self.run_id = ""
         self.seed: int | str | None = None
         self.long_term: list[Observation] = []
@@ -260,7 +263,7 @@ class SameModelAgent:
             "protocol": "mib-agent/0.1",
             "implementation": {
                 "name": f"MIB Same-Model Agent {self.condition}",
-                "version": "0.1.0",
+                "version": __version__,
                 "vendor": "MIB",
             },
             "track_support": ["memory_system"],
@@ -268,6 +271,8 @@ class SameModelAgent:
                 "observe": True, "respond": True, "act": True,
                 "runner_managed_tools": True, "virtual_time": True,
                 "seedable": True, "structured_output": True,
+                "spontaneous_emissions": self.observe_decisions, "maintenance": self.maintenance_decisions,
+                "session_boundary": True,
             },
             "state": {"run_isolation": "hard", "request_idempotency": True},
             "extensions": {
@@ -284,12 +289,29 @@ class SameModelAgent:
         self.run_id = run_id; self.seed = seed
         self.long_term = []; self.transient = []; self.active_task = None
         self.seen_observe = set(); self.response_cache = {}; self.act_cache = {}; self.call_counter = 0
+        self.observe_cache = {}; self.maintenance_cache = {}; self.boundary_requests = set()
         return {"accepted": True}
+
+    def _finish_task(self) -> None:
+        if self.condition != 'B0' and self.transient:
+            self.long_term.extend(self.transient)
+        self.transient = []
+        self.active_task = None
+
+    def _record_step(self, text: str, virtual_time: str | None = None) -> None:
+        self.transient.append(Observation(observation_id=f'action_{self.call_counter}_{len(self.transient)}', type='action', content=text, virtual_time=virtual_time))
+
+    def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        if request_id not in self.boundary_requests:
+            self._finish_task()
+            self.response_cache = {}; self.act_cache = {}
+            self.boundary_requests.add(request_id)
+        return {'accepted': True, 'transient_cleared': True, 'persistent_observations': len(self.long_term)}
 
     def observe(self, *, run_id: str, request_id: str, observation: Observation) -> dict[str, Any]:
         key = (run_id, request_id)
         if key in self.seen_observe:
-            return {"accepted": True, "emissions": []}
+            return self.observe_cache.get(key, {"accepted": True, "emissions": []})
         self.seen_observe.add(key)
         # Tool results produced after an ACTION Probe begins are current-task state,
         # not long-term memory. Past timeline tool results arrive before active_task.
@@ -297,10 +319,38 @@ class SameModelAgent:
             self.transient.append(observation)
         elif self.condition != "B0":
             self.long_term.append(observation)
-        return {"accepted": True, "emissions": []}
+        emissions = []
+        if self.observe_decisions:
+            visible = {k: v for k, v in asdict(observation).items() if k not in {'observation_id', 'tool_call_id'}}
+            opportunity = {k: visible.get(k) for k in ['type', 'virtual_time', 'actor', 'tool']}
+            obj = self._call(mode='OBSERVE', body={'observation': visible}, memory_query=observation_text(observation),
+                             seed_key='observe:' + _sha(_stable_json(opportunity)))
+            emissions = obj.get('emissions', [])
+            if not isinstance(emissions, list) or any(not isinstance(e, dict) for e in emissions):
+                raise ValueError('observe must return an emissions array of objects')
+        result = {'accepted': True, 'emissions': emissions}
+        self.observe_cache[key] = result
+        return result
+
+    def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
+        key = (run_id, request_id)
+        if key in self.maintenance_cache:
+            return self.maintenance_cache[key]
+        self._finish_task()
+        if not self.maintenance_decisions:
+            return {'accepted': False, 'reason': 'maintenance disabled by experiment policy'}
+        obj = self._call(mode='MAINTENANCE', body={'budget': budget, 'virtual_time': virtual_time}, memory_query='', seed_key='maintenance')
+        summary = obj.get('memory_summary')
+        if summary and self.condition != 'B0':
+            self.long_term.append(Observation(observation_id=f'maintenance_{request_id}', type='document', content=str(summary), virtual_time=virtual_time))
+        result = {'accepted': True}
+        self.maintenance_cache[key] = result
+        return result
 
     def _memory_context(self, query: str) -> tuple[str, bool, int]:
-        selected, truncated = self.policy.select(self.long_term, query=query, limit_chars=self.max_memory_chars)
+        recent = self.memory_config.get('recent_window')
+        available = self.long_term[-int(recent):] if recent else self.long_term
+        selected, truncated = self.policy.select(available, query=query, limit_chars=self.max_memory_chars)
         lines = []
         for i, o in enumerate(selected, 1):
             lines.append(f"[{i}] {observation_text(o)}")
@@ -402,9 +452,10 @@ class SameModelAgent:
         key = (run_id, request_id)
         if key in self.response_cache:
             return self.response_cache[key]
-        self.active_task = None; self.transient = []
+        self._finish_task()
         query = str(input_data.get("content") or input_data.get("goal") or "")
-        obj = self._call(mode="RESPONSE", body={"input": input_data, "virtual_time": virtual_time}, memory_query=query, seed_key=f"respond:{interaction_id}")
+        body = {"input": input_data, "virtual_time": virtual_time}
+        obj = self._call(mode="RESPONSE", body=body, memory_query=query, seed_key='respond:' + _sha(_stable_json(body)))
         typ = obj.get("type")
         if typ not in {"message", "structured", "abstention"}:
             raise ValueError(f"invalid response type: {typ!r}")
@@ -419,14 +470,15 @@ class SameModelAgent:
         if key in self.act_cache:
             return self.act_cache[key]
         if not continuation:
-            self.active_task = task_id; self.transient = []
+            self._finish_task()
+            self.active_task = task_id
+            self._record_step(f'Task: {goal or ""}', virtual_time)
             self._active_goal = goal or ""
             self._active_constraints = list(constraints)
             self._active_tools = list(tools)
             self._active_turn = 0
         query = getattr(self, "_active_goal", "") + " " + " ".join(getattr(self, "_active_constraints", []))
         body = {
-            "task_id": task_id,
             "goal": getattr(self, "_active_goal", goal or ""),
             "constraints": getattr(self, "_active_constraints", constraints),
             "tools": getattr(self, "_active_tools", tools),
@@ -435,16 +487,17 @@ class SameModelAgent:
         }
         turn_index = int(getattr(self, "_active_turn", 0))
         try:
-            obj = self._call(mode="ACTION", body=body, memory_query=query, seed_key=f"act:{task_id}:{turn_index}")
+            opportunity = _sha(_stable_json({k: body[k] for k in ['goal', 'constraints', 'virtual_time']}))
+            obj = self._call(mode="ACTION", body=body, memory_query=query, seed_key=f"act:{opportunity}:{turn_index}")
         except Exception:
             # The Runner records an execution_failure and moves on.  Leaving
             # active_task set would route later timeline tool results into
             # transient state, dropping them from long-term memory for good.
-            self.active_task = None
-            self.transient = []
+            self._finish_task()
             raise
         self._active_turn = turn_index + 1
         typ = obj.get("type")
+        self._record_step(json.dumps(obj, ensure_ascii=False), virtual_time)
         if typ == "tool_call":
             out = ActStep(
                 type="tool_call",
@@ -453,7 +506,7 @@ class SameModelAgent:
             )
         elif typ in {"final", "abstention"}:
             out = ActStep(type=typ, content=obj.get("content"), value=obj.get("value"))
-            self.active_task = None
+            self._finish_task()
         else:
             raise ValueError(f"invalid action type: {typ!r}")
         self.act_cache[key] = out

@@ -72,6 +72,22 @@ class HiddenEvalStore:
     def load_templates(self, schema: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, str]]:
         templates = []
         aliases = {}
+        if self.manifest.get('programs'):
+            from .generate import generate_instance
+            from .generate.registry import resolve_program_config
+            for entry in self.manifest['programs']:
+                config = resolve_program_config(entry, self.manifest.get('ladder'))
+                boundary = bool(self.manifest.get('session_boundary'))
+                template = generate_instance(config['id'], 0, rung=0, ladder=config['ladder'],
+                                             session_boundary=boundary, parameters=config['params'])
+                template.pop('instantiation')
+                template['template'] = {'program': {**config, 'session_boundary': boundary}}
+                vr = validate_scenario(template, schema)
+                if not vr.valid:
+                    raise HiddenStoreError(f'generated template invalid: {vr.errors}')
+                templates.append(template)
+                aliases[template['id']] = entry['public_id']
+            return templates, aliases
         for entry in self.entries():
             template = json.loads(entry.path.read_text(encoding="utf-8"))
             vr = validate_scenario(template, schema)
@@ -95,6 +111,23 @@ class HiddenEvalStore:
         cycle_id: str,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, str]]:
         templates, aliases = self.load_templates(schema)
+        if self.manifest.get('programs'):
+            from .generate import generate_instance
+            from .generate.registry import resolve_program_config
+            instances = []
+            for entry in self.manifest['programs']:
+                config = resolve_program_config(entry, self.manifest.get('ladder'))
+                for index in range(int(entry['instances'])):
+                    seed, alias = _derived_seed(evaluation_key, cycle=cycle_id, template_id=entry['id'], index=index)
+                    for rung in range(len(config['ladder'])):
+                        inst = generate_instance(config['id'], seed, rung=rung, ladder=config['ladder'],
+                                                 session_boundary=bool(self.manifest.get('session_boundary')), parameters=config['params'])
+                        inst['instantiation']['seed'] = alias
+                        vr = validate_scenario(inst, schema)
+                        if not vr.valid:
+                            raise HiddenStoreError(f'generated hidden instance invalid: {vr.errors}')
+                        instances.append(inst)
+            return templates, instances, aliases
         by_id = {t["id"]: t for t in templates}
         instances: list[dict[str, Any]] = []
         entries_by_path = {e.path.resolve(): e for e in self.entries()}
@@ -143,6 +176,13 @@ class HiddenEvalStore:
         suites: dict[str, int] = {}
         hidden = []
         holdout_count = 0
+        if self.manifest.get('programs'):
+            from .generate import program_descriptor
+            for entry in self.manifest['programs']:
+                desc = program_descriptor(entry['id'])
+                hidden.append({'public_id': entry['public_id'], 'visibility': 'hidden_eval', 'suite': desc['suite'],
+                               'dimensions': desc['dimensions'], 'title': 'Generated evaluation family'})
+                suites[desc['suite']] = suites.get(desc['suite'], 0) + 1
         for entry in self.entries():
             raw = json.loads(entry.path.read_text(encoding="utf-8"))
             suite = raw.get("suite", "unknown")
@@ -203,6 +243,14 @@ def redact_report_for_public(report: dict[str, Any], *, aliases: dict[str, str],
     for t in out.get("aggregates", {}).get("templates", []):
         if t.get("template_id") in aliases:
             t["template_id"] = aliases[t["template_id"]]
+    for row in out.get('retention', []):
+        row['template_id'] = aliases.get(row['template_id'], row['template_id'])
+    policy = out.get('evaluation_policy')
+    if policy:
+        for row in policy['templates']:
+            row['id'] = aliases.get(row['id'], row['id'])
+        if policy['profile'].get('required_templates'):
+            policy['profile']['required_templates'] = [aliases.get(t, t) for t in policy['profile']['required_templates']]
 
     # Causal metric scoped identifiers.
     for m in out.get("causal_metrics", []):

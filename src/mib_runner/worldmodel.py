@@ -60,6 +60,9 @@ class Assertion:
     kind: str = "state"
     truth_bearing: bool = True
     supersedes: str | None = None
+    valid_from: int | None = None
+    valid_to: int | None = None
+    derived_from: tuple[str, ...] = ()
 
     def asserts(self) -> bool:
         return self.kind in ASSERTING_KINDS
@@ -115,6 +118,18 @@ class WorldModel:
             raise WorldModelError(f"unknown source {assertion.source!r}")
         if any(a.event_id == assertion.event_id for a in self.assertions):
             raise WorldModelError(f"duplicate assertion event id {assertion.event_id!r}")
+        if assertion.supersedes:
+            previous = self.assertion(assertion.supersedes)
+            if previous is None or previous.seq >= assertion.seq:
+                raise WorldModelError("supersedes must reference an earlier assertion")
+            if (previous.subject, previous.attribute) != (assertion.subject, assertion.attribute):
+                raise WorldModelError("supersedes must preserve subject and attribute")
+        if assertion.valid_to is not None and assertion.valid_to <= (assertion.valid_from if assertion.valid_from is not None else assertion.seq):
+            raise WorldModelError("valid_to must follow valid_from")
+        for parent in assertion.derived_from:
+            original = self.assertion(parent)
+            if original is None or original.seq >= assertion.seq:
+                raise WorldModelError('derived_from must reference an earlier assertion')
         self.assertions.append(assertion)
         return assertion
 
@@ -136,6 +151,23 @@ class WorldModel:
         return next((a for a in self.assertions if a.event_id == event_id), None)
 
     # ------------------------------------------------------------ evaluation
+    @staticmethod
+    def _withdrawn(rows: list[Assertion]) -> set[str]:
+        by_id = {a.event_id: a for a in rows}
+        gone = {a.supersedes for a in rows if a.kind == 'retraction' and a.supersedes}
+        changed = True
+        while changed:
+            before = set(gone)
+            for eid in list(gone):
+                assertion = by_id.get(eid)
+                if assertion and assertion.kind == 'correction' and assertion.supersedes:
+                    gone.add(assertion.supersedes)
+            for a in rows:
+                if (a.kind == 'correction' and a.supersedes in gone) or any(parent in gone for parent in a.derived_from):
+                    gone.add(a.event_id)
+            changed = gone != before
+        return gone
+
     def _live(self, exclude: Iterable[str] = ()) -> list[Assertion]:
         """Assertions still on the record: not withheld, and not withdrawn by a live retraction.
 
@@ -146,14 +178,14 @@ class WorldModel:
         """
         gone = set(exclude)
         rows = sorted((a for a in self.assertions if a.event_id not in gone), key=lambda a: a.seq)
-        retracted = {a.supersedes for a in rows if a.kind in RETRACTING_KINDS and a.supersedes}
+        retracted = self._withdrawn(rows)
         return [a for a in rows if a.event_id not in retracted and a.kind not in RETRACTING_KINDS]
 
     def retracted_values(self, subject: str, attribute: str, exclude: Iterable[str] = ()) -> list[Any]:
         """Values withdrawn by live retractions: forbidden in an Oracle, since using them is the failure."""
         gone = set(exclude)
         rows = [a for a in self.assertions if a.event_id not in gone]
-        retracted = {a.supersedes for a in rows if a.kind in RETRACTING_KINDS and a.supersedes}
+        retracted = self._withdrawn(rows)
         out: list[Any] = []
         for a in rows:
             if a.event_id in retracted and (a.subject, a.attribute) == (subject, attribute) and a.value is not None and a.value not in out:
@@ -169,18 +201,22 @@ class WorldModel:
         """
         live = self._live(exclude)
         live_ids = {a.event_id for a in live}
+        by_id = {a.event_id: a for a in live}
         corrected: dict[str, Any] = {}
         for a in live:
             if a.kind == "correction" and a.supersedes in live_ids:
-                corrected[a.supersedes] = a.value
+                parent = by_id[a.supersedes]
+                while parent.kind == "correction" and parent.supersedes in live_ids:
+                    parent = by_id[parent.supersedes]
+                corrected[parent.event_id] = a.value
         rows: list[tuple[int, Any, str]] = []
         for a in live:
             if (a.subject, a.attribute) != (subject, attribute) or not a.truth_bearing:
                 continue
             if a.kind == "correction" and a.supersedes in live_ids:
                 continue
-            rows.append((a.seq, corrected.get(a.event_id, a.value), a.event_id))
-        return rows
+            rows.append((a.valid_from if a.valid_from is not None else a.seq, corrected.get(a.event_id, a.value), a.event_id))
+        return sorted(rows, key=lambda r: (r[0], by_id[r[2]].seq))
 
     def _last_truth_seq(self, subject: str, attribute: str, exclude: Iterable[str] = ()) -> int | None:
         seqs = [a.seq for a in self._live(exclude)
@@ -188,14 +224,17 @@ class WorldModel:
         return max(seqs) if seqs else None
 
     def truth_at(self, subject: str, attribute: str, seq: int | float, exclude: Iterable[str] = ()) -> tuple[Any, str | None]:
-        rows = [r for r in self.truth_series(subject, attribute, exclude) if r[0] <= seq]
+        rows = [r for r in self.truth_series(subject, attribute, exclude) if r[0] <= seq
+                and ((a := self.assertion(r[2])).valid_to is None or seq < a.valid_to)]
         if not rows:
             return None, None
         _, value, eid = rows[-1]
         return value, eid
 
     def current(self, subject: str, attribute: str, exclude: Iterable[str] = ()) -> tuple[Any, str | None]:
-        return self.truth_at(subject, attribute, float("inf"), exclude)
+        # An announced future state is not current merely because it was
+        # observed. Exclusion changes evidence, not the current time.
+        return self.truth_at(subject, attribute, max((a.seq for a in self.assertions), default=0), exclude)
 
     def said_by(self, source: str, subject: str, attribute: str, exclude: Iterable[str] = (), which: str = "latest") -> Any:
         rows = [a for a in self._live(exclude)
@@ -263,7 +302,17 @@ class WorldModel:
         s, a = query.get("subject"), query.get("attribute")
         if op == "current":
             value, _ = self.current(s, a, exclude)
+            return QueryResult("value", value, "contested" if self.status(s, a, exclude) == "contested" else None) if value is not None else QueryResult("unknown")
+        if op == "bitemporal":
+            # Valid time asks when the fact held; transaction time limits what
+            # the observer could have known, including corrections/retractions.
+            hidden = set(exclude) | {x.event_id for x in self.assertions if x.seq > query["recorded_at"]}
+            value, _ = self.truth_at(s, a, query["valid_at"], hidden)
             return QueryResult("value", value) if value is not None else QueryResult("unknown")
+        if op == 'according_to_authority':
+            owner, _ = self.current(s, 'authority.' + a, exclude)
+            value = self.said_by(str(owner), s, a, exclude) if owner is not None else None
+            return QueryResult('value', value) if value is not None else QueryResult('unknown')
         if op == "as_of":
             anchor = self.assertion(query["before_event"])
             if anchor is None:
@@ -300,6 +349,9 @@ class WorldModel:
     def candidates(self, query: dict[str, Any]) -> list[str]:
         """Assertions that could possibly influence a query (same subject/attribute chain)."""
         op = query.get("op")
+        if op == 'according_to_authority':
+            return [a.event_id for a in self.assertions if a.subject == query['subject']
+                    and a.attribute in {query['attribute'], 'authority.' + query['attribute']}]
         if op == "hop":
             attrs = set(query["attributes"])
             return [a.event_id for a in self.assertions if a.attribute in attrs]
@@ -363,7 +415,7 @@ def oracle_from_result(
                 if f not in accepted and f not in forbidden:
                     forbidden.append(f)
         return {
-            "expected_status": "historical" if historical else "known",
+            "expected_status": "historical" if historical else (result.status or "known"),
             "accepted": accepted,
             **({"forbidden": forbidden} if forbidden else {}),
             **_codes_block(forbidden, forms, codes),

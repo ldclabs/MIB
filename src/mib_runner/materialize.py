@@ -64,6 +64,16 @@ def materialize(scenario: dict[str, Any], seed: int | str = 0) -> dict[str, Any]
     """Materialize a public Scenario Template. Instances are returned unchanged."""
     if "template" not in scenario:
         return copy.deepcopy(scenario)
+    program = scenario['template'].get('program')
+    if program:
+        from .generate import generate_instance
+        instance = generate_instance(program['id'], seed, rung=int(program.get('rung', 0)), ladder=program.get('ladder'),
+                                     session_boundary=bool(program.get('session_boundary', False)), parameters=program.get('params'))
+        if program.get('version') and program['version'] != instance['instantiation']['program_version']:
+            raise MaterializationError('Program version differs from the experiment lock')
+        instance['id'] = scenario['id']
+        instance['instantiation']['template_id'] = scenario['id']
+        return instance
 
     rng = random.Random(str(seed))
     params: dict[str, Any] = {}

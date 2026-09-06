@@ -271,6 +271,7 @@ def _relation_row(
         row["routing_efficiency"] = _ratio(
             (oa - b) if (oa is not None and b is not None) else None, headroom, epsilon=epsilon
         )
+        row['routing_efficiency']['interpretation'] = 'Historical artifact availability: formation, survival and retrieval may all contribute. Pure routing is not identified by an early-versus-late black-box intervention.'
         row["natural_transfer_efficiency"] = _ratio(
             (aa - b) if (aa is not None and b is not None) else None, headroom, epsilon=epsilon
         )

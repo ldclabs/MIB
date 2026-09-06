@@ -78,6 +78,11 @@ class AgentHost:
                 if not callable(hook):
                     return ok_response(request, {"accepted": False, "reason": "maintenance not supported"})
                 return ok_response(request, hook(run_id=run_id, request_id=rid, budget=body.get("budget"), virtual_time=vt))
+            if op == 'session_boundary':
+                hook = getattr(agent, 'session_boundary', None)
+                if not callable(hook):
+                    return error_response(request, 'unsupported_operation', 'session boundary not supported')
+                return ok_response(request, hook(run_id=run_id, request_id=rid, virtual_time=vt))
             if op == "act":
                 step = agent.act(
                     run_id=run_id,

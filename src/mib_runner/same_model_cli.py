@@ -11,6 +11,7 @@ from .same_model_calibration import (
     build_experiment_lock,
     estimate_experiment,
     load_experiment,
+    load_experiment_templates,
     run_same_model_calibration,
     write_same_model_markdown,
 )
@@ -73,8 +74,7 @@ def main(argv=None) -> int:
         print(json.dumps(payload, indent=2))
         return 0
     if args.estimate_only:
-        from .calibration import load_private_templates
-        templates = load_private_templates(paths["pack"])
+        templates = load_experiment_templates(paths)
         payload = {"experiment_id": cfg["id"], "experiment_lock": lock["digest"], "estimate": estimate_experiment(cfg, templates)}
         if args.output_json:
             Path(args.output_json).write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

@@ -29,16 +29,18 @@ from .scoring import (  # noqa: F401  (re-exported: callers and tests import the
     instance_key,
     mean,
     memory_dependence,
+    aggregate_dependence_evidence,
     paired_causal_metrics,
     percentile,
     retention_block,
     rung_of_key,
+    run_tolerances,
     validate_causal_pairs,
     weighted_mean,
     weighted_probe_score,
 )
 from .generate import generate_pack
-from .util import utc_now
+from .util import utc_now, runner_source_digest
 from .experimental.transfer_diagnostics import (
     DEFAULT_EPSILON,
     attach_transfer_diagnostics,
@@ -52,139 +54,9 @@ from .validation import validate_scenario
 
 
 
-def build_template_aggregate(template: dict[str, Any], instances: list[dict[str, Any]]) -> dict[str, Any]:
-    dim_names = sorted({d for i in instances for d in (i.get("dimension_scores") or {})})
-    dim_scores = {
-        d: 100.0 * mean([float(i["dimension_scores"][d]) for i in instances if d in (i.get("dimension_scores") or {})])
-        for d in dim_names
-    }
-    c_metrics: dict[str, list[float]] = defaultdict(list)
-    for i in instances:
-        for m in i.get("causal_metrics", []):
-            c_metrics[m["name"]].append(float(m["value"]))
-    cscore = dim_scores.get(CAUSAL_DIM)
-    causal_components = None
-    if cscore is not None:
-        causal_components = {"causal_score": cscore}
-        for name in ["headroom_normalized_memory_benefit", "irrelevant_memory_stability", "harm_resistance"]:
-            if c_metrics.get(name):
-                causal_components[name] = mean(c_metrics[name])
-        causal_components["relevant_benefit_coverage"] = 1.0 if c_metrics.get("headroom_normalized_memory_benefit") else 0.0
-        causal_components["irrelevant_stability_coverage"] = 1.0 if c_metrics.get("irrelevant_memory_stability") else 0.0
-        causal_components["harm_resistance_coverage"] = 1.0 if c_metrics.get("harm_resistance") else 0.0
-    out = {
-        "template_id": template["id"],
-        "template_version": template.get("version"),
-        "instance_count": len(instances),
-        "template_weight": 1.0,
-        "full_score": 100.0 * mean([float(i["full_score"]) for i in instances]),
-        "dimension_scores": dim_scores,
-        "dimension_weights": copy.deepcopy((template.get("scoring") or {}).get("dimension_weights") or {}),
-        "coverage_weight": 1.0,
-    }
-    if causal_components:
-        out["causal_components"] = causal_components
-    return out
-
-
-def dimension_aggregates(
-    template_aggs: list[dict[str, Any]],
-    profile: dict[str, Any],
-    templates: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
-    """MIB-Specification §6.4, §6.5.
-
-    ``templates`` is the complete required pack; when given, the required
-    evidence weight counts Templates that were never executed (unsupported by
-    the Agent), so coverage cannot be inflated by skipping them.
-    """
-    out = []
-    profile_dims = profile.get("dimensions") or {}
-    required_by_dim: dict[str, list[float]] = defaultdict(list)
-    for t in templates or []:
-        for d, w in (((t.get("scoring") or {}).get("dimension_weights")) or {}).items():
-            if float(w) > 0:
-                required_by_dim[d].append(float(w))
-    for d, spec in profile_dims.items():
-        rows = []
-        expected_terms: list[float] = []
-        evaluated_terms: list[float] = []
-        for t in template_aggs:
-            evidence_w = float((t.get("dimension_weights") or {}).get(d, 0.0))
-            if evidence_w <= 0:
-                continue
-            expected_terms.append(evidence_w)
-            if d in (t.get("dimension_scores") or {}):
-                rows.append((float(t["dimension_scores"][d]), evidence_w))
-                evaluated_terms.append(evidence_w)
-        # fsum on both sides: the same multiset of weights must give coverage exactly 1.
-        expected = math.fsum(expected_terms)
-        evaluated = math.fsum(evaluated_terms)
-        if templates is not None:
-            expected = max(expected, math.fsum(required_by_dim.get(d, [])))
-        denom = math.fsum(w for _, w in rows)
-        score = math.fsum(s * w for s, w in rows) / denom if denom else 0.0
-        coverage = evaluated / expected if expected > 0 else 0.0
-        out.append({
-            "dimension": d,
-            "score": score,
-            "weight": float(spec["weight"]),
-            "coverage": coverage,
-            "template_count": len(rows),
-            "eligible_template_count": len(rows),
-            "required_template_weight": expected,
-            "evaluated_template_weight": evaluated,
-        })
-    return out
-
-
-def aggregate_benchmark_causal_metrics(instances_by_template: dict[str, list[dict[str, Any]]], templates_by_id: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    template_metric_values: dict[str, list[tuple[float, float]]] = defaultdict(list)
-    for tid, instances in instances_by_template.items():
-        per_name: dict[str, list[float]] = defaultdict(list)
-        for i in instances:
-            for m in i.get("causal_metrics", []):
-                per_name[m["name"]].append(float(m["value"]))
-        # v0.2: causal metrics are diagnostics.  A Template that carries no causal
-        # evidence weight still contributes, with unit weight.
-        evidence_w = float(((templates_by_id[tid].get("scoring") or {}).get("dimension_weights") or {}).get(CAUSAL_DIM, 0.0)) or 1.0
-        for name, vals in per_name.items():
-            template_metric_values[name].append((mean(vals), evidence_w))
-    out = []
-    unit_map = {
-        "memory_benefit": "percentage_points",
-        "memory_harm": "percentage_points",
-        "net_memory_gain": "percentage_points",
-        "consolidation_benefit": "percentage_points",
-        "headroom_normalized_memory_benefit": "normalized",
-        "irrelevant_memory_stability": "normalized",
-        "harm_resistance": "normalized",
-        "negative_transfer": "percentage_points",
-        "learning_gain": "percentage_points",
-    }
-    for name, rows in sorted(template_metric_values.items()):
-        denom = math.fsum(w for _, w in rows)
-        value = math.fsum(v * w for v, w in rows) / denom if denom else 0.0
-        out.append({
-            "name": name,
-            "value": value,
-            "unit": unit_map.get(name, "normalized"),
-            "scope": "benchmark",
-            "eligible_n": len(rows),
-            "total_n": len(rows),
-            "coverage": 1.0,
-        })
-    mb = next((m["value"] for m in out if m["name"] == "memory_benefit"), None)
-    mh = next((m["value"] for m in out if m["name"] == "memory_harm"), None)
-    if mb is not None and mh is not None and not any(m["name"] == "net_memory_gain" for m in out):
-        out.append({"name": "net_memory_gain", "value": mb - mh, "unit": "percentage_points", "scope": "benchmark"})
-    return out
-
-
-def _profile_score(dimensions: list[dict[str, Any]]) -> float:
-    rows = [(float(d["score"]), float(d["weight"])) for d in dimensions if float(d.get("weight", 0.0)) > 0]
-    denom = math.fsum(w for _, w in rows)
-    return math.fsum(s * w for s, w in rows) / denom if denom else 0.0
+from .aggregation import (build_template_aggregate, dimension_aggregates,
+                          aggregate_benchmark_causal_metrics, profile_score as _profile_score,
+                          canonical_instances, score_aggregates, tracking_totals)
 
 
 def describe_agent_factory(agent_factory: Callable[[], Any]) -> dict[str, Any]:
@@ -209,6 +81,9 @@ def select_profile_templates(templates: list[dict[str, Any]], profile: dict[str,
     silently enter the score, and a missing one would silently shrink it.
     """
     required = profile.get("required_templates")
+    if profile.get('programs'):
+        from .generate import program_descriptor
+        required = [program_descriptor(e['id'] if isinstance(e, dict) else e)['id'] for e in profile['programs']]
     if not required:
         return list(templates)
     by_id = {t["id"]: t for t in templates}
@@ -234,6 +109,8 @@ def agent_supports_template(descriptor: dict[str, Any], template: dict[str, Any]
     caps = (descriptor or {}).get("capabilities") or {}
     for cap in ((template.get("requirements") or {}).get("capabilities") or []):
         key = _CAPABILITY_KEYS.get(cap, cap)
+        if cap == 'session_boundary' and caps.get(key) is not True:
+            return False
         if key in caps and caps[key] is False:
             return False
     return True
@@ -286,17 +163,22 @@ def hierarchical_bootstrap(
         tid = runs[0]["template_id"]
         instance_template[iid] = tid
         scenario = templates_by_id[tid]
-        tolerances = ablation_tolerances(scenario)
         for rep in sorted({int(r["repetition"]) for r in runs if r.get("condition") == "full"}):
             rr = [r for r in runs if int(r["repetition"]) == rep]
             validate_causal_pairs(rr)
             full = next((r for r in rr if r.get("condition") == "full"), None)
             if full is None:
                 continue
+            # Run evidence carries the effective tolerance, including when the
+            # verifier has only the reduced public Template descriptor. Retain
+            # Scenario defaults for legacy artifacts without that field.
+            tolerances = {**ablation_tolerances(scenario),
+                          **run_tolerances([r for r in rr if 'ablation_tolerance' in r])}
             metrics = paired_causal_metrics(rr, tolerances) + full_run_metrics([full])
             rep_stats[iid].append({
                 "dimensions": instance_dimension_scores(list(scenario.get("dimensions", [])), [full], metrics),
                 "metrics": {m["name"]: float(m["value"]) for m in metrics},
+                "metric_counts": {m['name']: int(m.get('eligible_n', 1)) for m in metrics},
             })
 
     instance_ids_by_template: dict[str, list[str]] = defaultdict(list)
@@ -316,7 +198,10 @@ def hierarchical_bootstrap(
         dim_names = {d for r in sampled for d in r["dimensions"]}
         metric_names = {m for r in sampled for m in r["metrics"]}
         dims = {d: mean([r["dimensions"][d] for r in sampled if d in r["dimensions"]]) for d in dim_names}
-        metrics = {m: mean([r["metrics"][m] for r in sampled if m in r["metrics"]]) for m in metric_names}
+        metrics = {m: weighted_mean([(r['metrics'][m], r['metric_counts'].get(m, 1)) for r in sampled if m in r['metrics']]) for m in metric_names}
+        metrics = {m: v for m, v in metrics.items() if v is not None}
+        if 'memory_benefit' in metrics and 'memory_harm' in metrics:
+            metrics['net_memory_gain'] = metrics['memory_benefit'] - metrics['memory_harm']
         # The causal dimension is recomputed from repetition-aggregated components.
         cscore, _ = causal_score01([{"name": k, "value": v} for k, v in metrics.items()])
         if cscore is not None and CAUSAL_DIM in templates_by_id[instance_template[iid]].get("dimensions", []):
@@ -380,7 +265,9 @@ def hierarchical_bootstrap(
         name: [tid for tid in tids if name in point[tid]["metrics"] and (weight(tid, CAUSAL_DIM) > 0 or unit_is_instance)]
         for name in point_causal
     }
-    eligible_causal = {name for name, c in causal_candidates.items() if unit_count(c) >= threshold}
+    eligible_causal = {name for name, c in causal_candidates.items() if (
+        sum(any(name in r['metrics'] for r in rep_stats[iid]) for tid in c for iid in instance_ids_by_template[tid])
+        if unit_is_instance else unit_count(c)) >= threshold}
 
     mib_samples: list[float] = []
     dim_samples: dict[str, list[float]] = defaultdict(list)
@@ -439,7 +326,7 @@ def hierarchical_bootstrap(
             "method": method,
             "resamples": resamples,
             "seed": seed,
-            "template_resampling": True,
+            "template_resampling": not unit_is_instance,
             "instance_resampling": True,
             "repetition_resampling": True,
             "preserve_causal_pairs": True,
@@ -477,6 +364,14 @@ def efficiency_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     latencies = sorted(float(p.get("latency_ms", 0.0)) for r in runs for p in r.get("probe_results", []) if p.get("outcome") == "scored")
     tool_calls = sum(1 for r in runs for row in ((r.get("extensions") or {}).get("mib.runner.action_trace") or []) if row.get("kind") == "tool_call")
     measured: dict[str, Any] = {"runs": len(runs), "scored_probes": len(latencies), "tool_calls_total": tool_calls}
+    operations: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    for run in runs:
+        for op, counts in ((run.get('extensions') or {}).get('mib.runner.operation_usage') or {}).items():
+            for field, value in counts.items():
+                operations[op][field] += value
+    if operations:
+        measured['operations'] = {k: dict(v) for k, v in operations.items()}
+        measured['measurement_unit'] = 'UTF-8 bytes and wall-clock milliseconds; not tokenizer tokens'
     if latencies:
         measured.update({
             "probe_latency_ms_mean": mean(latencies),
@@ -526,25 +421,24 @@ def build_pack_report(
         if canonical_rung is None or agg.get("rung") is None or int(agg["rung"]) == int(canonical_rung):
             instances_by_template[agg["template_id"]].append(agg)
 
-    template_aggs = [
-        build_template_aggregate(templates_by_id[tid], instances_by_template[tid])
-        for tid in sorted(instances_by_template)
-    ]
-    dims = dimension_aggregates(template_aggs, profile, templates)
-    base_score = _profile_score(dims)
+    aggregated = score_aggregates(instance_aggs, templates, profile)
+    template_aggs, dims, base_score = aggregated['templates'], aggregated['dimensions'], aggregated['score']
     required_coverage = float(profile.get("required_coverage", 1.0))
     by_dim_cov = {d["dimension"]: float(d["coverage"]) for d in dims}
     profile_cov = math.fsum(float(d["weight"]) * float(d["coverage"]) for d in dims)
     profile_eligible = profile_cov + 1e-12 >= required_coverage
-    causal = aggregate_benchmark_causal_metrics(instances_by_template, templates_by_id)
+    causal = aggregated['causal_metrics']
     retention = retention_block(instance_aggs, int(canonical_rung) if canonical_rung is not None else None)
-    dependence = memory_dependence(causal, profile)
+    evidence = aggregate_dependence_evidence(canonical_instances(instance_aggs, profile))
+    dependence = memory_dependence(causal, profile, evidence if profile.get('programs') else None,
+                                   tracking_totals(canonical_instances(instance_aggs, profile)) if profile.get('programs') else None)
     dependence_gate = profile.get("memory_dependence") is not None
     dependence_ok = dependence["eligible"] is True if dependence_gate else True
     format_version = "0.2" if str(profile.get("mib", "")) == "0.2" or profile.get("programs") else "0.1"
 
     failed_probe_attempts = sum(1 for r in all_runs for p in r.get("probe_results", []) if p.get("outcome") == "execution_failure")
     scheduled_probe_attempts = sum(len(r.get("probe_results", [])) for r in all_runs)
+    failure_rate = failed_probe_attempts / scheduled_probe_attempts if scheduled_probe_attempts else 0.0
     warnings: list[dict[str, Any]] = list(extra_warnings or [])
     unsupported_templates = sorted(unsupported_templates or [])
     if unsupported_templates:
@@ -607,7 +501,7 @@ def build_pack_report(
     report = {
         "mib": format_version,
         "kind": "MIBReport",
-        "report_version": "0.2.0" if format_version == "0.2" else "0.1.0",
+        "report_version": "0.3.0",
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",
@@ -669,7 +563,7 @@ def build_pack_report(
                 "base_score": base_score,
                 "global_guardrail_penalty": 0.0,
                 "final_score": base_score,
-                "official": bool(profile.get("official", False)) and profile_eligible and dependence_ok,
+                "official": bool(profile.get("official", False)) and profile_eligible and dependence_ok and failure_rate <= float(profile.get('max_execution_failure_rate', 0)),
                 "partial": not profile_eligible,
                 "profile_eligible": profile_eligible,
                 "formula": "weighted_dimension_sum",
@@ -679,6 +573,17 @@ def build_pack_report(
         "causal_metrics": causal,
         **({"retention": retention} if retention else {}),
         "memory_dependence": dependence,
+        "evaluation_policy": {
+            "version": "1.0.0",
+            "runner_source_digest": runner_source_digest(),
+            "profile": {k: copy.deepcopy(v) for k, v in profile.items() if k in {
+                'id', 'version', 'track', 'scale', 'official', 'required_coverage', 'required_templates', 'dimensions',
+                'statistics', 'scenario_pack', 'canonical_rung', 'programs', 'memory_dependence', 'measurement_regime',
+                'repetitions', 'max_execution_failure_rate'}},
+            "templates": [{'id': t['id'], 'version': t.get('version'), 'dimensions': t.get('dimensions', []),
+                           'scoring': {'dimension_weights': copy.deepcopy(t.get('scoring', {}).get('dimension_weights', {}))}}
+                          for t in templates],
+        },
         "efficiency": efficiency_summary(all_runs),
         "coverage": {
             "overall": profile_cov,
@@ -699,6 +604,7 @@ def build_pack_report(
     }
     if statistics and statistics.get("mib_score", {}).get("ci"):
         report["aggregates"]["mib_score"]["ci"] = copy.deepcopy(statistics["mib_score"]["ci"])
+    if statistics:
         stat_dims = {x["dimension"]: x for x in statistics.get("dimensions", [])}
         for d in report["aggregates"]["dimensions"]:
             if d["dimension"] in stat_dims and stat_dims[d["dimension"]].get("ci"):
@@ -851,6 +757,29 @@ def run_materialized_pack(
     missing_instances = sorted(expected_ids - instance_template_ids)
     if missing_instances:
         raise ValueError(f"profile requires Templates with no materialized Instances: {missing_instances}")
+    if profile.get('programs'):
+        from .generate.base import template_id_for
+        from .generate.registry import resolve_program_config
+        configs = [resolve_program_config(e, profile.get('ladder')) for e in profile['programs']]
+        by_template = {template_id_for(c['id']): c for c in configs}
+        units: dict[tuple[str, Any], set[int]] = defaultdict(set)
+        seen = set()
+        for instance in instances:
+            inst = instance['instantiation']
+            config = by_template.get(inst['template_id'])
+            rung = inst['rung']
+            if (config is None or type(rung) is not int or not 0 <= rung < len(config['ladder'])
+                    or inst.get('program') != config['id']
+                    or inst.get('program_version') != config['version']
+                    or inst.get('interference_count') != config['ladder'][rung]):
+                raise ValueError('generated Instance Program/ladder differs from the Profile')
+            key = (inst['template_id'], inst['seed'], inst['rung'])
+            if key in seen:
+                raise ValueError('duplicate generated Instance')
+            seen.add(key)
+            units[(inst['template_id'], inst['seed'])].add(inst['rung'])
+        if any(rungs != set(range(len(by_template[tid]['ladder']))) for (tid, _), rungs in units.items()):
+            raise ValueError('generated hidden pack must contain every rung for every seed')
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in templates if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []

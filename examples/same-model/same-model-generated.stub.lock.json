@@ -1,0 +1,66 @@
+{
+  "kind": "MIBSameModelExperimentLock",
+  "version": "0.1.0",
+  "experiment_id": "MIB-v0.2-generated-engineering-smoke",
+  "model": {
+    "client": "deterministic_stub",
+    "model_id": "mib-deterministic-stub/0.1",
+    "endpoint": null,
+    "command": null,
+    "parameters": {
+      "temperature": 0,
+      "max_tokens": 512
+    },
+    "seed_policy": "paired_per_call",
+    "seed_derivation": "agent_seed + semantic_probe_or_task_turn_key; condition label excluded",
+    "seed_base": "mib-same-model-0.1",
+    "api_key_env": null,
+    "header_value_fingerprints": {},
+    "stateless_contract": true
+  },
+  "system_prompt_sha256": "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e",
+  "reasoning_policy_sha256": "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6",
+  "scenario_schema_sha256": "35671d3909f01ba574671d39bbe0177df6420a86f06026c32093079519b3260b",
+  "profile_sha256": "e3d65ff97e58de9a2989f7fec4e5d4753b70a66409db38c490b8e611c0542c6f",
+  "scenario_pack_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "runner_source_sha256": "3408ef4ad560857d7558edefe1ee11ae3e75147f760982f81cc7239909f892b3",
+  "condition_order_policy": "counterbalanced_latin_rotation_v1",
+  "conditions": {
+    "B0": {
+      "memory_policy": "no_memory"
+    },
+    "B1": {
+      "memory_policy": "full_visible_history"
+    },
+    "B2": {
+      "memory_policy": "lexical_top_k",
+      "top_k": 4
+    },
+    "B3": {
+      "memory_policy": "structured_deterministic",
+      "top_k": 10,
+      "salient_k": 6
+    }
+  },
+  "memory_runtime": {
+    "memory_char_limits": {
+      "B0": null,
+      "B1": null,
+      "B2": null,
+      "B3": null
+    },
+    "parse_retries": 1,
+    "observe_decisions": true,
+    "maintenance_decisions": true,
+    "additional_baselines": {
+      "recent_window": 12,
+      "oracle_reference": true
+    }
+  },
+  "allowed_condition_differences": [
+    "memory_policy",
+    "memory_selection",
+    "memory_context_content"
+  ],
+  "digest": "sha256:b8545abb7e59484b2d499935e73d7d43ec825f7ea30e1ac09fc7e421427aa193"
+}

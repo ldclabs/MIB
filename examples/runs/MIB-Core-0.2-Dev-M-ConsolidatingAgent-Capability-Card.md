@@ -4,10 +4,10 @@
 MIB — Memory Intelligence Benchmark
 ════════════════════════════════════════════
 
-Profile   MIB-Core-0.2-Dev-M 0.2.0
+Profile   MIB-Core-0.2-Dev-M 0.3.0
 Track     integrated_agent
 Scale     MIB-M
-Agent     MIB Consolidating Window Fixture (window 12) 0.9.0
+Agent     MIB Consolidating Window Fixture (window 12) 0.10.0
 
 MIB Score 100.0
 95% CI    [100.0, 100.0]
@@ -22,22 +22,26 @@ Capability
   Selective Forgetting         100.0  coverage 100.0%
 
 Causal Diagnostics
-  Memory Benefit               +75.9 pp
+  Memory Benefit               +80.4 pp
+  Memory Harm                   +0.0 pp
+  Net Memory Gain              +80.4 pp
+  Irrelevant Stability         100.0
+  Harm Resistance              100.0
   Content Tracking             100.0
   Stale Adoption                 0.0%
   Error Recurrence               0.0%
-  Consolidation Benefit        +63.3 pp
+  Consolidation Benefit        +68.4 pp
 
 Behaviour Diagnostics
   Negative Transfer             +0.0 pp
   Negative Transfer Rate         0.0%
-  Learning Gain                +40.0 pp
-  Learning Curve Area           80.0
+  Learning Gain                +25.0 pp
+  Learning Curve Area           70.8
   Historical Fidelity          100.0
   Source Attribution           100.0
   Authority Confusion            0.0%
   Self-Rule Continuity         100.0
-  Memory-Induced Errors          0.0%
+  Memory-Related Error Patterns (descriptive)   0.0%
 
 Retention (score by interference distance)
   MIB-GEN-EPISTEMIC-V1         @0:100.0  @100:100.0  @1000:100.0  index 100.0  half >ladder
@@ -50,8 +54,23 @@ Retention (score by interference distance)
   Capability score read at rung 2.
 
 Memory Dependence
-  content_tracking_rate        100.0  floor  50.0  (4/4 programs with counterfactual pairs)
-  earned through memory
+  content_tracking_rate        100.0  floor  50.0  (64/64 eligible changed-probe pairs)
+  meets the declared dependence policy
+  Retention & Retrieval        5 Instances; 10/10 pairs; lower bound 56.6%; pass
+  Temporal Memory              5 Instances; 5/5 pairs; lower bound 56.6%; pass
+  Epistemic Memory             5 Instances; 14/14 pairs; lower bound 56.6%; pass
+  Experience Memory            5 Instances; 5/5 pairs; lower bound 56.6%; pass
+  Skill Learning & Transfer    5 Instances; 5/5 pairs; lower bound 56.6%; pass
+  Prospective & Self Memory    5 Instances; 10/10 pairs; lower bound 56.6%; pass
+  Selective Forgetting         5 Instances; 15/15 pairs; lower bound 56.6%; pass
+  Regime: historical_information_use; internal mechanism is not independently identified.
+
+Runner operations (all evaluation conditions; UTF-8 bytes, not tokens)
+  act                2005 calls; 67.4 ms; 889165 input bytes; 334788 output bytes
+  maintain            756 calls; 3.8 ms; 104328 input bytes; 27972 output bytes
+  observe          321413 calls; 9159.9 ms; 127942558 input bytes; 11257014 output bytes
+  reset               861 calls; 6.0 ms; 80934 input bytes; 15498 output bytes
+  respond            2031 calls; 771.7 ms; 837870 input bytes; 266445 output bytes
 
 Coverage  100.0%
 Execution Failure Rate  0.00%

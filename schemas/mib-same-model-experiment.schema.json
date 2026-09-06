@@ -17,7 +17,10 @@
   ],
   "properties": {
     "mib": {
-      "const": "0.1"
+      "enum": [
+        "0.1",
+        "0.2"
+      ]
     },
     "kind": {
       "const": "MIBSameModelExperiment"
@@ -151,6 +154,12 @@
               "minimum": 1
             }
           }
+        },
+        "observe_decisions": {
+          "type": "boolean"
+        },
+        "maintenance_decisions": {
+          "type": "boolean"
         }
       }
     },
@@ -255,6 +264,19 @@
             "bootstrap_resamples": {
               "type": "integer",
               "minimum": 0
+            }
+          }
+        },
+        "additional_baselines": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "recent_window": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "oracle_reference": {
+              "type": "boolean"
             }
           }
         }

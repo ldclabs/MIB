@@ -1,5 +1,8 @@
 # MIB v0.1 同模型实证基准测试框架
 
+> 下方的 v0.1 示例仍为遗留资料。实现版本 0.10.0 同时支持在各个阶梯档位上执行生成的 v0.2 程序。可使用 `same-model-generated.stub.json` 进行工程验证，或使用 `same-model-generated.external-http.json` 进行真实固定模型校准。修订后的适配器为 B1–B3 持久化已完成的任务轨迹，对 B0 则予以丢弃，并支持观测期决策、系统维护以及显式会话边界。可选的近期窗口（recent-window）和特权 Oracle 支持参考作为独立诊断项呈现，绝不纳入发布门控。参见 `MIB-v0.2-Review-Resolution.md` 了解当前流程及后续实证要求。
+
+
 **版本：** 0.1-draft  
 **状态：** 工程实现候选规范 / 发布级校准核心基础设施  
 **目标 Profile：** `MIB-Core-0.1`

@@ -1,0 +1,5630 @@
+{
+  "mib": "0.2",
+  "kind": "MIBSameModelCalibrationReport",
+  "report_version": "0.2.0",
+  "generated_at": "2026-09-06T06:05:57.291763Z",
+  "experiment": {
+    "id": "MIB-v0.2-generated-engineering-smoke",
+    "status": "engineering_stub_completed",
+    "experiment_lock": {
+      "kind": "MIBSameModelExperimentLock",
+      "version": "0.1.0",
+      "experiment_id": "MIB-v0.2-generated-engineering-smoke",
+      "model": {
+        "client": "deterministic_stub",
+        "model_id": "mib-deterministic-stub/0.1",
+        "endpoint": null,
+        "command": null,
+        "parameters": {
+          "temperature": 0,
+          "max_tokens": 512
+        },
+        "seed_policy": "paired_per_call",
+        "seed_derivation": "agent_seed + semantic_probe_or_task_turn_key; condition label excluded",
+        "seed_base": "mib-same-model-0.1",
+        "api_key_env": null,
+        "header_value_fingerprints": {},
+        "stateless_contract": true
+      },
+      "system_prompt_sha256": "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e",
+      "reasoning_policy_sha256": "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6",
+      "scenario_schema_sha256": "35671d3909f01ba574671d39bbe0177df6420a86f06026c32093079519b3260b",
+      "profile_sha256": "e3d65ff97e58de9a2989f7fec4e5d4753b70a66409db38c490b8e611c0542c6f",
+      "scenario_pack_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "runner_source_sha256": "3408ef4ad560857d7558edefe1ee11ae3e75147f760982f81cc7239909f892b3",
+      "condition_order_policy": "counterbalanced_latin_rotation_v1",
+      "conditions": {
+        "B0": {
+          "memory_policy": "no_memory"
+        },
+        "B1": {
+          "memory_policy": "full_visible_history"
+        },
+        "B2": {
+          "memory_policy": "lexical_top_k",
+          "top_k": 4
+        },
+        "B3": {
+          "memory_policy": "structured_deterministic",
+          "top_k": 10,
+          "salient_k": 6
+        }
+      },
+      "memory_runtime": {
+        "memory_char_limits": {
+          "B0": null,
+          "B1": null,
+          "B2": null,
+          "B3": null
+        },
+        "parse_retries": 1,
+        "observe_decisions": true,
+        "maintenance_decisions": true,
+        "additional_baselines": {
+          "recent_window": 12,
+          "oracle_reference": true
+        }
+      },
+      "allowed_condition_differences": [
+        "memory_policy",
+        "memory_selection",
+        "memory_context_content"
+      ],
+      "digest": "sha256:b8545abb7e59484b2d499935e73d7d43ec825f7ea30e1ac09fc7e421427aa193"
+    },
+    "execution_plan": {
+      "template_count": 42,
+      "instance_seeds": 1,
+      "repetitions": 1,
+      "minimum_condition_runs": 558,
+      "full_baseline_condition_runs": 168,
+      "additional_causal_ablation_runs": 306,
+      "additional_diagnostic_runs": 84,
+      "minimum_model_turns": 23325,
+      "note": "minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote."
+    }
+  },
+  "model_identity": {
+    "client": "deterministic_stub",
+    "model_id": "mib-deterministic-stub/0.1",
+    "empirical": false
+  },
+  "statelessness_preflight": {
+    "passed": true,
+    "first_a_digest": "sha256:bd8852318abae77279baed86e428230c2596cd08c349323aee90d5cbca625f73",
+    "second_a_digest": "sha256:bd8852318abae77279baed86e428230c2596cd08c349323aee90d5cbca625f73",
+    "comparison": "exact_text_under_deterministic_or_seeded_parameters"
+  },
+  "condition_order_audit": {
+    "policy": "counterbalanced_latin_rotation_v1",
+    "paired_units": 42,
+    "position_counts": {
+      "B0": [
+        11,
+        10,
+        10,
+        11
+      ],
+      "B1": [
+        11,
+        11,
+        10,
+        10
+      ],
+      "B2": [
+        10,
+        11,
+        11,
+        10
+      ],
+      "B3": [
+        10,
+        10,
+        11,
+        11
+      ]
+    },
+    "max_position_count_difference": 1,
+    "balanced": true,
+    "schedule_digest": "sha256:6ced22070f9d86edb1cacefd26ccac387217829a9e15a9956de8d8dc46d18e3d"
+  },
+  "pairing_audit": {
+    "valid": true,
+    "paired_units": 42,
+    "mismatch_count": 0,
+    "mismatches": []
+  },
+  "fairness_audit": {
+    "valid": true,
+    "checks": {
+      "single_model_identity": true,
+      "single_model_client_configuration": true,
+      "identical_system_prompt": true,
+      "identical_reasoning_policy": true,
+      "identical_tool_interface": true,
+      "identical_decoding_parameters": true,
+      "deterministic_or_seeded_decoding": true,
+      "stateless_model_contract": true,
+      "statelessness_preflight": true,
+      "only_memory_policy_varies": true,
+      "condition_label_not_model_visible": true,
+      "counterbalanced_condition_order": true,
+      "paired_agent_seed_and_future_probe": true,
+      "b1_full_context_not_truncated": true,
+      "no_model_transport_or_parse_errors": true
+    },
+    "evidence": {
+      "observed_model_calls": 23325,
+      "distinct_model_identities": 1,
+      "distinct_system_prompts": 1,
+      "distinct_reasoning_policies": 1,
+      "distinct_decoding_fingerprints": 1,
+      "memory_policy_ids": [
+        "B0",
+        "B1",
+        "B2",
+        "B3"
+      ],
+      "condition_label_visible_calls": 0,
+      "transport_errors": 0,
+      "parse_errors": 0,
+      "verification": "computed from recorded model invocations"
+    }
+  },
+  "telemetry": {
+    "B0": {
+      "model_calls": 2064,
+      "model_errors": 0,
+      "input_chars_total": 7105414,
+      "output_chars_total": 90324,
+      "usage_totals": {},
+      "memory_selections": 2064,
+      "memory_records_available_total": 0,
+      "memory_records_selected_total": 0,
+      "memory_chars_selected_total": 14448,
+      "memory_truncations": 0,
+      "transport_errors": 0,
+      "parse_errors": 0,
+      "model_identities": [
+        "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+      ],
+      "system_prompt_shas": [
+        "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+      ],
+      "reasoning_policy_shas": [
+        "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+      ],
+      "decoding_fingerprints": [
+        "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+      ],
+      "memory_policy_ids": [
+        "B0"
+      ],
+      "condition_label_visible_calls": 0
+    },
+    "B1": {
+      "model_calls": 2064,
+      "model_errors": 0,
+      "input_chars_total": 19300629,
+      "output_chars_total": 90318,
+      "usage_totals": {},
+      "memory_selections": 2064,
+      "memory_records_available_total": 90518,
+      "memory_records_selected_total": 90518,
+      "memory_chars_selected_total": 12209663,
+      "memory_truncations": 0,
+      "transport_errors": 0,
+      "parse_errors": 0,
+      "model_identities": [
+        "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+      ],
+      "system_prompt_shas": [
+        "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+      ],
+      "reasoning_policy_shas": [
+        "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+      ],
+      "decoding_fingerprints": [
+        "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+      ],
+      "memory_policy_ids": [
+        "B1"
+      ],
+      "condition_label_visible_calls": 0
+    },
+    "B2": {
+      "model_calls": 2064,
+      "model_errors": 0,
+      "input_chars_total": 8169767,
+      "output_chars_total": 90330,
+      "usage_totals": {},
+      "memory_selections": 2064,
+      "memory_records_available_total": 90518,
+      "memory_records_selected_total": 7992,
+      "memory_chars_selected_total": 1078801,
+      "memory_truncations": 0,
+      "transport_errors": 0,
+      "parse_errors": 0,
+      "model_identities": [
+        "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+      ],
+      "system_prompt_shas": [
+        "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+      ],
+      "reasoning_policy_shas": [
+        "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+      ],
+      "decoding_fingerprints": [
+        "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+      ],
+      "memory_policy_ids": [
+        "B2"
+      ],
+      "condition_label_visible_calls": 0
+    },
+    "B3": {
+      "model_calls": 17133,
+      "model_errors": 0,
+      "input_chars_total": 82019909,
+      "output_chars_total": 750614,
+      "usage_totals": {},
+      "memory_selections": 17133,
+      "memory_records_available_total": 749348,
+      "memory_records_selected_total": 165709,
+      "memory_chars_selected_total": 23200995,
+      "memory_truncations": 0,
+      "transport_errors": 0,
+      "parse_errors": 0,
+      "model_identities": [
+        "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+      ],
+      "system_prompt_shas": [
+        "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+      ],
+      "reasoning_policy_shas": [
+        "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+      ],
+      "decoding_fingerprints": [
+        "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+      ],
+      "memory_policy_ids": [
+        "B3"
+      ],
+      "condition_label_visible_calls": 0
+    }
+  },
+  "additional_baselines": {
+    "bounded_recent_context": {
+      "templates": [
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R0",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R1",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R2",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R0",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R1",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R2",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R0",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R1",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R2",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R0",
+          "score": 0.2,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R2",
+          "score": 0.2,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R0",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R1",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R2",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R0",
+          "score": 0.4800000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R1",
+          "score": 0.4800000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R2",
+          "score": 0.4800000000000001,
+          "n": 1
+        }
+      ],
+      "telemetry": {
+        "model_calls": 2064,
+        "model_errors": 0,
+        "input_chars_total": 10040183,
+        "output_chars_total": 90318,
+        "usage_totals": {},
+        "memory_selections": 2064,
+        "memory_records_available_total": 90518,
+        "memory_records_selected_total": 21970,
+        "memory_chars_selected_total": 2949217,
+        "memory_truncations": 0,
+        "transport_errors": 0,
+        "parse_errors": 0,
+        "model_identities": [
+          "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+        ],
+        "system_prompt_shas": [
+          "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+        ],
+        "reasoning_policy_shas": [
+          "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+        ],
+        "decoding_fingerprints": [
+          "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+        ],
+        "memory_policy_ids": [
+          "B1"
+        ],
+        "condition_label_visible_calls": 0
+      },
+      "enters_release_gate": false,
+      "interpretation": "The fixed model sees only the configured recent observation window."
+    },
+    "oracle_supported_reference": {
+      "templates": [
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RECALL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-TEMPORAL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R0",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R1",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EPISTEMIC-V1-R2",
+          "score": 0.16666666666666666,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-EXPERIENCE-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-SKILL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R0",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R1",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-PROSPECTIVE-V1-R2",
+          "score": 0.44000000000000006,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R0",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R1",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-FORGETTING-V1-R2",
+          "score": 0.6,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R0",
+          "score": 0.4,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R1",
+          "score": 0.4,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-BITEMPORAL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-AUTHORITY-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R2",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R0",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R1",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R2",
+          "score": 0.8400000000000001,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R0",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R1",
+          "score": 0.0,
+          "n": 1
+        },
+        {
+          "template_id": "MIB-GEN-RELEARNING-V1-R2",
+          "score": 0.0,
+          "n": 1
+        }
+      ],
+      "telemetry": {
+        "model_calls": 2175,
+        "model_errors": 0,
+        "input_chars_total": 20529823,
+        "output_chars_total": 95202,
+        "usage_totals": {},
+        "memory_selections": 2175,
+        "memory_records_available_total": 96161,
+        "memory_records_selected_total": 96161,
+        "memory_chars_selected_total": 13041546,
+        "memory_truncations": 0,
+        "transport_errors": 0,
+        "parse_errors": 0,
+        "model_identities": [
+          "{\"client\": \"deterministic_stub\", \"empirical\": false, \"model_id\": \"mib-deterministic-stub/0.1\"}"
+        ],
+        "system_prompt_shas": [
+          "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e"
+        ],
+        "reasoning_policy_shas": [
+          "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6"
+        ],
+        "decoding_fingerprints": [
+          "b477d1f89909d8d156b5f1a61d7deea1ed47bec0cae59f106b6af8d8df242076"
+        ],
+        "memory_policy_ids": [
+          "B1"
+        ],
+        "condition_label_visible_calls": 0
+      },
+      "enters_release_gate": false,
+      "interpretation": "A diagnostic reference, not a deployable participant or guaranteed mathematical upper bound."
+    }
+  },
+  "empirical_release_gate": {
+    "eligible": false,
+    "non_stub_model": false,
+    "template_full_gate": {
+      "passed": 0,
+      "total": 42,
+      "all_pass": false
+    },
+    "fairness_valid": true,
+    "requirements": [
+      "same model identity across B0-B3",
+      "same system/reasoning/tool/decoding policy across B0-B3",
+      "only memory context/policy varies",
+      "counterbalanced condition order",
+      "paired Agent seed and future Probe",
+      "statelessness preflight passes",
+      "B1 full history is not truncated",
+      "zero model transport/parse failures",
+      "all official Templates pass FC/NM/MDI and causal sensitivity/stability gates"
+    ]
+  },
+  "calibration": {
+    "mib": "0.1",
+    "kind": "MIBCalibrationReport",
+    "report_version": "0.1.0",
+    "generated_at": "2026-09-06T06:05:56.706106Z",
+    "profile": {
+      "id": "MIB-Core-0.2-Calibration-Dev",
+      "version": "0.3.0"
+    },
+    "scenario_pack": {
+      "id": "MIB-v0.2-Calibration-Dev",
+      "version": "0.3.0"
+    },
+    "calibration_mode": "same_model_engineering_stub",
+    "release_calibration_eligible": false,
+    "release_note": "Harness execution is valid, but leaderboard release eligibility remains false until a non-stub fixed model completes the full pack with all fairness and admission gates passing.",
+    "configuration": {
+      "instance_seeds": [
+        101
+      ],
+      "repetitions": 1,
+      "baseline_ids": [
+        "B0",
+        "B1",
+        "B2",
+        "B3"
+      ],
+      "bootstrap_resamples": 100,
+      "causal_baseline_id": "B3",
+      "causal_instance_seeds": [
+        101
+      ],
+      "causal_repetitions": 1,
+      "thresholds": {
+        "full_context_min": 0.8,
+        "no_memory_max": 0.6,
+        "mdi_min": 0.25,
+        "baseline_span_min": 0.2,
+        "irrelevant_stability_min": 0.9,
+        "causal_memory_benefit_min": 0.2
+      },
+      "condition_order_policy": "counterbalanced_latin_rotation_v1"
+    },
+    "baselines": [
+      {
+        "id": "B0",
+        "name": "MIB Same-Model Agent B0",
+        "role": "B0",
+        "release_calibration_eligible": false
+      },
+      {
+        "id": "B1",
+        "name": "MIB Same-Model Agent B1",
+        "role": "B1",
+        "release_calibration_eligible": false
+      },
+      {
+        "id": "B2",
+        "name": "MIB Same-Model Agent B2",
+        "role": "B2",
+        "release_calibration_eligible": false
+      },
+      {
+        "id": "B3",
+        "name": "MIB Same-Model Agent B3",
+        "role": "B3",
+        "release_calibration_eligible": false
+      }
+    ],
+    "summary": {
+      "template_count": 42,
+      "recommendations": {
+        "retire_or_redesign_candidate": 3,
+        "revise_or_empirically_review": 39
+      },
+      "gate_pass_counts": {
+        "baseline_span": 5,
+        "causal_sensitivity": 4,
+        "full_context": 3,
+        "irrelevant_stability": 42,
+        "mdi": 3,
+        "no_memory": 39
+      },
+      "ordering_diagnostics": {
+        "B1_ge_B3": 42,
+        "B3_ge_B2": 42,
+        "B2_ge_B0": 42,
+        "template_count": 42
+      },
+      "causal_risk_counts": {
+        "relevant_ablation_low_effect": 38
+      },
+      "provisional_gate_pass_all_three": 0,
+      "provisional_full_gate_including_causal": 0
+    },
+    "dimension_matrix": [
+      {
+        "dimension": "retention_retrieval",
+        "weight": 0.15,
+        "baselines": {
+          "B0": 0.0,
+          "B1": 0.06666666666666667,
+          "B2": 0.03333333333333333,
+          "B3": 0.03333333333333333
+        }
+      },
+      {
+        "dimension": "temporal_memory",
+        "weight": 0.15,
+        "baselines": {
+          "B0": 0.0,
+          "B1": 0.0,
+          "B2": 0.0,
+          "B3": 0.0
+        }
+      },
+      {
+        "dimension": "epistemic_memory",
+        "weight": 0.18,
+        "baselines": {
+          "B0": 0.08333333333333333,
+          "B1": 0.08333333333333333,
+          "B2": 0.08333333333333333,
+          "B3": 0.08333333333333333
+        }
+      },
+      {
+        "dimension": "experience_memory",
+        "weight": 0.15,
+        "baselines": {
+          "B0": 0.0,
+          "B1": 0.0,
+          "B2": 0.0,
+          "B3": 0.0
+        }
+      },
+      {
+        "dimension": "skill_learning_transfer",
+        "weight": 0.14,
+        "baselines": {
+          "B0": 0.0,
+          "B1": 0.0,
+          "B2": 0.0,
+          "B3": 0.0
+        }
+      },
+      {
+        "dimension": "prospective_self_memory",
+        "weight": 0.12,
+        "baselines": {
+          "B0": 0.64,
+          "B1": 0.64,
+          "B2": 0.64,
+          "B3": 0.64
+        }
+      },
+      {
+        "dimension": "selective_forgetting",
+        "weight": 0.11,
+        "baselines": {
+          "B0": 0.3,
+          "B1": 0.54,
+          "B2": 0.54,
+          "B3": 0.54
+        }
+      }
+    ],
+    "templates": [
+      {
+        "template_id": "MIB-GEN-AUTHORITY-V1-R0",
+        "title": "Scoped authority with identical claim wording and randomized source order",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-AUTHORITY-V1-R1",
+        "title": "Scoped authority with identical claim wording and randomized source order",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-AUTHORITY-V1-R2",
+        "title": "Scoped authority with identical claim wording and randomized source order",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-AUTHORITY-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-BITEMPORAL-V1-R0",
+        "title": "Valid-time history viewed before and after a delayed correction",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-BITEMPORAL-V1-R1",
+        "title": "Valid-time history viewed before and after a delayed correction",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-BITEMPORAL-V1-R2",
+        "title": "Valid-time history viewed before and after a delayed correction",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-BITEMPORAL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R0",
+        "title": "Cancel a commitment without forgetting the standing authorization",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R0:B0"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B1": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R0:B1"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B2": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R0:B2"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B3": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R0:B3"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.8400000000000001,
+          "no_memory": 0.8400000000000001,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.8400000000000001,
+          "structured_agentic": 0.8400000000000001,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": true,
+          "no_memory": false,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "retire_or_redesign_candidate",
+        "reasons": [
+          "no_memory_too_strong",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R1",
+        "title": "Cancel a commitment without forgetting the standing authorization",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R1:B0"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B1": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R1:B1"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B2": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R1:B2"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B3": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R1:B3"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.8400000000000001,
+          "no_memory": 0.8400000000000001,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.8400000000000001,
+          "structured_agentic": 0.8400000000000001,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": true,
+          "no_memory": false,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "retire_or_redesign_candidate",
+        "reasons": [
+          "no_memory_too_strong",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-CANCELLED-COMMITMENT-V1-R2",
+        "title": "Cancel a commitment without forgetting the standing authorization",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R2:B0"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B1": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R2:B1"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B2": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R2:B2"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          },
+          "B3": {
+            "mean": 0.8400000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.8400000000000001,
+              "upper": 0.8400000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-CANCELLED-COMMITMENT-V1-R2:B3"
+            },
+            "min": 0.8400000000000001,
+            "max": 0.8400000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.8400000000000001,
+          "no_memory": 0.8400000000000001,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.8400000000000001,
+          "structured_agentic": 0.8400000000000001,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": true,
+          "no_memory": false,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "retire_or_redesign_candidate",
+        "reasons": [
+          "no_memory_too_strong",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R0",
+        "title": "Compose a remembered ordered recipe with a new transformation",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R1",
+        "title": "Compose a remembered ordered recipe with a new transformation",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-COMPOSED-SKILL-V1-R2",
+        "title": "Compose a remembered ordered recipe with a new transformation",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-COMPOSED-SKILL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EPISTEMIC-V1-R0",
+        "title": "Correction, contradiction with authority, and unknown",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R0:B0"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B1": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R0:B1"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B2": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R0:B2"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B3": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R0:B3"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          }
+        },
+        "metrics": {
+          "full_context": 0.16666666666666666,
+          "no_memory": 0.16666666666666666,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.16666666666666666,
+          "structured_agentic": 0.16666666666666666,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EPISTEMIC-V1-R1",
+        "title": "Correction, contradiction with authority, and unknown",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R1:B0"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B1": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R1:B1"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B2": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R1:B2"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B3": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R1:B3"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          }
+        },
+        "metrics": {
+          "full_context": 0.16666666666666666,
+          "no_memory": 0.16666666666666666,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.16666666666666666,
+          "structured_agentic": 0.16666666666666666,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EPISTEMIC-V1-R2",
+        "title": "Correction, contradiction with authority, and unknown",
+        "suite": "epistemic",
+        "visibility": "public_dev",
+        "dimensions": [
+          "epistemic_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R2:B0"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B1": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R2:B1"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B2": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R2:B2"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          },
+          "B3": {
+            "mean": 0.16666666666666666,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.16666666666666666,
+              "upper": 0.16666666666666666,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EPISTEMIC-V1-R2:B3"
+            },
+            "min": 0.16666666666666666,
+            "max": 0.16666666666666666
+          }
+        },
+        "metrics": {
+          "full_context": 0.16666666666666666,
+          "no_memory": 0.16666666666666666,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.16666666666666666,
+          "structured_agentic": 0.16666666666666666,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EXPERIENCE-V1-R0",
+        "title": "Two feedback-driven workflow trials, then a related item",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EXPERIENCE-V1-R1",
+        "title": "Two feedback-driven workflow trials, then a related item",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-EXPERIENCE-V1-R2",
+        "title": "Two feedback-driven workflow trials, then a related item",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-EXPERIENCE-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-FORGETTING-V1-R0",
+        "title": "A retracted fact must stop being used while its neighbours stay available",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R0:B0"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B1": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R0:B1"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B2": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R0:B2"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B3": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R0:B3"
+            },
+            "min": 0.6,
+            "max": 0.6
+          }
+        },
+        "metrics": {
+          "full_context": 0.6,
+          "no_memory": 0.6,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.6,
+          "structured_agentic": 0.6,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-FORGETTING-V1-R1",
+        "title": "A retracted fact must stop being used while its neighbours stay available",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R1:B0"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B1": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R1:B1"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B2": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R1:B2"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B3": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R1:B3"
+            },
+            "min": 0.6,
+            "max": 0.6
+          }
+        },
+        "metrics": {
+          "full_context": 0.6,
+          "no_memory": 0.6,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.6,
+          "structured_agentic": 0.6,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-FORGETTING-V1-R2",
+        "title": "A retracted fact must stop being used while its neighbours stay available",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R2:B0"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B1": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R2:B1"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B2": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R2:B2"
+            },
+            "min": 0.6,
+            "max": 0.6
+          },
+          "B3": {
+            "mean": 0.6,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.6,
+              "upper": 0.6,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-FORGETTING-V1-R2:B3"
+            },
+            "min": 0.6,
+            "max": 0.6
+          }
+        },
+        "metrics": {
+          "full_context": 0.6,
+          "no_memory": 0.6,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.6,
+          "structured_agentic": 0.6,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R0",
+        "title": "Interleaved facts with useful information arriving after maintenance",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.2,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.2,
+              "upper": 0.2,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R0:B1"
+            },
+            "min": 0.2,
+            "max": 0.2
+          },
+          "B2": {
+            "mean": 0.2,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.2,
+              "upper": 0.2,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R0:B2"
+            },
+            "min": 0.2,
+            "max": 0.2
+          },
+          "B3": {
+            "mean": 0.2,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.2,
+              "upper": 0.2,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R0:B3"
+            },
+            "min": 0.2,
+            "max": 0.2
+          }
+        },
+        "metrics": {
+          "full_context": 0.2,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.2,
+          "simple_retrieval": 0.2,
+          "structured_agentic": 0.2,
+          "memory_gap_closure_b2": 1.0,
+          "memory_gap_closure_b3": 1.0,
+          "baseline_span": 0.2,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.2,
+          "headroom_normalized_memory_benefit": 0.2,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.2
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": true,
+          "irrelevant_stability": true,
+          "causal_sensitivity": true
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target"
+        ],
+        "causal_risks": []
+      },
+      {
+        "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R1",
+        "title": "Interleaved facts with useful information arriving after maintenance",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-INTERLEAVED-RECALL-V1-R2",
+        "title": "Interleaved facts with useful information arriving after maintenance",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.2,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.2,
+              "upper": 0.2,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R2:B1"
+            },
+            "min": 0.2,
+            "max": 0.2
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-INTERLEAVED-RECALL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.2,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.2,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": 0.0,
+          "memory_gap_closure_b3": 0.0,
+          "baseline_span": 0.2,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": true,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-PROSPECTIVE-V1-R0",
+        "title": "A deferred commitment that must fire on its trigger and not before; a self-rule that must hold",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R0:B0"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B1": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R0:B1"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B2": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R0:B2"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B3": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R0:B3"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          }
+        },
+        "metrics": {
+          "full_context": 0.44000000000000006,
+          "no_memory": 0.44000000000000006,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.44000000000000006,
+          "structured_agentic": 0.44000000000000006,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-PROSPECTIVE-V1-R1",
+        "title": "A deferred commitment that must fire on its trigger and not before; a self-rule that must hold",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R1:B0"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B1": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R1:B1"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B2": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R1:B2"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B3": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R1:B3"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          }
+        },
+        "metrics": {
+          "full_context": 0.44000000000000006,
+          "no_memory": 0.44000000000000006,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.44000000000000006,
+          "structured_agentic": 0.44000000000000006,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-PROSPECTIVE-V1-R2",
+        "title": "A deferred commitment that must fire on its trigger and not before; a self-rule that must hold",
+        "suite": "prospective",
+        "visibility": "public_dev",
+        "dimensions": [
+          "prospective_self_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R2:B0"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B1": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R2:B1"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B2": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R2:B2"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          },
+          "B3": {
+            "mean": 0.44000000000000006,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.44000000000000006,
+              "upper": 0.44000000000000006,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-PROSPECTIVE-V1-R2:B3"
+            },
+            "min": 0.44000000000000006,
+            "max": 0.44000000000000006
+          }
+        },
+        "metrics": {
+          "full_context": 0.44000000000000006,
+          "no_memory": 0.44000000000000006,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.44000000000000006,
+          "structured_agentic": 0.44000000000000006,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-RECALL-V1-R0",
+        "title": "Direct and multi-hop recall under generated interference",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-RECALL-V1-R1",
+        "title": "Direct and multi-hop recall under generated interference",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-RECALL-V1-R2",
+        "title": "Direct and multi-hop recall under generated interference",
+        "suite": "recall",
+        "visibility": "public_dev",
+        "dimensions": [
+          "retention_retrieval"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RECALL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-RELEARNING-V1-R0",
+        "title": "Fresh authorization after withdrawal permits relearning without restoring obsolete content",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R0:B1"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B2": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R0:B2"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B3": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R0:B3"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.4800000000000001,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.4800000000000001,
+          "simple_retrieval": 0.4800000000000001,
+          "structured_agentic": 0.4800000000000001,
+          "memory_gap_closure_b2": 1.0,
+          "memory_gap_closure_b3": 1.0,
+          "baseline_span": 0.4800000000000001,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.5333333333333333,
+          "headroom_normalized_memory_benefit": 0.5333333333333333,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.4800000000000001,
+          "harm_resistance": 0.5199999999999999,
+          "net_memory_gain": 0.05333333333333323
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": true,
+          "baseline_span": true,
+          "irrelevant_stability": true,
+          "causal_sensitivity": true
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target"
+        ],
+        "causal_risks": []
+      },
+      {
+        "template_id": "MIB-GEN-RELEARNING-V1-R1",
+        "title": "Fresh authorization after withdrawal permits relearning without restoring obsolete content",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R1:B1"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B2": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R1:B2"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B3": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R1:B3"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.4800000000000001,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.4800000000000001,
+          "simple_retrieval": 0.4800000000000001,
+          "structured_agentic": 0.4800000000000001,
+          "memory_gap_closure_b2": 1.0,
+          "memory_gap_closure_b3": 1.0,
+          "baseline_span": 0.4800000000000001,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.5333333333333333,
+          "headroom_normalized_memory_benefit": 0.5333333333333333,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.4800000000000001,
+          "harm_resistance": 0.5199999999999999,
+          "net_memory_gain": 0.05333333333333323
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": true,
+          "baseline_span": true,
+          "irrelevant_stability": true,
+          "causal_sensitivity": true
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target"
+        ],
+        "causal_risks": []
+      },
+      {
+        "template_id": "MIB-GEN-RELEARNING-V1-R2",
+        "title": "Fresh authorization after withdrawal permits relearning without restoring obsolete content",
+        "suite": "forgetting",
+        "visibility": "public_dev",
+        "dimensions": [
+          "selective_forgetting"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R2:B1"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B2": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R2:B2"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          },
+          "B3": {
+            "mean": 0.4800000000000001,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.4800000000000001,
+              "upper": 0.4800000000000001,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-RELEARNING-V1-R2:B3"
+            },
+            "min": 0.4800000000000001,
+            "max": 0.4800000000000001
+          }
+        },
+        "metrics": {
+          "full_context": 0.4800000000000001,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.4800000000000001,
+          "simple_retrieval": 0.4800000000000001,
+          "structured_agentic": 0.4800000000000001,
+          "memory_gap_closure_b2": 1.0,
+          "memory_gap_closure_b3": 1.0,
+          "baseline_span": 0.4800000000000001,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.5333333333333333,
+          "headroom_normalized_memory_benefit": 0.5333333333333333,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.4800000000000001,
+          "harm_resistance": 0.5199999999999999,
+          "net_memory_gain": 0.05333333333333323
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": true,
+          "baseline_span": true,
+          "irrelevant_stability": true,
+          "causal_sensitivity": true
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target"
+        ],
+        "causal_risks": []
+      },
+      {
+        "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R0",
+        "title": "A learned workflow becomes obsolete and must be learned again",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R1",
+        "title": "A learned workflow becomes obsolete and must be learned again",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-REVISED-EXPERIENCE-V1-R2",
+        "title": "A learned workflow becomes obsolete and must be learned again",
+        "suite": "experience",
+        "visibility": "public_dev",
+        "dimensions": [
+          "experience_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-REVISED-EXPERIENCE-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-SKILL-V1-R0",
+        "title": "A learned precondition, transferred where it applies and withheld where it does not",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-SKILL-V1-R1",
+        "title": "A learned precondition, transferred where it applies and withheld where it does not",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-SKILL-V1-R2",
+        "title": "A learned precondition, transferred where it applies and withheld where it does not",
+        "suite": "skill",
+        "visibility": "public_dev",
+        "dimensions": [
+          "skill_learning_transfer"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-SKILL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-TEMPORAL-V1-R0",
+        "title": "State transitions: current, previous and original values",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R0:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R0:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R0:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R0:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-TEMPORAL-V1-R1",
+        "title": "State transitions: current, previous and original values",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R1:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R1:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R1:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R1:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      },
+      {
+        "template_id": "MIB-GEN-TEMPORAL-V1-R2",
+        "title": "State transitions: current, previous and original values",
+        "suite": "time",
+        "visibility": "public_dev",
+        "dimensions": [
+          "temporal_memory"
+        ],
+        "baseline_scores": {
+          "B0": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R2:B0"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B1": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R2:B1"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B2": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R2:B2"
+            },
+            "min": 0.0,
+            "max": 0.0
+          },
+          "B3": {
+            "mean": 0.0,
+            "stddev": 0.0,
+            "n": 1,
+            "independent_n": 1,
+            "ci": {
+              "level": 0.95,
+              "lower": 0.0,
+              "upper": 0.0,
+              "method": "hierarchical_bootstrap_percentile",
+              "resamples": 100,
+              "seed": "mib-same-model-smoke:MIB-GEN-TEMPORAL-V1-R2:B3"
+            },
+            "min": 0.0,
+            "max": 0.0
+          }
+        },
+        "metrics": {
+          "full_context": 0.0,
+          "no_memory": 0.0,
+          "memory_discriminativeness_index": 0.0,
+          "simple_retrieval": 0.0,
+          "structured_agentic": 0.0,
+          "memory_gap_closure_b2": null,
+          "memory_gap_closure_b3": null,
+          "baseline_span": 0.0,
+          "structured_over_retrieval": 0.0
+        },
+        "causal_diagnostics": {
+          "memory_benefit": 0.0,
+          "headroom_normalized_memory_benefit": 0.0,
+          "irrelevant_memory_stability": 1.0,
+          "memory_harm": 0.0,
+          "harm_resistance": 1.0,
+          "net_memory_gain": 0.0
+        },
+        "gates": {
+          "full_context": false,
+          "no_memory": true,
+          "mdi": false,
+          "baseline_span": false,
+          "irrelevant_stability": true,
+          "causal_sensitivity": false
+        },
+        "recommendation": "revise_or_empirically_review",
+        "reasons": [
+          "fixture_full_context_below_target",
+          "memory_discriminativeness_below_target",
+          "baseline_separation_too_small"
+        ],
+        "causal_risks": [
+          "relevant_ablation_low_effect"
+        ]
+      }
+    ]
+  },
+  "transfer_diagnostics": {
+    "enabled": false
+  }
+}

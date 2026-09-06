@@ -13,6 +13,7 @@ from .calibration import DEFAULT_THRESHOLDS, _baseline_stat, _metric, _recommend
 from .materialize import materialize
 from .model_clients import build_model_client, DeterministicStubModelClient
 from .runner import run_condition, run_scenario
+from .scoring import CONDITION_BY_ABLATION_KIND
 from .same_model_agent import InvocationRecorder, SameModelAgent, load_prompt
 from .experimental.transfer import oracle_artifact_bundle_digest
 from .experimental.transfer_diagnostics import DEFAULT_EPSILON, build_transfer_diagnostics
@@ -79,7 +80,29 @@ def load_experiment(path: str | Path) -> tuple[dict[str, Any], dict[str, Path]]:
     return cfg, paths
 
 
+def load_experiment_templates(paths: dict[str, Path]) -> list[dict[str, Any]]:
+    profile = load_json(paths['profile'])
+    if not profile.get('programs'):
+        return load_private_templates(paths['pack'])
+    from .generate import generate_instance
+    from .generate.registry import resolve_program_config
+    templates = []
+    boundary = bool(profile.get('measurement_regime', {}).get('session_boundary'))
+    for entry in profile['programs']:
+        config = resolve_program_config(entry, profile.get('ladder'))
+        pid, ladder, params = config['id'], config['ladder'], config['params']
+        for rung in range(len(ladder)):
+            template = generate_instance(pid, 0, rung=rung, ladder=ladder, session_boundary=boundary, parameters=params)
+            template['id'] += f'-R{rung}'
+            version = template.pop('instantiation')['program_version']
+            template['template'] = {'program': {'id': pid, 'version': version, 'ladder': ladder, 'rung': rung, 'session_boundary': boundary, 'params': params}}
+            template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung)
+            templates.append(template)
+    return templates
+
+
 def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[str, Any]:
+    generated = bool(load_json(paths['profile']).get('programs'))
     model_public = copy.deepcopy(cfg["model"])
     # Secret values are never stored in the experiment lock. Header values are
     # fingerprinted so behavior-affecting configuration remains bound without
@@ -108,6 +131,7 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
         "scenario_schema_sha256": sha256_file(paths["scenario_schema"]),
         "profile_sha256": sha256_file(paths["profile"]),
         "scenario_pack_sha256": directory_digest(paths["pack"] / "templates"),
+        "runner_source_sha256": directory_digest(Path(__file__).parent, '*.py'),
         "condition_order_policy": "counterbalanced_latin_rotation_v1",
         "conditions": {
             "B0": {"memory_policy": "no_memory"},
@@ -122,6 +146,9 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
         "memory_runtime": {
             "memory_char_limits": copy.deepcopy(cfg["agent"].get("memory_char_limits") or {}),
             "parse_retries": int(cfg["agent"].get("parse_retries", 1)),
+            "observe_decisions": bool(cfg['agent'].get('observe_decisions', generated)),
+            "maintenance_decisions": bool(cfg['agent'].get('maintenance_decisions', generated)),
+            "additional_baselines": copy.deepcopy(cfg.get('calibration', {}).get('additional_baselines', {})),
         },
         "allowed_condition_differences": ["memory_policy", "memory_selection", "memory_context_content"],
     }
@@ -167,25 +194,33 @@ def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) ->
     cseeds = list(cal.get("causal_instance_seeds") or seeds)
     creps = int(cal.get("causal_repetitions", 1))
     full_condition_runs = len(templates) * len(seeds) * reps * 4
-    causal_ablation_runs = sum(
-        sum(1 for a in t.get("ablations", []) if a.get("method") == "replay_excluding_events")
-        for t in templates
-    ) * len(cseeds) * creps
-    full_probe_calls_min = sum(len(t.get("probes", [])) for t in templates) * len(seeds) * reps * 4
-    causal_probe_calls_min = sum(
-        sum(len(a.get("probes", [])) for a in t.get("ablations", []) if a.get("method") == "replay_excluding_events")
-        for t in templates
-    ) * len(cseeds) * creps
+    causal_ablation_runs = 0
+    calls = 0
+    observe = bool(cfg['agent'].get('observe_decisions', any(t.get('template', {}).get('program') for t in templates)))
+    maintain = bool(cfg['agent'].get('maintenance_decisions', observe))
+    def minimum_calls(instance, ablation=None):
+        removed = set((ablation or {}).get('targets', {}).get('event_ids', [])) if (ablation or {}).get('method') == 'replay_excluding_events' else set()
+        events = [e for e in instance['timeline'] if e['id'] not in removed]
+        visible = sum(e.get('visibility') in {'agent', 'both'} and e['type'] not in {'task', 'checkpoint', 'world_update'} for e in events)
+        return (sum(e['type'] == 'task' for e in events) + sum(p['delivery'] in {'respond', 'act'} for p in instance['probes'])
+                + int(observe) * (visible + len((ablation or {}).get('injections', [])) + sum(p['delivery'] == 'observe_only' for p in instance['probes']))
+                + int(maintain) * sum(e['type'] == 'maintenance_window' for e in events))
+    for template in templates:
+        for seed in seeds:
+            calls += 4 * reps * minimum_calls(materialize(template, seed))
+        for seed in cseeds:
+            instance = materialize(template, seed)
+            causal_ablation_runs += len(instance.get('ablations', [])) * creps
+            calls += creps * sum(minimum_calls(instance, a) for a in instance.get('ablations', []))
+    additional = cal.get('additional_baselines') or {}
+    extra_count = int(bool(additional.get('recent_window'))) + int(bool(additional.get('oracle_reference')))
+    extra_runs = len(templates) * len(seeds) * reps * extra_count
     return {
-        "template_count": len(templates),
-        "instance_seeds": len(seeds),
-        "repetitions": reps,
-        "minimum_condition_runs": full_condition_runs + causal_ablation_runs,
-        "full_baseline_condition_runs": full_condition_runs,
-        "additional_causal_ablation_runs": causal_ablation_runs,
-        "minimum_model_turns": full_probe_calls_min + causal_probe_calls_min,
-        "note": "ACTION probes may require multiple model turns, so actual model calls can exceed minimum_model_turns.",
-    }
+        'template_count': len(templates), 'instance_seeds': len(seeds), 'repetitions': reps,
+        'minimum_condition_runs': full_condition_runs + causal_ablation_runs + extra_runs,
+        'full_baseline_condition_runs': full_condition_runs, 'additional_causal_ablation_runs': causal_ablation_runs,
+        'additional_diagnostic_runs': extra_runs, 'minimum_model_turns': calls,
+        'note': 'minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote.'}
 
 
 def _preflight_statelessness(model_cfg: dict[str, Any], system_prompt: str) -> dict[str, Any]:
@@ -339,13 +374,11 @@ def _run_causal_from_paired_b3(
                         agent_seed=f"same-model:{seed}:{rep}",
                     )
                 runs = [full]
-                for a in t.get("ablations", []):
-                    if a.get("method") != "replay_excluding_events":
-                        continue
+                for a in instance.get("ablations", []):
                     runs.append(run_condition(
                         scenario=instance,
                         agent=factory(),
-                        condition=_KIND_TO_CONDITION.get(a["kind"], "custom"),
+                        condition=CONDITION_BY_ABLATION_KIND.get(a["kind"], "custom"),
                         ablation=a,
                         repetition=rep,
                         agent_seed=f"same-model:{seed}:{rep}",
@@ -532,7 +565,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     experiment_lock = build_experiment_lock(cfg, paths)
     schema = load_json(paths["scenario_schema"])
     profile = load_json(paths["profile"])
-    templates = load_private_templates(paths["pack"])
+    templates = load_experiment_templates(paths)
     system_prompt = load_prompt(paths["system_prompt"])
     reasoning_policy = load_prompt(paths["reasoning_policy"])
     execution_plan = estimate_experiment(cfg, templates)
@@ -550,6 +583,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "structured_top_k": int(cfg["agent"].get("structured_top_k", 10)),
         "structured_salient_k": int(cfg["agent"].get("structured_salient_k", 6)),
         "parse_retries": int(cfg["agent"].get("parse_retries", 1)),
+        "observe_decisions": bool(cfg['agent'].get('observe_decisions', bool(profile.get('programs')))),
+        "maintenance_decisions": bool(cfg['agent'].get('maintenance_decisions', bool(profile.get('programs')))),
     }
     memory_limits = dict(cfg["agent"].get("memory_char_limits") or {})
     model_cfg = copy.deepcopy(cfg["model"])
@@ -641,6 +676,35 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
                 "condition_order_policy": "counterbalanced_latin_rotation_v1",
             },
         )
+        additional_baselines = {}
+        additional_spec = cal_cfg.get('additional_baselines') or {}
+        for label in ['bounded_recent_context', 'oracle_supported_reference']:
+            if (label == 'bounded_recent_context' and not additional_spec.get('recent_window')) or (label == 'oracle_supported_reference' and not additional_spec.get('oracle_reference')):
+                continue
+            recorder = InvocationRecorder()
+            memory = {**common_memory, **({'recent_window': int(additional_spec['recent_window'])} if label == 'bounded_recent_context' else {})}
+            def extra_factory():
+                return SameModelAgent(condition='B1', model_client=model_client, system_prompt=system_prompt, reasoning_policy=reasoning_policy,
+                    model_parameters=copy.deepcopy(model_cfg.get('parameters') or {}), recorder=recorder, memory_config=memory,
+                    empirical_eligible=empirical_client, seed_policy=str(model_cfg.get('seed_policy', 'paired_per_call')),
+                    seed_base=str(model_cfg.get('seed_base', 'mib-same-model-0.1')))
+            rows = []
+            for template in templates:
+                scores = []
+                for seed in seeds:
+                    instance = materialize(template, seed)
+                    support = {}
+                    if label == 'oracle_supported_reference':
+                        support = {p['id']: ['Privileged evaluator reference for this diagnostic only: ' + json.dumps(p['oracle'], ensure_ascii=False)]
+                                   for p in instance['probes']}
+                    for rep in range(reps):
+                        run = run_condition(scenario=instance, agent=extra_factory(), condition='full', repetition=rep,
+                                            agent_seed=f'same-model:{seed}:{rep}', pre_probe_injections=support)
+                        scores.append(run['scenario_score'])
+                rows.append({'template_id': template['id'], 'score': sum(scores)/len(scores), 'n': len(scores)})
+            additional_baselines[label] = {'templates': rows, 'telemetry': recorder.summary(), 'enters_release_gate': False,
+                'interpretation': 'A diagnostic reference, not a deployable participant or guaranteed mathematical upper bound.' if label == 'oracle_supported_reference'
+                                  else 'The fixed model sees only the configured recent observation window.'}
     finally:
         try:
             model_client.close()
@@ -725,9 +789,9 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     )
 
     return {
-        "mib": "0.1",
+        "mib": profile.get('mib', '0.1'),
         "kind": "MIBSameModelCalibrationReport",
-        "report_version": "0.1.0",
+        "report_version": "0.2.0",
         "generated_at": utc_now(),
         "experiment": {
             "id": cfg["id"],
@@ -741,6 +805,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "pairing_audit": pairing_audit,
         "fairness_audit": {"valid": fairness_valid, "checks": fairness_checks, "evidence": fairness_evidence},
         "telemetry": telemetry,
+        "additional_baselines": additional_baselines,
         "empirical_release_gate": {
             "eligible": release_eligible,
             "non_stub_model": empirical_client,
@@ -774,7 +839,7 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
     fa = report["fairness_audit"]
     sched = report["condition_order_audit"]
     lines = [
-        "# MIB v0.1 Same-Model Empirical Calibration Report",
+        f"# MIB v{report.get('mib', '0.1')} Same-Model Calibration Report",
         "",
         f"**Experiment:** `{report['experiment']['id']}`  ",
         f"**Mode:** `{cal['calibration_mode']}`  ",

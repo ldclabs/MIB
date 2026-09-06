@@ -48,13 +48,14 @@ def plan(
 ) -> list[InterferenceEvent]:
     """Plan ``count`` interference events for one target attribute.
 
-    ``exclude_values`` are answer values that must not appear in interference,
-    so a string-matching evaluator cannot reward a guess.
+    ``exclude_values`` is retained for source compatibility and deliberately
+    ignored: conditioning noise on the answer leaks that answer by absence.
+    The same value may occur for another subject or in a nonassertive mention.
     """
     mix = mix or DEFAULT_MIX
     kinds = list(mix)
     weights = [mix[k] for k in kinds]
-    pool_values = [v for v in spec.values if v not in exclude_values]
+    pool_values = list(spec.values)
     out: list[InterferenceEvent] = []
     for _ in range(count):
         kind = rng.choices(kinds, weights=weights, k=1)[0]

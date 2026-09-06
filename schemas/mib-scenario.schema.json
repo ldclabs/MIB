@@ -376,6 +376,13 @@
               "additionalProperties": {
                 "$ref": "#/$defs/JsonValue"
               }
+            },
+            "rung": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "session_boundary": {
+              "type": "boolean"
             }
           }
         }
@@ -461,7 +468,8 @@
               "snapshot",
               "memory_inspect",
               "memory_delete",
-              "memory_restore"
+              "memory_restore",
+              "session_boundary"
             ]
           }
         },
@@ -823,7 +831,8 @@
             "feedback",
             "document",
             "custom",
-            "task"
+            "task",
+            "session_boundary"
           ]
         },
         "at": {
@@ -1143,6 +1152,39 @@
             "window": {
               "type": "integer",
               "minimum": 0
+            },
+            "lifecycle": {
+              "type": "boolean"
+            },
+            "start_after": {
+              "type": "string"
+            },
+            "expected": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "after_event",
+                  "commitment_id",
+                  "recipient",
+                  "topic"
+                ],
+                "properties": {
+                  "after_event": {
+                    "type": "string"
+                  },
+                  "commitment_id": {
+                    "type": "string"
+                  },
+                  "recipient": {
+                    "type": "string"
+                  },
+                  "topic": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
@@ -1152,6 +1194,9 @@
           "additionalProperties": {
             "type": "string"
           }
+        },
+        "experienced_failure": {
+          "type": "string"
         }
       },
       "minProperties": 1
@@ -1265,7 +1310,9 @@
                 "first_stated",
                 "known",
                 "status",
-                "hop"
+                "hop",
+                "bitemporal",
+                "according_to_authority"
               ]
             }
           },
@@ -1393,7 +1440,8 @@
             "custom",
             "counterfactual_content",
             "no_maintenance",
-            "negative_transfer"
+            "negative_transfer",
+            "counterfactual_policy"
           ]
         },
         "probes": {
@@ -1409,7 +1457,8 @@
           "enum": [
             "replay_excluding_events",
             "replay_with_injections",
-            "swap_parameter"
+            "swap_parameter",
+            "replay_policy_twin"
           ]
         },
         "targets": {
@@ -1477,8 +1526,20 @@
               "additionalProperties": {
                 "$ref": "#/$defs/Oracle"
               }
+            },
+            "world_updates": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/WorldUpdate"
+                }
+              }
             }
           }
+        },
+        "reference_ablation": {
+          "type": "string"
         }
       }
     },

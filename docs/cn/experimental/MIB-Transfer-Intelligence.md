@@ -298,7 +298,7 @@ OO  支撑经历被移除，在任务执行时刻将标准的真值产物直接
     推送给系统                             （兼容黑盒 Agent）
 ```
 
-`OA` 和 `OO` 均承载标准真值内容，唯一区别在于其**何时**对系统可见，从而精确隔离出路由（Routing）能力。`AA` 和 `AO` 均承载系统自发形成的内容，唯一区别在于路由机制，从而精确隔离出形成（Formation）能力。
+`OA` 和 `OO` 在不同时间承载真值内容。对于黑盒 Agent，这种对比可能包含形成、留存、巩固、新鲜度以及检索；它测量的是历史产物可用性（historical artifact availability），而非孤立的路由机制。`AA` 与 `AO` 均保留自发形成的内容，但改变了其呈现方式。若将这些测试单元解释为纯粹的机制解构，需要额外的假设或依赖 Memory Adapter，并且这些假设必须在报告中说明。
 
 标准真值内容**取代（replaces）**其所代表的经历。若原有的自然支撑经历依然保留，则 `OA` 测量的将是“自然记忆 + 额外提示”，而非纯粹的路由能力。
 
@@ -405,7 +405,7 @@ NTG = AA - B
 FE = (AO - B) / (OO - B)
 ```
 
-## 9.3 路由效率（Routing Efficiency）
+## 9.3 历史产物可用性（Historical Artifact Availability，遗留键名: routing_efficiency）
 
 ```text
 RE = (OA - B) / (OO - B)
@@ -516,7 +516,7 @@ Oracle 路由收益（Oracle Routed Gain）  = OO - B
 Transfer Diagnostics
   Natural Transfer Gain  +18.4 pp
   Formation Efficiency     81.0
-  Routing Efficiency       64.0
+  Artifact Availability    64.0
   Oracle-Routed Score      92.0
   Negative Transfer Rate    9.8%
 

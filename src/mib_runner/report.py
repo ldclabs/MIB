@@ -182,6 +182,7 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
         "run_id", "scenario_instance_id", "scenario_instance_version", "template_id",
         "template_version", "instance_seed", "condition", "ablation_id", "ablation_method",
         "ablation_tolerance", "repetition", "agent_seed", "status", "started_at", "completed_at",
+        "reference_ablation_id",
         "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings", "task_results",
     }
     result = {k: v for k, v in run.items() if k in allowed and v is not None}
@@ -195,6 +196,9 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
         {k: v for k, v in p.items() if k in p_allowed and v is not None}
         for p in result.get("probe_results", [])
     ]
+    if result.get('warnings'):
+        result['warnings'] = [w if isinstance(w, dict) else {'code': 'runner.warning', 'severity': 'warning', 'message': str(w), 'scope': 'run'}
+                              for w in result['warnings']]
     return result
 
 
@@ -251,7 +255,8 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             recomputed_metrics = {m["name"]: float(m["value"]) for m in metrics}
             metric_ok = True
             for m in inst.get("causal_metrics", []):
-                rec = recomputed_metrics.get(m["name"])
+                name = 'memory_related_error_rate' if m['name'] == 'memory_induced_error_rate' else m['name']
+                rec = recomputed_metrics.get(name)
                 if rec is None or not close(rec, float(m["value"])):
                     metric_ok = False
                     errors.append(f"instance {iid} causal metric {m['name']}: stored={m['value']} recomputed={rec}")
@@ -321,6 +326,78 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     stored_final = float(report["aggregates"]["mib_score"]["final_score"])
     if not close(recomputed_final, stored_final):
         errors.append(f"MIB final score: stored={stored_final} recomputed={recomputed_final}")
+
+    policy = report.get('evaluation_policy')
+    if report.get('report_version') == '0.3.0' and policy is None:
+        errors.append('evaluation_policy: required for report version 0.3.0')
+    if policy is not None:
+        from .aggregation import canonical_instances, score_aggregates, tracking_totals
+        from .scoring import aggregate_dependence_evidence, counterfactual_evidence, counterfactual_counts, memory_dependence, retention_block, validate_causal_pairs
+        import math
+
+        def same(actual, expected) -> bool:
+            if isinstance(actual, bool) or isinstance(expected, bool):
+                return type(actual) is type(expected) and actual == expected
+            if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+                return math.isclose(actual, expected, abs_tol=tolerance, rel_tol=0)
+            if isinstance(actual, dict) and isinstance(expected, dict):
+                return set(actual) == set(expected) and all(same(actual[k], expected[k]) for k in actual)
+            if isinstance(actual, list) and isinstance(expected, list):
+                return len(actual) == len(expected) and all(same(a, b) for a, b in zip(actual, expected))
+            return actual == expected
+
+        def check(label, actual, expected):
+            if not same(actual, expected):
+                errors.append(f'{label}: differs from policy/evidence recomputation')
+
+        profile, templates = policy['profile'], policy['templates']
+        if policy.get('runner_source_digest'):
+            from .util import runner_source_digest
+            check('runner_source_digest', policy['runner_source_digest'], runner_source_digest())
+        check('benchmark.profile', report['benchmark']['profile'], {k: profile[k] for k in ['id', 'version']})
+        check('benchmark.track', report['benchmark']['track'], profile.get('track', 'integrated_agent'))
+        rebuilt = score_aggregates(instance_rows, templates, profile)
+        strip_ci = lambda xs: [{k: v for k, v in x.items() if k != 'ci'} for x in xs]
+        check('templates', strip_ci(template_rows), rebuilt['templates'])
+        check('dimensions', strip_ci(dimension_rows), rebuilt['dimensions'])
+        check('causal_metrics', strip_ci(report.get('causal_metrics', [])), rebuilt['causal_metrics'])
+        check('retention', report.get('retention', []), retention_block(instance_rows, profile.get('canonical_rung')))
+        evidence = aggregate_dependence_evidence(canonical_instances(instance_rows, profile))
+        dependence = memory_dependence(rebuilt['causal_metrics'], profile, evidence if profile.get('programs') else None,
+                                        tracking_totals(canonical_instances(instance_rows, profile)) if profile.get('programs') else None)
+        check('memory_dependence', report.get('memory_dependence'), dependence)
+        coverage = math.fsum(d['weight'] * d['coverage'] for d in rebuilt['dimensions'])
+        eligible = coverage + 1e-12 >= float(profile.get('required_coverage', 1))
+        check('coverage.overall', report.get('coverage', {}).get('overall'), coverage)
+        check('mib_score.partial', aggregates['mib_score'].get('partial'), not eligible)
+        check('mib_score.profile_eligible', aggregates['mib_score'].get('profile_eligible'), eligible)
+        failure_rate = float(report.get('execution', {}).get('execution_failure_rate', 0))
+        official = bool(profile.get('official')) and eligible and (dependence['eligible'] is True if profile.get('memory_dependence') else True) and failure_rate <= float(profile.get('max_execution_failure_rate', 0))
+        check('mib_score.official', aggregates['mib_score'].get('official'), official)
+        stats_block = report.get('statistics', {})
+        check('mib_score.ci', aggregates['mib_score'].get('ci'), stats_block.get('mib_score', {}).get('ci'))
+        for group, items in [('dimensions', dimension_rows), ('causal_metrics', report.get('causal_metrics', []))]:
+            key = 'dimension' if group == 'dimensions' else 'name'
+            intervals = {x[key]: x.get('ci') for x in stats_block.get(group, [])}
+            for row in items:
+                check(group + '.ci', row.get('ci'), intervals.get(row[key]))
+        if runs:
+            attempts = sum(len(r.get('probe_results', [])) for r in runs)
+            failures = sum(p.get('outcome') == 'execution_failure' for r in runs for p in r.get('probe_results', []))
+            check('execution.failure_rate', failure_rate, failures / attempts if attempts else 0.0)
+            for inst in instance_rows:
+                rr = runs_by_iid.get(inst['scenario_instance_id'], [])
+                valid, _, notes = validate_causal_pairs(rr)
+                if not valid:
+                    errors.append(f'causal pairing: {notes}')
+                check('dependence_evidence', inst.get('dependence_evidence', []), counterfactual_evidence(rr))
+                check('counterfactual_counts', inst.get('counterfactual_counts', {}), counterfactual_counts(rr))
+            boot = report.get('statistics', {}).get('bootstrap')
+            if boot and int(boot.get('resamples', 0)):
+                from .benchmark import hierarchical_bootstrap
+                stats = hierarchical_bootstrap(templates=templates, runs_by_instance=runs_by_iid, profile=profile,
+                    resamples=int(boot['resamples']), seed=boot['seed'], confidence_level=report['statistics']['confidence_level'])
+                check('statistics', report['statistics'], stats)
 
     return {
         "valid": not errors,

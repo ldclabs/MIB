@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import hmac
 import json
+import secrets
 import time
 import uuid
 
@@ -27,11 +29,13 @@ _EVENT_TYPE_MAP = {
     "time_advance": "time_event",
     "maintenance_window": "system_event",
     "system_event": "system_event",
+    "session_boundary": "system_event",
     "custom": "custom",
 }
 
 # Timeline event types the Runner handles itself rather than projecting.
 _HARNESS_EVENT_TYPES = {"checkpoint", "world_update", "task"}
+_WIRE_SECRET = secrets.token_bytes(32)
 
 
 class RunnerError(RuntimeError):
@@ -61,7 +65,8 @@ def _actor_map(scenario: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]], virtual_time: str | None,
-                         replacement: dict[str, Any] | None = None) -> Observation:
+                         replacement: dict[str, Any] | None = None, *, observation_id: str | None = None,
+                         tool_call_id: str | None = None) -> Observation:
     actor = None
     if event.get("actor"):
         src = actors[event["actor"]]
@@ -74,13 +79,13 @@ def _project_observation(event: dict[str, Any], actors: dict[str, dict[str, Any]
         content = replacement.get("content", content)
         payload = replacement.get("payload", payload)
     return Observation(
-        observation_id=f"obs_{event['id']}",
+        observation_id=observation_id or _opaque("obs"),
         type=obs_type,
         virtual_time=virtual_time,
         actor=actor,
         content=content,
         payload=copy.deepcopy(payload),
-        tool_call_id=event.get("tool_call_id"),
+        tool_call_id=tool_call_id,
         tool=event.get("tool"),
     )
 
@@ -117,8 +122,12 @@ def _emissions_of(response: Any) -> list[dict[str, Any]]:
         if isinstance(item, str):
             out.append({"content": item})
         elif isinstance(item, dict):
-            content = item.get("content") or item.get("text")
-            out.append({**item, "content": content if content is not None else json.dumps(item, ensure_ascii=False)})
+            content = item.get("content")
+            if content is None:
+                content = item.get("text")
+            # A payload-only reminder has no text. Serializing the envelope
+            # here would fabricate extra content and invalidate that reminder.
+            out.append({**item, **({"content": content} if content is not None else {})})
     return out
 
 
@@ -159,6 +168,12 @@ def run_condition(
 
     seed = agent_seed if agent_seed is not None else repetition
 
+    def wire_id(kind: str, raw: str) -> str:
+        # Stable across paired conditions, opaque to participants, and independent
+        # of event position so excluding one event cannot relabel every survivor.
+        message = json.dumps([instance_key(scenario), kind, raw]).encode()
+        return f"{kind}_" + hmac.new(_WIRE_SECRET, message, hashlib.sha256).hexdigest()[:24]
+
     removed_ids: set[str] = set(excluded_event_ids or ())
     # Diagnostic callers may explicitly choose which Probes exist in the run.
     # Ordinary Ablations, however, must execute the same complete future Probe
@@ -177,10 +192,11 @@ def run_condition(
     scenario_injection_ids: set[str] = set()
     replacements: dict[str, dict[str, Any]] = {}
     counterfactual_oracles: dict[str, dict[str, Any]] = {}
+    policy_updates: dict[str, list[dict[str, Any]]] = {}
     if ablation:
         ablation_id = ablation["id"]
         ablation_method = ablation.get("method")
-        if ablation_method not in {"replay_excluding_events", "replay_with_injections", "swap_parameter"}:
+        if ablation_method not in {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}:
             raise NotImplementedError(
                 "reference Runner implements replay_excluding_events, replay_with_injections "
                 f"and swap_parameter only, got {ablation_method!r}"
@@ -188,12 +204,13 @@ def run_condition(
         scored_probe_ids = set(ablation.get("probes", []))
         scenario_injections = copy.deepcopy(ablation.get("injections") or [])
         scenario_injection_ids = {str(injection["id"]) for injection in scenario_injections}
-        if ablation_method == "swap_parameter":
+        if ablation_method in {"swap_parameter", "replay_policy_twin"}:
             cf = ablation.get("counterfactual") or {}
             replacements = copy.deepcopy(cf.get("events") or {})
             counterfactual_oracles = copy.deepcopy(cf.get("oracle") or {})
+            policy_updates = copy.deepcopy(cf.get('world_updates') or {}) if ablation_method == 'replay_policy_twin' else {}
             for eid in (ablation.get("targets") or {}).get("event_ids", []):
-                if str(eid) not in replacements:
+                if str(eid) not in (policy_updates if ablation_method == 'replay_policy_twin' else replacements):
                     raise RunnerError(f"swap_parameter Ablation {ablation_id} has no replacement for {eid}")
         else:
             removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
@@ -217,17 +234,31 @@ def run_condition(
     probe_variant_digests: dict[str, str] = {}
     request_counter = 0
     observation_counter = 0
+    observation_indices: dict[str, int] = {}
+    operation_usage: dict[str, dict[str, float]] = {}
+
+    def invoke(operation: str, **kwargs):
+        start = time.perf_counter_ns()
+        row = operation_usage.setdefault(operation, {"calls": 0, "latency_ms": 0, "input_bytes": 0, "output_bytes": 0})
+        row["calls"] += 1
+        row["input_bytes"] += len(json.dumps(kwargs, default=lambda x: asdict(x), ensure_ascii=False).encode())
+        try:
+            result = getattr(agent, operation)(**kwargs)
+            row["output_bytes"] += len(json.dumps(result, default=lambda x: asdict(x), ensure_ascii=False).encode())
+            return result
+        finally:
+            row["latency_ms"] += (time.perf_counter_ns() - start) / 1_000_000
 
     def req_id() -> str:
         nonlocal request_counter
         request_counter += 1
-        return f"req_{request_counter:06d}"
+        return wire_id("req", str(request_counter))
 
     def deliver_observation(obs: Observation) -> int:
         nonlocal observation_counter
         observation_counter += 1
         index = observation_counter
-        response = agent.observe(run_id=run_id, request_id=req_id(), observation=obs)
+        response = invoke("observe", run_id=run_id, request_id=req_id(), observation=obs)
         emissions = _emissions_of(response)
         if emissions:
             emission_log.append({"index": index, "observation_id": obs.observation_id, "emissions": emissions})
@@ -275,7 +306,7 @@ def run_condition(
 
     def counterfactual_extra(p: dict[str, Any], output: AgentOutput, context: dict[str, Any], score: float) -> dict[str, Any]:
         """Under swap_parameter, record whether the answer tracked the counterfactual or stayed with the original."""
-        if p["id"] not in counterfactual_oracles:
+        if condition != 'counterfactual_content' or p["id"] not in counterfactual_oracles:
             return {}
         original = {**p, "oracle": p.get("oracle") or {}}
         stale_score, _ = evaluate_probe(output, original, evaluator_map, context)
@@ -283,10 +314,10 @@ def run_condition(
 
     def execute_respond_probe(p: dict[str, Any]) -> None:
         started_ns = time.perf_counter_ns()
-        output = agent.respond(
+        output = invoke("respond",
             run_id=run_id,
             request_id=req_id(),
-            interaction_id=f"interaction_{p['id']}",
+            interaction_id=wire_id("interaction", p['id']),
             input_data=copy.deepcopy(p.get("input") or {}),
             virtual_time=virtual_time,
         )
@@ -311,7 +342,7 @@ def run_condition(
         seen_calls: set[str] = set()
         final_step: ActStep | None = None
         for turn in range(turns):
-            step = agent.act(
+            step = invoke("act",
                 run_id=run_id,
                 request_id=req_id(),
                 task_id=task_id,
@@ -363,7 +394,7 @@ def run_condition(
         started_ns = time.perf_counter_ns()
         inp = copy.deepcopy(p.get("input") or {})
         final_step, trace = run_act_loop(
-            task_id=f"task_{p['id']}", goal=inp.get("goal") or inp.get("content"), allowed=inp.get("available_tools"),
+            task_id=wire_id("task", p['id']), goal=inp.get("goal") or inp.get("content"), allowed=inp.get("available_tools"),
             constraints=list(inp.get("constraints") or []), turns=max_agent_turns,
         )
         output = AgentOutput(
@@ -377,6 +408,31 @@ def run_condition(
         score, eval_results = evaluate_probe(output, scored, evaluator_map, context)
         extra = counterfactual_extra(p, output, context, score)
         recurrence = recurrence_checks(trace, scored.get("oracle") or {})
+        failure = scored.get('oracle', {}).get('experienced_failure')
+        if failure:
+            past_failures = [r for rows in experience_trace.values() for r in rows if r.get('result', {}).get('error') == failure]
+            current_family = world.get('/workflow/family')
+            past_failures = [r for r in past_failures if r.get('result', {}).get('family') == current_family
+                             and r.get('result', {}).get('required_recipe') == world.get('/workflow/recipe')]
+            recurrence = {'eligible': bool(past_failures), 'recurred': bool(trace and trace[0].get('result', {}).get('error') == failure)}
+            if recurrence['eligible'] and recurrence['recurred'] and p.get('kind') == 'experience':
+                for result in eval_results:
+                    result.setdefault('failure_codes', []).append('error_recurrence')
+            elif recurrence['recurred'] and p.get('kind') == 'skill':
+                chosen = world.get('/workflow/first_recipe')
+                transferred = any(
+                    row.get('result', {}).get('family') != current_family
+                    and chosen == (row.get('arguments', {}).get('recipe') if row.get('result', {}).get('success')
+                                   else row.get('result', {}).get('required_recipe'))
+                    for rows in experience_trace.values() for row in rows if row.get('tool') == 'workflow.submit')
+                for result in eval_results:
+                    result.setdefault('failure_codes', []).append('negative_transfer' if transferred else 'skill_non_transfer')
+        elif recurrence is not None:
+            # A structural no-recurrence requirement is only an opportunity if
+            # the Agent actually lived a failed action of the relevant kind.
+            actions = {r.get('action') for r in scored.get('oracle', {}).get('trajectory_requirements', []) if r.get('type') == 'no_recurrence'}
+            recurrence['eligible'] = any(r.get('tool') in actions and r.get('result', {}).get('success') is False
+                                         for rows in experience_trace.values() for r in rows)
         if recurrence is not None:
             extra["recurrence"] = recurrence
         append_probe_result(p, output, score, eval_results, (time.perf_counter_ns() - started_ns) / 1_000_000, trace, extra=extra)
@@ -384,7 +440,7 @@ def run_condition(
     def execute_task(event: dict[str, Any]) -> None:
         """A lived task in the past: the Agent's own trajectory becomes its experience (§5.3)."""
         task = event.get("task") or {}
-        task_id = f"task_{event['id']}"
+        task_id = wire_id("task", event['id'])
         try:
             _, trace = run_act_loop(
                 task_id=task_id, goal=task.get("goal"), allowed=task.get("available_tools"),
@@ -416,7 +472,7 @@ def run_condition(
             src = actor_by_id[spec["actor"]]
             actor = {"id": src["id"], "kind": src.get("kind"), "display_name": src.get("display_name")}
         index = deliver_observation(Observation(
-            observation_id=f"obs_probe_{p['id']}",
+            observation_id=wire_id("obs", p['id']),
             type=spec.get("type", "environment_event"),
             virtual_time=virtual_time,
             actor=actor,
@@ -424,6 +480,7 @@ def run_condition(
             payload=copy.deepcopy(spec.get("payload")),
         ))
         pending_emission_probes.append((p, index))
+        observation_indices[p['id']] = index
 
     def execute_probe(p: dict[str, Any]) -> None:
         sampled, variant_digest = sample_probe_for_delivery(scenario=scenario, probe=p, repetition=repetition)
@@ -481,8 +538,12 @@ def run_condition(
     def score_pending_emission_probes() -> None:
         for p, index in pending_emission_probes:
             scored = {**p, "oracle": probe_oracle(p)}
-            score, eval_results = evaluate_emission_probe(scored, evaluator_map, emission_log, index)
-            append_probe_result(p, None, score, eval_results, 0.0)
+            score, eval_results = evaluate_emission_probe(scored, evaluator_map, emission_log, index, observation_indices)
+            extra = {}
+            if p['id'] in counterfactual_oracles:
+                stale, _ = evaluate_emission_probe(p, evaluator_map, emission_log, index, observation_indices)
+                extra['counterfactual'] = {'tracks': score >= 1.0, 'stale': stale >= 1.0}
+            append_probe_result(p, None, score, eval_results, 0.0, extra=extra)
 
     def maintain(event: dict[str, Any]) -> None:
         hook = getattr(agent, "maintain", None)
@@ -490,7 +551,7 @@ def run_condition(
             return
         payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
         try:
-            hook(run_id=run_id, request_id=req_id(), budget=payload.get("budget"), virtual_time=virtual_time)
+            invoke("maintain", run_id=run_id, request_id=req_id(), budget=payload.get("budget"), virtual_time=virtual_time)
         except Exception as exc:  # a broken maintenance hook must not fail the run
             run_warnings.append(f"maintenance {event['id']}: {exc!r}")
 
@@ -559,7 +620,7 @@ def run_condition(
         virtual_time = _virtual_time_for_event(event, virtual_time)
         if not injected:
             # World updates apply in every condition: memory is the only treatment variable.
-            for update in event.get("world_updates", []):
+            for update in policy_updates.get(event['id'], event.get("world_updates", [])):
                 world.apply(update)
         if event["id"] in removed_ids or event.get("visibility") not in {"agent", "both"}:
             return
@@ -568,14 +629,21 @@ def run_condition(
             return
         if event["type"] in _HARNESS_EVENT_TYPES:
             return
-        deliver_observation(_project_observation(event, actor_by_id, virtual_time, replacements.get(str(event["id"]))))
+        index = deliver_observation(_project_observation(event, actor_by_id, virtual_time, replacements.get(str(event["id"])),
+                                   observation_id=wire_id("obs", event['id']),
+                                   tool_call_id=wire_id("call", event['tool_call_id']) if event.get('tool_call_id') else None))
+        observation_indices[event['id']] = index
         if event["type"] == "maintenance_window":
             maintain(event)
+        if event['type'] == 'session_boundary':
+            result = invoke('session_boundary', run_id=run_id, request_id=req_id(), virtual_time=virtual_time)
+            if not isinstance(result, dict) or result.get('accepted') is not True:
+                raise RunnerError('Agent did not acknowledge the required session boundary')
 
     try:
         # Reset inside the guarded region: any failure after this point must
         # release the Agent (and its sandboxed subprocess) before propagating.
-        agent.reset(run_id=run_id, seed=seed, virtual_time=virtual_time)
+        invoke("reset", run_id=run_id, seed=seed, virtual_time=virtual_time)
         timeline, injected_after = merged_timeline()
         for event in timeline:
             is_scenario_injection = str(event["id"]) in scenario_injection_ids
@@ -619,6 +687,7 @@ def run_condition(
         "instance_seed": instance.get("seed"),
         "condition": condition,
         **({"ablation_id": ablation_id, "ablation_method": ablation_method} if ablation else {}),
+        **({'reference_ablation_id': ablation['reference_ablation']} if ablation and ablation.get('reference_ablation') else {}),
         **({"ablation_tolerance": float(ablation["tolerance"])} if ablation and ablation.get("tolerance") is not None else {}),
         "repetition": repetition,
         "agent_seed": seed,
@@ -628,7 +697,8 @@ def run_condition(
         "scenario_score": scenario_score_from_probes(probe_results),
         "probe_results": probe_results,
         **({"task_results": task_results} if task_results else {}),
-        "validity": {"causal_pair_valid": True, "runner_valid": True, "notes": []},
+        "validity": {"causal_pair_valid": True, "runner_valid": True, "notes": [], "probe_input_digests": probe_variant_digests,
+                     "instance_spec_digest": hashlib.sha256(json.dumps(scenario, sort_keys=True, ensure_ascii=False).encode()).hexdigest()},
         **({"warnings": run_warnings} if run_warnings else {}),
         "extensions": {
             "mib.runner.world_state": copy.deepcopy(world.state),
@@ -637,6 +707,8 @@ def run_condition(
             "mib.runner.experience_trace": experience_trace,
             "mib.runner.emissions": emission_log,
             "mib.runner.probe_variant_digests": probe_variant_digests,
+            "mib.runner.operation_usage": operation_usage,
+            "mib.runner.observation_indices": observation_indices,
         },
     }
     # Closed only after all observations, Probes, and result traces complete.
@@ -649,7 +721,7 @@ def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: 
     runs = [run_condition(scenario=scenario, agent=agent_factory(), condition="full", repetition=repetition, agent_seed=agent_seed)]
     if include_ablations:
         for a in scenario.get("ablations", []):
-            if a.get("method") not in {"replay_excluding_events", "replay_with_injections", "swap_parameter"}:
+            if a.get("method") not in {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}:
                 continue
             runs.append(run_condition(
                 scenario=scenario,
