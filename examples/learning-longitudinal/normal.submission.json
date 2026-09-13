@@ -1,0 +1,6 @@
+{
+  "id": "p6-normal",
+  "transport": "http",
+  "base_url": "http://127.0.0.1:18101",
+  "timeout_seconds": 180
+}

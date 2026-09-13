@@ -1,0 +1,8 @@
+{
+  "profile": "../../profiles/MIB-Learning-Longitudinal-0.1-Dev.json",
+  "submissions": {
+    "normal": "normal.submission.json",
+    "no_memory": "no-memory.submission.json",
+    "ungated": "ungated.submission.json"
+  }
+}

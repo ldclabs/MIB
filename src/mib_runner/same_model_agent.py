@@ -12,6 +12,8 @@ from typing import Any
 from .model_clients import ModelClient
 from . import __version__
 from .types import ActStep, AgentOutput, Observation
+from .adapter_contract import require_accepted
+from .memory_backend import MemoryBackend, check_backend_descriptor
 
 _WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+.-]*")
 _STOP = {
@@ -80,7 +82,11 @@ class InvocationRecorder:
             "model_errors": sum(1 for r in rows if r.get("error")),
             "input_chars_total": sum(int(r.get("input_chars", 0)) for r in rows),
             "output_chars_total": sum(int(r.get("output_chars", 0)) for r in rows),
-            "usage_totals": usage,
+            "usage_totals": {k: v if all(isinstance((r.get("usage") or {}).get(k), (int, float)) for r in rows) else None for k, v in usage.items()},
+            "usage_known_subtotals": usage,
+            "usage_unreported_calls": sum(not bool(r.get("usage")) for r in rows),
+            "accounting_complete": False,  # provider retries/pricing are not generally observable
+            "total_cost": None,
             "memory_selections": len(sels),
             "memory_records_available_total": sum(int(x.get("available", 0)) for x in sels),
             "memory_records_selected_total": sum(int(x.get("selected", 0)) for x in sels),
@@ -212,10 +218,13 @@ class SameModelAgent:
     def __init__(self, *, condition: str, model_client: ModelClient, system_prompt: str,
                  reasoning_policy: str, model_parameters: dict[str, Any], recorder: InvocationRecorder,
                  memory_config: dict[str, Any] | None = None, empirical_eligible: bool = True,
-                 seed_policy: str = "fixed", seed_base: str = "mib-same-model") -> None:
-        if condition not in POLICIES:
+                 seed_policy: str = "fixed", seed_base: str = "mib-same-model",
+                 memory_backend: MemoryBackend | None = None) -> None:
+        if memory_backend is None and condition not in POLICIES:
             raise ValueError(f"unknown memory condition: {condition}")
         self.condition = condition
+        self.backend = memory_backend
+        self.virtual_time = None
         self.model = model_client
         self.system_prompt = system_prompt
         self.reasoning_policy = reasoning_policy
@@ -233,7 +242,9 @@ class SameModelAgent:
             json.dumps({k: v for k, v in sorted(self.model_parameters.items()) if k != "seed"},
                        sort_keys=True, ensure_ascii=False)
         )
-        if condition == "B2":
+        if memory_backend is not None:
+            self.policy = NoMemoryPolicy()  # external context is the sole persistent source
+        elif condition == "B2":
             self.policy = LexicalRetrievalPolicy(top_k=int(self.memory_config.get("retrieval_top_k", 4)))
         elif condition == "B3":
             self.policy = StructuredMemoryPolicy(
@@ -271,7 +282,7 @@ class SameModelAgent:
                 "observe": True, "respond": True, "act": True,
                 "runner_managed_tools": True, "virtual_time": True,
                 "seedable": True, "structured_output": True,
-                "spontaneous_emissions": self.observe_decisions, "maintenance": self.maintenance_decisions,
+                "spontaneous_emissions": self.observe_decisions, "maintenance": self.backend is not None or self.maintenance_decisions,
                 "session_boundary": True,
             },
             "state": {"run_isolation": "hard", "request_idempotency": True},
@@ -279,31 +290,42 @@ class SameModelAgent:
                 "mib.calibration": {
                     "role": self.condition,
                     "same_model": True,
-                    "memory_policy": self.policy.__class__.__name__,
+                    "memory_policy": self.policy.__class__.__name__ if self.backend is None else "external_backend",
+                    **({"backend": check_backend_descriptor(self.backend.describe())} if self.backend is not None else {}),
                     "release_calibration_eligible": bool(self.empirical_eligible),
                 }
             },
         }
 
     def reset(self, *, run_id: str, seed: int | str | None, virtual_time: str | None) -> dict[str, Any]:
-        self.run_id = run_id; self.seed = seed
+        self.run_id = run_id; self.seed = seed; self.virtual_time = virtual_time
+        if self.backend is not None:
+            require_accepted("reset", self.backend.reset(seed=seed, virtual_time=virtual_time))
         self.long_term = []; self.transient = []; self.active_task = None
         self.seen_observe = set(); self.response_cache = {}; self.act_cache = {}; self.call_counter = 0
         self.observe_cache = {}; self.maintenance_cache = {}; self.boundary_requests = set()
         return {"accepted": True}
 
     def _finish_task(self) -> None:
-        if self.condition != 'B0' and self.transient:
+        if self.backend is not None:
+            for observation in self.transient:
+                require_accepted("observe", self.backend.observe(observation))
+        elif self.condition != 'B0' and self.transient:
             self.long_term.extend(self.transient)
         self.transient = []
         self.active_task = None
+        self._active_goal = ""; self._active_constraints = []; self._active_tools = []
+        self._active_turn = 0
 
     def _record_step(self, text: str, virtual_time: str | None = None) -> None:
         self.transient.append(Observation(observation_id=f'action_{self.call_counter}_{len(self.transient)}', type='action', content=text, virtual_time=virtual_time))
 
     def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
+        self.virtual_time = virtual_time
         if request_id not in self.boundary_requests:
             self._finish_task()
+            if self.backend is not None:
+                require_accepted("session_boundary", self.backend.session_boundary(virtual_time=virtual_time))
             self.response_cache = {}; self.act_cache = {}
             self.boundary_requests.add(request_id)
         return {'accepted': True, 'transient_cleared': True, 'persistent_observations': len(self.long_term)}
@@ -312,11 +334,13 @@ class SameModelAgent:
         key = (run_id, request_id)
         if key in self.seen_observe:
             return self.observe_cache.get(key, {"accepted": True, "emissions": []})
-        self.seen_observe.add(key)
+        self.virtual_time = observation.virtual_time
         # Tool results produced after an ACTION Probe begins are current-task state,
         # not long-term memory. Past timeline tool results arrive before active_task.
         if self.active_task is not None and observation.tool_call_id:
             self.transient.append(observation)
+        elif self.backend is not None:
+            require_accepted("observe", self.backend.observe(observation))
         elif self.condition != "B0":
             self.long_term.append(observation)
         emissions = []
@@ -329,6 +353,7 @@ class SameModelAgent:
             if not isinstance(emissions, list) or any(not isinstance(e, dict) for e in emissions):
                 raise ValueError('observe must return an emissions array of objects')
         result = {'accepted': True, 'emissions': emissions}
+        self.seen_observe.add(key)
         self.observe_cache[key] = result
         return result
 
@@ -336,18 +361,48 @@ class SameModelAgent:
         key = (run_id, request_id)
         if key in self.maintenance_cache:
             return self.maintenance_cache[key]
+        self.virtual_time = virtual_time
         self._finish_task()
+        if self.backend is not None:
+            require_accepted("maintain", self.backend.maintain(budget=budget, virtual_time=virtual_time))
         if not self.maintenance_decisions:
-            return {'accepted': False, 'reason': 'maintenance disabled by experiment policy'}
+            result = {'accepted': self.backend is not None, 'reason': 'business maintenance decisions disabled by experiment policy'}
+            self.maintenance_cache[key] = result
+            return result
         obj = self._call(mode='MAINTENANCE', body={'budget': budget, 'virtual_time': virtual_time}, memory_query='', seed_key='maintenance')
         summary = obj.get('memory_summary')
-        if summary and self.condition != 'B0':
-            self.long_term.append(Observation(observation_id=f'maintenance_{request_id}', type='document', content=str(summary), virtual_time=virtual_time))
+        if summary:
+            observation = Observation(observation_id=f'maintenance_{request_id}', type='document', content=str(summary), virtual_time=virtual_time)
+            if self.backend is not None:
+                require_accepted("observe", self.backend.observe(observation))
+            elif self.condition != 'B0':
+                self.long_term.append(observation)
         result = {'accepted': True}
         self.maintenance_cache[key] = result
         return result
 
     def _memory_context(self, query: str) -> tuple[str, bool, int]:
+        if self.backend is not None:
+            limit = self.max_memory_chars if self.max_memory_chars is not None else 32768
+            result = self.backend.retrieve(query=query or "Recall the current memory context.", limit_chars=limit, virtual_time=self.virtual_time)
+            lines, used = [], 0
+            truncated = result['truncated']
+            for i, item in enumerate(result['items'], 1):
+                line = f"[{i}] {item['content']}"
+                size = len(line) + (1 if lines else 0)
+                if used + size > limit:
+                    # Backend items may be complete bounded Recall packets.
+                    # Cutting one can remove native uncertainty or required
+                    # warnings, or corrupt its JSON. Include it whole or omit
+                    # it, accounting for our own prefixes and separators.
+                    truncated = True
+                    continue
+                lines.append(line)
+                used += size
+            text = "\n".join(lines) if lines else ("<empty>" if limit >= len("<empty>") else "")
+            self.recorder.record_memory({"condition": self.condition, "available": len(result['items']),
+                "selected": len(lines), "selected_chars": len(text), "truncated": truncated})
+            return text, truncated, len(lines)
         recent = self.memory_config.get('recent_window')
         available = self.long_term[-int(recent):] if recent else self.long_term
         selected, truncated = self.policy.select(available, query=query, limit_chars=self.max_memory_chars)
@@ -391,6 +446,7 @@ class SameModelAgent:
         for attempt in range(self.parse_retries + 1):
             req_id = _sha(req_base + f":{attempt}")[:24]
             last_text = ""
+            completion = None
             try:
                 parameters = dict(self.model_parameters)
                 if self.seed_policy == "paired_per_call":
@@ -416,7 +472,7 @@ class SameModelAgent:
                 self.recorder.record_call({
                     "condition": self.condition, "mode": mode, "request_id": req_id,
                     "input_chars": sum(len(m["content"]) for m in attempt_messages),
-                    "output_chars": len(last_text), "usage": {}, "error": repr(exc),
+                    "output_chars": len(last_text), "usage": completion.usage if completion is not None else {}, "error": repr(exc),
                     "error_kind": "parse" if is_parse_failure else "transport",
                     "model_identity": self.model.identity(), "memory_selected": selected_n,
                     "memory_truncated": truncated, "attempt": attempt,
@@ -441,7 +497,7 @@ class SameModelAgent:
             "system_prompt_sha": self.system_prompt_sha,
             "reasoning_policy_sha": self.reasoning_policy_sha,
             "decoding_fingerprint": self.decoding_fingerprint,
-            "memory_policy_id": getattr(self.policy, "id", self.condition),
+            "memory_policy_id": ("backend:" + self.condition) if self.backend is not None else getattr(self.policy, "id", self.condition),
             "seed_policy": self.seed_policy,
             # The model must not be able to tell which memory condition it is in.
             "condition_label_visible": self.condition in rendered,
@@ -452,6 +508,7 @@ class SameModelAgent:
         key = (run_id, request_id)
         if key in self.response_cache:
             return self.response_cache[key]
+        self.virtual_time = virtual_time
         self._finish_task()
         query = str(input_data.get("content") or input_data.get("goal") or "")
         body = {"input": input_data, "virtual_time": virtual_time}
@@ -469,6 +526,7 @@ class SameModelAgent:
         key = (run_id, request_id)
         if key in self.act_cache:
             return self.act_cache[key]
+        self.virtual_time = virtual_time
         if not continuation:
             self._finish_task()
             self.active_task = task_id
@@ -513,6 +571,8 @@ class SameModelAgent:
         return out
 
     def close(self, run_id: str | None = None) -> None:
+        if self.backend is not None:
+            self.backend.close()
         # The client factory may return a shared/stateless HTTP client. Closing is
         # therefore intentionally a no-op at Agent level. Harness owns clients.
         return None

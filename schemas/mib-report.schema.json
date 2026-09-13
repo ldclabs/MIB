@@ -1166,6 +1166,10 @@
         },
         "reference_ablation_id": {
           "type": "string"
+        },
+        "adapter_contract": {
+          "type": "object",
+          "description": "Versioned evaluator lifecycle receipts; verify-score enforces semantic consistency."
         }
       }
     },

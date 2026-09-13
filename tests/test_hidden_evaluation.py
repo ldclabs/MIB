@@ -164,14 +164,16 @@ def test_http_external_agent_profile():
 
 
 @pytest.mark.skipif(not SANDBOX_AVAILABLE, reason=SANDBOX_REASON)
-def test_namespace_sandbox_hides_evaluator_storage_when_supported():
+def test_namespace_sandbox_hides_evaluator_storage_when_supported(tmp_path):
     """The evaluator-only store must be invisible inside the sandbox."""
     store = str(PRIVATE_EVAL_STORE_DEMO.resolve())
     manifest = str((PRIVATE_EVAL_STORE_DEMO / "manifest.private.json").resolve())
-    policy = SandboxPolicy(network="disabled_strict", hide_paths=[store], memory_mb=512, cpu_seconds=10)
+    secret = tmp_path / 'private-profile.json'
+    secret.write_text('private', encoding='utf-8')
+    policy = SandboxPolicy(network="disabled_strict", hide_paths=[store, str(secret)], memory_mb=512, cpu_seconds=10)
     box = spawn_sandboxed_stdio(
         ["python3", "-c",
-         f"import os; print('visible' if os.path.exists({manifest!r}) else 'hidden', flush=True)"],
+         f"import os; print('hidden' if not os.path.exists({manifest!r}) and open({str(secret)!r}).read() == '' else 'visible', flush=True)"],
         policy=policy,
     )
     try:

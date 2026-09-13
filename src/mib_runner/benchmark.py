@@ -104,16 +104,13 @@ _CAPABILITY_KEYS = {"tools": "runner_managed_tools"}
 
 
 def agent_supports_template(descriptor: dict[str, Any], template: dict[str, Any]) -> bool:
-    """MIB-Specification §6.6: a Template is unsupported only when the Agent *declares*
-    a required capability false.  Absent metadata is not a refusal."""
-    caps = (descriptor or {}).get("capabilities") or {}
-    for cap in ((template.get("requirements") or {}).get("capabilities") or []):
-        key = _CAPABILITY_KEYS.get(cap, cap)
-        if cap == 'session_boundary' and caps.get(key) is not True:
-            return False
-        if key in caps and caps[key] is False:
-            return False
-    return True
+    """Capabilities needed by the Scenario must be explicitly supported."""
+    from .adapter_contract import check_descriptor, required_capabilities, AdapterLifecycleError
+    try:
+        check_descriptor(descriptor, required_capabilities(template))
+        return True
+    except AdapterLifecycleError:
+        return False
 
 
 DEFAULT_MIN_TEMPLATES_PER_DIMENSION = 5
@@ -383,9 +380,12 @@ def efficiency_summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
         for key, value in (r.get("usage") or {}).items():
             if isinstance(value, (int, float)):
                 reported[key] += float(value)
-    out: dict[str, Any] = {"runner_measured": measured}
+    out: dict[str, Any] = {"runner_measured": measured,
+        "participant_reported": {"accounting_complete": False, "total_cost": None,
+            "per_run_costs": [{"run_id": r["run_id"], "last_snapshot": r.get("adapter_contract", {}).get("reported_costs_last")}
+                              for r in runs]}}
     if reported:
-        out["participant_reported"] = dict(reported)
+        out["participant_reported"]["known_usage_subtotals"] = dict(reported)
     return out
 
 
@@ -445,7 +445,7 @@ def build_pack_report(
         warnings.append({
             "code": "coverage.unsupported_templates",
             "severity": "warning",
-            "message": f"Not executed: the Agent declares a required capability false for {unsupported_templates}.",
+            "message": f"Not executed: the Agent did not explicitly declare a required capability true for {unsupported_templates}.",
             "scope": "report",
         })
     if statistics:
@@ -501,7 +501,7 @@ def build_pack_report(
     report = {
         "mib": format_version,
         "kind": "MIBReport",
-        "report_version": "0.3.0",
+        "report_version": "0.4.0",
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",

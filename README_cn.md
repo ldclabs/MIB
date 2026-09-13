@@ -448,7 +448,9 @@ B3 —— 结构化记忆基线（Structured Memory）
 
 ## 当前开发进展
 
-MIB 采用场景格式 v0.2、度量修订版本 **0.3.0** 与实现版本 **0.10.0**。
+MIB 采用场景格式 v0.2、度量修订版本 **0.3.0** 与实现版本 **0.12.0**。
+
+Pack 报告 **0.4.0** 增加显式生命周期成功门禁与可重验失败证据。评测方控制的 HTTP memory backend 接缝已支持固定业务模型的 B0/candidate 对照；集成 Bot 仍属于 Track B。未测成本保留未知，不能按 0 汇总。协议、可运行命令、公平性与实证边界见[运行时 backend 文档](docs/harness/MIB-Memory-Backend.md)。
 
 九月设计审查修正项均已落实：
 
@@ -574,7 +576,7 @@ python -m pip install -e .
 
 要求 Python 3.10+、`jsonschema >= 4.18` 以及 `cryptography >= 46`。
 
-安装后会在系统 `PATH` 中注册四个 CLI 命令 —— `mib`、`mib-service`、`mib-calibrate` 以及 `mib-same-model-calibrate`。它们是在 `pyproject.toml` 的 `[project.scripts]` 中声明的控制台脚本入口；其中 `mib` 映射到 `mib_runner.cli:main`。如果不想全局安装，可直接通过模块方式调用：
+安装后会在系统 `PATH` 中注册六个 CLI 命令 —— `mib`、`mib-service`、`mib-calibrate`、`mib-same-model-calibrate`、`mib-memory-backend-benchmark` 以及 `mib-learning-benchmark`。它们是在 `pyproject.toml` 的 `[project.scripts]` 中声明的控制台脚本入口；其中 `mib` 映射到 `mib_runner.cli:main`。如果不想全局安装，可直接通过模块方式调用：
 
 ```bash
 PYTHONPATH=src python -m mib_runner.cli --help
@@ -782,3 +784,7 @@ Consolidation Benefit:          +5.4 pp
 ## 引用规范
 
 当生成的基准测试数据包通过实证校准并正式冻结后，我们将补充正式学术论文。在此之前，[CITATION.cff](CITATION.cff) 提供了机器可读的软件引用元数据，GitHub 的“Cite this repository”亦解析至该文件。
+
+P6 新增独立版本的[长期学习开发 harness](docs/harness/MIB-Learning-Longitudinal.md)：严格区分正常、无记忆与无门槛组，采用 Brain P0 原样任务合同、预执行固定锁、评测私有世界日志重放及显式 Unknown。工程 fixture 不代表学习效果；现有 persistent adapter 不能改名冒充原生学习组。
+
+Brain P7 的旧九个产品目标、八个生成程序与公开无模型 CI 入口见[迁移合同](docs/harness/MIB-Brain-Legacy-Migration.md)。判据是实际保存的草稿对象；主动通知缺失会明确拒绝。此工程回归不代表真实模型质量，也不完成 P6 学习接入验收。

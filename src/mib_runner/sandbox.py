@@ -242,9 +242,12 @@ def spawn_sandboxed_stdio(
         if use_ns:
             hides = [p for p in policy.hide_paths if Path(p).exists()]
             mount_cmds = "; ".join(
-                f"mount -t tmpfs tmpfs {shlex.quote(str(Path(p).resolve()))}" for p in hides
+                (f"mount -t tmpfs tmpfs {shlex.quote(str(Path(p).resolve()))}"
+                 if Path(p).is_dir()
+                 else f"mount --bind /dev/null {shlex.quote(str(Path(p).resolve()))}")
+                for p in hides
             )
-            script = "mount --make-rprivate /"
+            script = "set -e; mount --make-rprivate /"
             if mount_cmds:
                 script += "; " + mount_cmds
             script += '; exec "$@"'

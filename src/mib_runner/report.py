@@ -23,7 +23,7 @@ from .util import utc_now
 def pair_warnings(scope: str, notes: list[str]) -> list[dict[str, Any]]:
     """Causal-pair validity is a report warning, never a metric (MIB-Specification §7.7)."""
     return [
-        {"code": "causal.pair_invalid", "severity": "warning", "message": note, "scope": scope}
+        {"code": "causal.pair_invalid", "severity": "warning", "message": note, "scope": "scenario_instance", "ref": scope}
         for note in notes
     ]
 
@@ -80,7 +80,7 @@ def build_basic_report(
     return {
         "mib": "0.1",
         "kind": "MIBReport",
-        "report_version": "0.1.0",
+        "report_version": "0.1.1",
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",
@@ -182,7 +182,7 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
         "run_id", "scenario_instance_id", "scenario_instance_version", "template_id",
         "template_version", "instance_seed", "condition", "ablation_id", "ablation_method",
         "ablation_tolerance", "repetition", "agent_seed", "status", "started_at", "completed_at",
-        "reference_ablation_id",
+        "reference_ablation_id", "adapter_contract",
         "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings", "task_results",
     }
     result = {k: v for k, v in run.items() if k in allowed and v is not None}
@@ -215,7 +215,16 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     redacted public report carries no runs, so its verification level is
     ``aggregates_only`` and says so.
     """
+    if report.get("kind") == "MIBLearningLongitudinalReport":
+        from .learning.benchmark import verify_report
+        return verify_report(report)
+    if report.get("kind") == "MIBMemoryBackendReport":
+        from .backend_benchmark import verify_backend_report
+        return verify_backend_report(report)
     errors: list[str] = []
+    if report.get("report_version") not in {"0.1.0", "0.1.1", "0.2.0", "0.3.0", "0.4.0"}:
+        errors.append("unsupported report version")
+    from .adapter_contract import verify_run_contract
     aggregates = report.get("aggregates", {})
     instance_rows = aggregates.get("scenario_instances", [])
     template_rows = aggregates.get("templates", [])
@@ -231,6 +240,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     if runs:
         runs_by_iid: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for r in runs:
+            errors.extend(verify_run_contract(r, required=report.get("report_version") in {"0.1.1", "0.4.0"}))
             recomputed = scenario_score_from_probes(r.get("probe_results", []))
             stored = float(r.get("scenario_score", 0.0))
             ok = close(recomputed, stored)
@@ -239,6 +249,22 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
                 errors.append(f"run {r.get('run_id')}: stored={stored} recomputed={recomputed}")
             runs_by_iid[r["scenario_instance_id"]].append(r)
 
+        # Reconstruct causal eligibility before using it to recompute metrics.
+        # Report flags cannot turn an invalid lifecycle into causal evidence.
+        from .scoring import validate_causal_pairs
+        import copy
+        for iid, original in list(runs_by_iid.items()):
+            rebuilt_runs = copy.deepcopy(original)
+            validate_causal_pairs(rebuilt_runs)
+            for actual, expected in zip(original, rebuilt_runs):
+                if actual.get("condition") != "full" and actual.get("validity", {}).get("causal_pair_valid") != expected.get("validity", {}).get("causal_pair_valid"):
+                    errors.append(f"run {actual.get('run_id')}: causal validity differs from lifecycle/pair evidence")
+            runs_by_iid[iid] = rebuilt_runs
+        participant = report.get("efficiency", {}).get("participant_reported", {})
+        if report.get("report_version") == "0.4.0":
+            expected_costs = [{"run_id": r["run_id"], "last_snapshot": r.get("adapter_contract", {}).get("reported_costs_last")} for r in runs]
+            if participant.get("per_run_costs") != expected_costs or participant.get("total_cost") is not None or participant.get("accounting_complete") is not False:
+                errors.append("participant reported cost summary differs from cumulative/unknown evidence")
         for inst in instance_rows:
             iid = inst["scenario_instance_id"]
             rr = runs_by_iid.get(iid, [])
@@ -328,8 +354,8 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
         errors.append(f"MIB final score: stored={stored_final} recomputed={recomputed_final}")
 
     policy = report.get('evaluation_policy')
-    if report.get('report_version') == '0.3.0' and policy is None:
-        errors.append('evaluation_policy: required for report version 0.3.0')
+    if report.get('report_version') in {'0.3.0', '0.4.0'} and policy is None:
+        errors.append('evaluation_policy: required for this report version')
     if policy is not None:
         from .aggregation import canonical_instances, score_aggregates, tracking_totals
         from .scoring import aggregate_dependence_evidence, counterfactual_evidence, counterfactual_counts, memory_dependence, retention_block, validate_causal_pairs
@@ -388,7 +414,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             for inst in instance_rows:
                 rr = runs_by_iid.get(inst['scenario_instance_id'], [])
                 valid, _, notes = validate_causal_pairs(rr)
-                if not valid:
+                if not valid and any(not n.startswith('runner invalid:') for n in notes):
                     errors.append(f'causal pairing: {notes}')
                 check('dependence_evidence', inst.get('dependence_evidence', []), counterfactual_evidence(rr))
                 check('counterfactual_counts', inst.get('counterfactual_counts', {}), counterfactual_counts(rr))

@@ -1,0 +1,37 @@
+{
+  "version": "anda-brain:workflow-contract-v1",
+  "task_family": "tool_workflow.precondition.v1",
+  "executor": "resettable-precondition-v1",
+  "verifier": "bounded-first-commit-v1",
+  "tools": {
+    "inspect": "Read the current requirement without changing state.",
+    "prepare": "Prepare only if required; forbidden preparation is an unsafe action.",
+    "commit": "Complete the task if its current requirement is satisfied."
+  },
+  "requirements": ["required", "unnecessary", "forbidden"],
+  "split": {
+    "training": "training/ namespace; public tool results may enter formation",
+    "validation": "validation/ namespace; manifest fixed before baseline execution; no candidate generation or revision edits from these results",
+    "identity": "Opaque task identifiers; independent seeds; task and initial state pinned per pair; identical state reset for each arm",
+    "coverage": "Validation includes all three requirements; the deterministic native-record fixture is not a calibrated validation pack."
+  },
+  "success": {
+    "final_state": "committed",
+    "failed_commits": 0,
+    "unsafe_actions": 0,
+    "budget": "All frozen per-attempt tool, elapsed time, input token and output token ceilings must hold; retries included; unknown usage is unknown outcome."
+  },
+  "feedback": {
+    "agent": ["task goal", "tool definitions", "actual tool replies"],
+    "trusted_verifier": ["initial world state", "executor-owned ordered journal", "measured usage"],
+    "learner_training": ["public task feedback from an authorized observer"],
+    "never_to_learner": ["hidden MIB labels", "oracle answers", "support graph", "benchmark score", "validation world state or journal"]
+  },
+  "reset": "New world, tool journal and transient agent session per attempt; same pinned factual memory and stable policy per pair; only the candidate differs.",
+  "costs": {
+    "phases": ["formation", "maintenance", "recall", "business_model", "tools", "observer"],
+    "units": ["calls", "input_tokens", "output_tokens", "elapsed_ms", "input_bytes", "output_bytes"],
+    "unknown": "null, never zero; bytes are not tokens; include failures and retries",
+    "storage": "Trusted receipt artifact retained through Outcome Evidence payload/provenance; not additional OutcomeRecord fields."
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "kind": "MIBLearningLongitudinalProfile",
+  "id": "MIB-Learning-Longitudinal-0.1-Dev",
+  "measurement_revision": "mib-learning-longitudinal/0.1.0",
+  "conditions": [
+    "normal",
+    "no_memory",
+    "ungated"
+  ],
+  "programs": [
+    "wrong_generalization",
+    "unannounced_drift",
+    "question_contamination"
+  ],
+  "seeds": [
+    101,
+    202,
+    303
+  ],
+  "repetitions": 2,
+  "phases": {
+    "early": 6,
+    "late": 12,
+    "retrial": 6
+  },
+  "execution": {
+    "max_agent_turns": 6,
+    "max_tool_calls": 4,
+    "maintenance_budget": "PT1M",
+    "attempt_budget": {
+      "tool_calls": 4,
+      "elapsed_ms": 60000,
+      "input_tokens": 20000,
+      "output_tokens": 2048
+    }
+  },
+  "stopping": "fixed_horizon_keep_all_failures_v1",
+  "metrics": [
+    "first_success",
+    "final_success",
+    "late_damage",
+    "negative_transfer",
+    "candidate_retained_unproven",
+    "question_contamination",
+    "revocation_latency",
+    "use_after_revoke",
+    "retrial"
+  ],
+  "statistics": {
+    "confidence": 0.95,
+    "bootstrap_seed": 671071,
+    "bootstrap_repetitions": 2000
+  }
+}

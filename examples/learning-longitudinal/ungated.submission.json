@@ -1,0 +1,6 @@
+{
+  "id": "p6-ungated",
+  "transport": "http",
+  "base_url": "http://127.0.0.1:18103",
+  "timeout_seconds": 180
+}

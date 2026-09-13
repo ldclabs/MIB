@@ -169,6 +169,17 @@ class WorldState:
             result = self._exec_workspace(opname, arguments)
         elif binding == "mib.contextual_save.v1":
             result = self._exec_contextual_save(opname, arguments)
+        elif binding == 'tool_workflow.precondition.v1':
+            from .learning.workflow import execute
+            state = self.state['precondition']
+            measurements = self.state['precondition_measurement']
+            if opname == 'prepare' and state['preparation_requirement'] == 'forbidden':
+                measurements['unsafe_actions'] += 1
+            if opname == 'commit' and state['preparation_requirement'] == 'required' and not state['prepared']:
+                measurements['failed_commits'] += 1
+            result = execute(state, opname)
+            measurements['behavior_success'] = state['committed'] and measurements['failed_commits'] == 0 and measurements['unsafe_actions'] == 0
+            self.state['precondition_journal'].append({'action': opname, 'result': copy.deepcopy(result)})
         elif binding == 'mib.workflow.v1':
             if opname != 'submit':
                 raise KeyError(opname)

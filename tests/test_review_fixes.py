@@ -32,7 +32,7 @@ class MemoryBlindAgent:
         return {
             "protocol": "mib-agent/0.1",
             "implementation": {"name": "MemoryBlind", "version": "0"},
-            "capabilities": {"observe": True, "respond": True, "act": True},
+            "capabilities": {"observe": True, "respond": True, "act": True, "runner_managed_tools": True, "virtual_time": True, "maintenance": False},
         }
 
     def reset(self, **_):

@@ -52,7 +52,7 @@ def _check_response(
                 f"Agent response {field} mismatch: expected {request.get(field)!r}, "
                 f"got {resp.get(field)!r}{_reported_error(resp)}"
             )
-    if resp.get("status") != "ok":
+    if resp.get("status") != "ok" or resp.get("error") is not None:
         err = resp.get("error") or {}
         raise AgentTransportError(f"{err.get('code', 'error')}: {err.get('message', resp)!s}")
     return resp.get("body") or {}
@@ -190,6 +190,9 @@ class StdioAgentAdapter:
     def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('maintain', run_id=run_id, request_id=request_id, virtual_time=virtual_time, budget=budget)
 
+    def learning_audit(self, *, run_id: str, request_id: str) -> dict[str, Any]:
+        return self._lifecycle('learning_audit', run_id=run_id, request_id=request_id, virtual_time=None)
+
     def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
 
@@ -197,9 +200,7 @@ class StdioAgentAdapter:
         try:
             if run_id and self.proc.poll() is None:
                 req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": f"close:{run_id}", "run_id": run_id, "operation": "close", "body": {"reason": "run_complete"}}
-                self._rpc(req)
-        except Exception:
-            pass
+                _check_response(self._rpc(req), req)
         finally:
             if not self.persistent:
                 self.sandbox.terminate()
@@ -216,6 +217,7 @@ class HttpAgentAdapter:
         self.timeout_seconds = float(timeout_seconds)
         self.headers = {"Content-Type": "application/json", **(headers or {})}
         self._opener = urllib.request.build_opener(_NoRedirectHandler)
+        self.cost_snapshots = []
 
     def _request(self, operation: str, payload: dict[str, Any] | None = None, *, method: str = "POST") -> dict[str, Any]:
         url = f"{self.base_url}/mib-agent/v0.1/{operation}"
@@ -226,7 +228,13 @@ class HttpAgentAdapter:
                 raw = resp.read(MAX_HTTP_RESPONSE_BYTES + 1)
             if len(raw) > MAX_HTTP_RESPONSE_BYTES:
                 raise AgentTransportError(f"Agent response exceeded {MAX_HTTP_RESPONSE_BYTES} bytes")
-            return json.loads(raw.decode("utf-8"))
+            envelope = json.loads(raw.decode("utf-8"))
+            if payload and isinstance(envelope, dict) and all(envelope.get(k) == payload.get(k) for k in IDENTITY_FIELDS):
+                source = envelope.get("body") or envelope.get("extensions") or {}
+                if isinstance(source, dict) and "costs" in source:
+                    self.cost_snapshots.append({"operation": operation, "run_id": payload.get("run_id"),
+                        "request_id": payload.get("request_id"), "cost_scope": source.get("cost_scope"), "costs": source["costs"]})
+            return envelope
         except urllib.error.HTTPError as exc:
             body = exc.read(65536).decode("utf-8", "replace")
             raise AgentTransportError(f"HTTP {exc.code}: {body}") from exc
@@ -265,6 +273,9 @@ class HttpAgentAdapter:
     def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('maintain', run_id=run_id, request_id=request_id, virtual_time=virtual_time, budget=budget)
 
+    def learning_audit(self, *, run_id: str, request_id: str) -> dict[str, Any]:
+        return self._lifecycle('learning_audit', run_id=run_id, request_id=request_id, virtual_time=None)
+
     def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
 
@@ -272,7 +283,4 @@ class HttpAgentAdapter:
         if not run_id:
             return
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": f"close:{run_id}", "run_id": run_id, "operation": "close", "body": {"reason": "run_complete"}}
-        try:
-            _check_response(self._request("close", req), req)
-        except Exception:
-            pass
+        _check_response(self._request("close", req), req)

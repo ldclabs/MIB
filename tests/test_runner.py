@@ -91,6 +91,8 @@ def test_ablation_executes_the_same_prior_probe_history_as_full():
     historical = scenario["probes"][1]["oracle"]["accepted"][0]
 
     class ProbeHistoryAgent:
+        describe = ReferenceMemoryAgent.describe
+
         def __init__(self):
             self.calls = 0
 
@@ -134,6 +136,8 @@ def test_execution_failure_remains_a_zero_score_probe_in_the_denominator():
     current = scenario["probes"][0]["oracle"]["accepted"][0]
 
     class PartiallyFailingAgent:
+        describe = ReferenceMemoryAgent.describe
+
         def reset(self, **_):
             self.calls = 0
             return {"accepted": True}
@@ -180,6 +184,8 @@ def test_replay_with_injections_delivers_memory_before_the_probe():
     assert validation.valid, validation.errors
 
     class InjectionAwareAgent:
+        describe = ReferenceMemoryAgent.describe
+
         def reset(self, **_):
             self.seen = []
             return {"accepted": True}

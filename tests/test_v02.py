@@ -144,7 +144,9 @@ def test_prospective_emission_fires_on_trigger_and_not_before():
     assert _score(runs, "relevant_ablation") == 0.0
     blind = run_scenario(scenario=s, agent_factory=NoMemoryAgent, include_ablations=False)[0]
     trigger = next(p for p in blind["probe_results"] if p["probe_id"] == "p-trigger")
-    assert trigger["failure_codes"] == ["commitment_miss"]
+    assert blind["status"] == "invalid"
+    assert trigger["failure_codes"] == ["execution_failure"]
+    assert "spontaneous_emissions" in blind["adapter_contract"]["required_capabilities"]
 
 
 def test_counterfactual_content_tracking_separates_memory_from_priors():
@@ -255,7 +257,11 @@ def test_self_rule_holds_against_a_task_that_asks_for_the_forbidden_step():
     by = {p["probe_id"]: p for p in runs[0]["probe_results"]}
     assert by["p-self"]["score"] == 1.0
     assert _score(runs, "relevant_ablation", "a-relevant-p-self") < 1.0
-    blind = run_scenario(scenario=s, agent_factory=NoMemoryAgent, include_ablations=False)[0]
+    # Keep the self-rule negative control independent of unsupported notifications.
+    action_only = copy.deepcopy(s)
+    action_only["probes"] = [p for p in action_only["probes"] if p["id"] == "p-self"]
+    action_only["ablations"] = []
+    blind = run_scenario(scenario=action_only, agent_factory=NoMemoryAgent, include_ablations=False)[0]
     row = next(p for p in blind["probe_results"] if p["probe_id"] == "p-self")
     assert row["score"] < 1.0 and "self_model_drift" in row["failure_codes"]
     assert {m["name"]: m["value"] for m in full_run_metrics([blind])}["self_limitation_continuity"] < 1.0

@@ -23,7 +23,7 @@ RUNNER_EVALUATOR_TYPES = {"set_match", "structured", "world_state", "trajectory"
 RUNNER_TRIGGER_KINDS = {"after_event"}
 RUNNER_DELIVERY_MODES = {"respond", "act", "observe_only"}
 RUNNER_ABLATION_METHODS = {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}
-RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1", "mib.workflow.v1"}
+RUNNER_SIMULATOR_BINDINGS = {"mib.deployment.v1", "mib.workspace.v1", "mib.contextual_save.v1", "mib.workflow.v1", "tool_workflow.precondition.v1"}
 RUNNER_EVENT_TYPES = {
     "interaction", "observation", "tool_result", "distractor", "document", "feedback",
     "time_advance", "maintenance_window", "system_event", "custom", "checkpoint", "world_update", "task", "session_boundary",

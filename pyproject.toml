@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mib-reference-runner"
-version = "0.10.0"
+version = "0.12.0"
 description = "MIB reference Runner, generated memory experiments, calibration and evaluation service"
 requires-python = ">=3.10"
 license = "GPL-3.0-or-later"
@@ -18,7 +18,12 @@ test = ["pytest>=7"]
 mib = "mib_runner.cli:main"
 mib-service = "mib_runner.service_cli:main"
 mib-calibrate = "mib_runner.calibration_cli:main"
+mib-memory-backend-benchmark = "mib_runner.backend_benchmark:main"
+mib-learning-benchmark = "mib_runner.learning.benchmark:main"
 mib-same-model-calibrate = "mib_runner.same_model_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+mib_runner = ["learning/*.json"]

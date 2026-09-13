@@ -1,6 +1,6 @@
 # MIB Agent Adapter
 
-> Reference implementation 0.10.0: reset, observe, respond, act, maintain, session_boundary, and close are executable. The optional snapshot/inspection designs later in this document are not required by Core. Participant-visible event/task/interaction IDs are opaque. Revised output and lifecycle scoring is defined by `MIB-Specification.md` revision 0.3.0. Reminder emissions may contain only a structured payload; missing content stays absent. Non-object payload metadata cannot crash lifecycle scoring, and a correct canonical text reminder remains valid independently of that metadata.
+> Reference implementation 0.11.0: reset, observe, respond, act, maintain, session_boundary, and close are executable. The optional snapshot/inspection designs later in this document are not required by Core. Participant-visible event/task/interaction IDs are opaque. Revised output and lifecycle scoring is defined by `MIB-Specification.md` revision 0.3.0. Reminder emissions may contain only a structured payload; missing content stays absent. Non-object payload metadata cannot crash lifecycle scoring, and a correct canonical text reminder remains valid independently of that metadata.
 
 The reference `maintain` operation accepts a virtual duration string such as `PT1H`; this is not a measured wall-time or storage limit. Both HTTP and stdio adapters forward it. `session_boundary` carries the ordinary request/run IDs and virtual time with an empty body, and returns `{"accepted": true}`. It preserves persistent memory while clearing the working task/conversation. A Profile requiring this operation requires an explicit `session_boundary: true` capability. The fixed-model wrapper enforces its own transient boundary; an arbitrary integrated Agent declares its implementation.
 
@@ -1393,12 +1393,16 @@ maintain()
 
 at that point.
 
-The reference Runner (0.10.0) calls `maintain` at every `maintenance_window` event when
-the Agent exposes the operation, passing the window's `payload.budget` and the virtual
-time, and delivers the window as a `system_event` observation in every case. A
-`no_maintenance` Ablation replays the same timeline with the windows withheld; the paired
-difference is reported as `consolidation_benefit` (`MIB-Specification.md` §7.2). An
-exception raised by `maintain` is recorded as a run warning and never fails the run.
+The reference Runner (0.11.0) calls `maintain` at delivered maintenance windows when
+`maintenance:true` is declared, passing `payload.budget` and virtual time. An explicitly
+unsupported optional operation is recorded as skipped. `accepted:false`, errors, timeouts,
+and missing declarations invalidate the condition and retain every scheduled probe as an
+execution failure. Earlier outputs remain diagnostic evidence, and invalid conditions are
+excluded from causal benefit. This applies the same success gate to reset, observe and
+session boundaries. See [the runtime backend and lifecycle contract](harness/MIB-Memory-Backend.md)
+for report versions, verification, costs and the independent Track A backend interface.
+A `no_maintenance` ablation withholds the same windows; successful pairs can measure
+`consolidation_benefit`.
 
 ---
 
@@ -3880,3 +3884,9 @@ score semantics
 ```
 
 which is enough to begin implementing an end-to-end reference runner.
+
+### Optional longitudinal native audit
+
+P6 uses the existing eight operations plus an explicitly declared, read-only `learning_audit` extension. This is not a new core capability or automatic learning admission. See [the versioned contract and limits](harness/MIB-Learning-Longitudinal.md). The current persistent Bot host cannot claim the normal or ungated learning condition without the native executor/independent-observer binding.
+
+P6 在八个既有操作之外使用显式声明的只读 `learning_audit` 扩展；这不自动构成原生学习支持。正常组与无门槛组仍须完成真实 executor、独立 observer 和冻结 trial 接线。

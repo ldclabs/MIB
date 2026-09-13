@@ -154,7 +154,21 @@ def cmd_benchmark(args) -> int:
     schema = load_json(args.schema)
     report_schema = load_json(args.report_schema) if args.report_schema else None
     profile = load_json(args.profile)
-    factory = _load_agent_factory(args.agent)
+    if args.submission:
+        spec = load_submission_spec(args.submission)
+        hidden_paths = [
+            str(Path(value).resolve()) for value in (
+                args.path, args.profile, args.schema, args.report_schema,
+                args.output_report, args.output_summary, args.card,
+            ) if value
+        ]
+        runtime = build_submission_runtime(spec,
+            network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
+            hide_paths=hidden_paths, allow_remote_http=args.allow_remote_http,
+            confine_stage_to_spec_dir=True)
+        factory = runtime.factory
+    else:
+        factory = _load_agent_factory(args.agent)
     seeds = _parse_seeds(args.seeds) if args.seeds else list(profile.get("instance_seeds") or [101, 202])
     repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 2))
     boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
@@ -219,6 +233,16 @@ def cmd_capability_card(args) -> int:
     else:
         print(text)
     return 0
+
+
+def cmd_learning_benchmark(args) -> int:
+    from .learning.benchmark import main
+    argv = [args.config, "--output", args.output]
+    if args.allow_remote_http:
+        argv.append("--allow-remote-http")
+    if args.resume_lock:
+        argv.extend(["--resume-lock", args.resume_lock])
+    return main(argv)
 
 
 def cmd_verify_score(args) -> int:
@@ -459,7 +483,11 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--profile", required=True)
     b.add_argument("--schema", required=True)
     b.add_argument("--report-schema")
-    b.add_argument("--agent", default="reference")
+    backend = b.add_mutually_exclusive_group()
+    backend.add_argument("--agent", help="In-process Agent factory; defaults to reference")
+    backend.add_argument("--submission", help="External mib-agent/0.1 HTTP or stdio submission JSON")
+    b.add_argument("--allow-remote-http", action="store_true", help="Allow remote HTTP submission (HTTPS required)")
+    b.add_argument("--allow-degraded-sandbox", action="store_true", help="Permit best-effort stdio isolation for development")
     b.add_argument("--seeds", help="Comma-separated Scenario instance seeds; defaults to Profile")
     b.add_argument("--repetitions", type=int)
     b.add_argument("--bootstrap-resamples", type=int)
@@ -485,6 +513,13 @@ def build_parser() -> argparse.ArgumentParser:
     cc.add_argument("report")
     cc.add_argument("--output")
     cc.set_defaults(func=cmd_capability_card)
+
+    lb = sub.add_parser("learning-benchmark", help="Three-arm longitudinal learning behavioral experiment")
+    lb.add_argument("config")
+    lb.add_argument("--output", required=True)
+    lb.add_argument("--allow-remote-http", action="store_true")
+    lb.add_argument("--resume-lock")
+    lb.set_defaults(func=cmd_learning_benchmark)
 
     vs = sub.add_parser("verify-score", help="Recompute Template, Dimension, and final report scores")
     vs.add_argument("report")

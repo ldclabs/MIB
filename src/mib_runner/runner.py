@@ -10,6 +10,8 @@ import uuid
 
 import jsonschema
 from dataclasses import asdict
+from .adapter_contract import (ACKNOWLEDGED, CONTRACT_VERSION, AdapterLifecycleError,
+                               check_descriptor, digest, require_accepted, required_capabilities)
 from typing import Any
 
 from .evaluator import evaluate_emission_probe, evaluate_probe, recurrence_checks
@@ -237,6 +239,19 @@ def run_condition(
     observation_indices: dict[str, int] = {}
     operation_usage: dict[str, dict[str, float]] = {}
 
+    contract = {"version": CONTRACT_VERSION, "required_capabilities": required_capabilities(scenario),
+                "protocol": None, "capabilities": {}, "operations": [], "valid": True,
+                "scheduled_probes": [{"probe_id": p["id"], "weight": float(p.get("weight", 1.0))
+                    if scored_probe_ids is None or p["id"] in scored_probe_ids else 0.0}
+                    for p in scenario.get("probes", [])
+                    if execution_probe_ids is None or p["id"] in execution_probe_ids]}
+
+    def record_receipt(operation, outcome, **details):
+        contract["operations"].append({"sequence": len(contract["operations"]),
+            "operation": operation, "outcome": outcome, **details})
+        if outcome == "failure":
+            contract["valid"] = False
+
     def invoke(operation: str, **kwargs):
         start = time.perf_counter_ns()
         row = operation_usage.setdefault(operation, {"calls": 0, "latency_ms": 0, "input_bytes": 0, "output_bytes": 0})
@@ -244,8 +259,17 @@ def run_condition(
         row["input_bytes"] += len(json.dumps(kwargs, default=lambda x: asdict(x), ensure_ascii=False).encode())
         try:
             result = getattr(agent, operation)(**kwargs)
+            if operation in ACKNOWLEDGED:
+                require_accepted(operation, result)
+                record_receipt(operation, "success", request_id=kwargs.get("request_id"),
+                               accepted=True, response_digest=digest(result))
             row["output_bytes"] += len(json.dumps(result, default=lambda x: asdict(x), ensure_ascii=False).encode())
             return result
+        except Exception as exc:
+            if operation in ACKNOWLEDGED or isinstance(exc, AdapterLifecycleError):
+                record_receipt(operation, "failure", request_id=kwargs.get("request_id"), error=repr(exc))
+                raise AdapterLifecycleError(f"{operation}: {exc}") from exc
+            raise
         finally:
             row["latency_ms"] += (time.perf_counter_ns() - start) / 1_000_000
 
@@ -495,6 +519,8 @@ def run_condition(
                 execute_observe_only_probe(sampled)
             else:
                 raise NotImplementedError(f"reference Runner implements respond/act/observe_only Probes, got {sampled.get('delivery')!r}")
+        except AdapterLifecycleError:
+            raise
         except AgentBehaviourError as exc:
             # Cognitive failure: the Probe was executed and the Agent failed it.
             row = {
@@ -510,7 +536,12 @@ def run_condition(
                 "latency_ms": 0.0,
                 "evaluator_results": [],
                 "output_digest": hashlib.sha256(repr(exc).encode()).hexdigest(),
-                "extensions": {"mib.runner.agent_error": repr(exc)},
+                "extensions": {
+                    "mib.runner.agent_error": repr(exc),
+                    "mib.runner.action_trace": [copy.deepcopy(r) for r in run_action_trace
+                        if r.get("task_id") == wire_id("task", sampled["id"])],
+                    "mib.runner.failed_task_id": wire_id("task", sampled["id"]),
+                },
             }
             if scored_probe_ids is not None and sampled["id"] not in scored_probe_ids:
                 row = {**row, "weight": 0.0}
@@ -546,14 +577,15 @@ def run_condition(
             append_probe_result(p, None, score, eval_results, 0.0, extra=extra)
 
     def maintain(event: dict[str, Any]) -> None:
-        hook = getattr(agent, "maintain", None)
-        if not callable(hook):
+        declared = contract["capabilities"].get("maintenance")
+        if declared is False and "maintenance" not in contract["required_capabilities"]:
+            record_receipt("maintain", "skipped", reason="explicitly unsupported, optional capability")
             return
+        if declared is not True:
+            record_receipt("maintain", "failure", error="maintenance capability was not declared")
+            raise AdapterLifecycleError("maintenance capability was not declared")
         payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
-        try:
-            invoke("maintain", run_id=run_id, request_id=req_id(), budget=payload.get("budget"), virtual_time=virtual_time)
-        except Exception as exc:  # a broken maintenance hook must not fail the run
-            run_warnings.append(f"maintenance {event['id']}: {exc!r}")
+        invoke("maintain", run_id=run_id, request_id=req_id(), budget=payload.get("budget"), virtual_time=virtual_time)
 
     def close_agent() -> None:
         # A transport-backed Adapter may own one subprocess per condition.  It
@@ -643,6 +675,15 @@ def run_condition(
     try:
         # Reset inside the guarded region: any failure after this point must
         # release the Agent (and its sandboxed subprocess) before propagating.
+        try:
+            descriptor = agent.describe()
+            contract["protocol"] = descriptor.get("protocol") if isinstance(descriptor, dict) else None
+            contract["capabilities"] = descriptor.get("capabilities", {}) if isinstance(descriptor, dict) else {}
+            check_descriptor(descriptor, contract["required_capabilities"])
+            record_receipt("describe", "success", response_digest=digest(descriptor))
+        except Exception as exc:
+            record_receipt("describe", "failure", error=repr(exc))
+            raise AdapterLifecycleError(f"describe: {exc}") from exc
         invoke("reset", run_id=run_id, seed=seed, virtual_time=virtual_time)
         timeline, injected_after = merged_timeline()
         for event in timeline:
@@ -669,14 +710,44 @@ def run_condition(
         missing = expected_probe_ids - executed_probe_ids
         if missing:
             raise RunnerError(f"untriggered probes: {sorted(missing)}")
+    except AdapterLifecycleError:
+        # A failed mutation/barrier makes the entire condition unusable. Keep
+        # every planned probe and the pre-failure evidence for diagnosis.
+        pass
     except BaseException:
         close_agent()
         raise
 
+    if close_agent_on_complete:
+        try:
+            close_agent()
+            record_receipt("close", "success")
+        except Exception as exc:
+            record_receipt("close", "failure", error=repr(exc))
+    prior_probe_results = []
+    if not contract["valid"]:
+        prior_probe_results = copy.deepcopy(probe_results)
+        probe_results.clear()
+        for p in scenario.get("probes", []):
+            if execution_probe_ids is not None and p["id"] not in execution_probe_ids:
+                continue
+            probe_results.append({"probe_id": p["id"], "probe_kind": p.get("kind"),
+                "condition": condition, "repetition": repetition, "outcome": "execution_failure",
+                "score": 0.0, "weight": float(p.get("weight", 1.0))
+                    if scored_probe_ids is None or p["id"] in scored_probe_ids else 0.0,
+                "dimensions": list(p.get("dimensions") or []), "failure_codes": ["execution_failure"],
+                "evaluator_results": [], "latency_ms": 0.0})
+    snapshots = getattr(agent, "cost_snapshots", None)
+    if snapshots:
+        contract["reported_cost_snapshots"] = copy.deepcopy(snapshots)
+        contract["reported_costs_last"] = copy.deepcopy(snapshots[-1])
+    if prior_probe_results:
+        contract["pre_invalidation_probe_results"] = prior_probe_results
+    contract["digest"] = digest(contract)
     completed = utc_now()
     # Every executed Probe has a row here; the unscored ones only carry weight 0.
     # An infrastructure failure on any of them is still a failed run.
-    status = "failed" if any(p["outcome"] == "execution_failure" for p in probe_results) else "succeeded"
+    status = "invalid" if not contract["valid"] else ("failed" if any(p["outcome"] == "execution_failure" for p in probe_results) else "succeeded")
     instance = scenario.get("instantiation") or {}
     result = {
         "run_id": run_id,
@@ -697,10 +768,12 @@ def run_condition(
         "scenario_score": scenario_score_from_probes(probe_results),
         "probe_results": probe_results,
         **({"task_results": task_results} if task_results else {}),
-        "validity": {"causal_pair_valid": True, "runner_valid": True, "notes": [], "probe_input_digests": probe_variant_digests,
+        "validity": {"causal_pair_valid": contract["valid"], "runner_valid": contract["valid"], "notes": [], "probe_input_digests": probe_variant_digests,
                      "instance_spec_digest": hashlib.sha256(json.dumps(scenario, sort_keys=True, ensure_ascii=False).encode()).hexdigest()},
         **({"warnings": run_warnings} if run_warnings else {}),
+        "adapter_contract": contract,
         "extensions": {
+            "mib.runner.pre_invalidation_probe_results": prior_probe_results,
             "mib.runner.world_state": copy.deepcopy(world.state),
             "mib.runner.world_state_digest": hashlib.sha256(json.dumps(world.state, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest(),
             "mib.runner.action_trace": run_action_trace,
@@ -711,9 +784,6 @@ def run_condition(
             "mib.runner.observation_indices": observation_indices,
         },
     }
-    # Closed only after all observations, Probes, and result traces complete.
-    if close_agent_on_complete:
-        close_agent()
     return result
 
 

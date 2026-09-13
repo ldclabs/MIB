@@ -7,8 +7,9 @@ from typing import Any
 from .base import ScenarioBuilder, template_id_for
 from .programs import PROGRAM_CLASSES, Program
 from .extended import EXTENDED_PROGRAM_CLASSES
+from .products import PRODUCT_PROGRAM_CLASSES
 
-PROGRAMS: dict[str, type[Program]] = {cls.ID: cls for cls in PROGRAM_CLASSES + EXTENDED_PROGRAM_CLASSES}
+PROGRAMS: dict[str, type[Program]] = {cls.ID: cls for cls in PROGRAM_CLASSES + EXTENDED_PROGRAM_CLASSES + PRODUCT_PROGRAM_CLASSES}
 
 
 class UnknownProgram(KeyError):

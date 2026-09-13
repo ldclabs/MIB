@@ -216,6 +216,9 @@ def validate_causal_pairs(runs: list[dict[str, Any]]) -> tuple[bool, list[str], 
         rep = int(r["repetition"])
         full = full_by_rep.get(rep)
         pair_ok = True
+        if r.get('validity', {}).get('runner_valid') is False or (full is not None and full.get('validity', {}).get('runner_valid') is False):
+            pair_ok = False
+            notes.append('runner invalid: lifecycle failure excludes causal pair')
         if full is None:
             pair_ok = False
             notes.append(f"missing full control for repetition {rep}")

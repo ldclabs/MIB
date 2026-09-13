@@ -488,7 +488,9 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB uses scenario format v0.2, measurement revision **0.3.0**, and implementation **0.10.0**.
+MIB uses scenario format v0.2, measurement revision **0.3.0**, and implementation **0.12.0**.
+
+Pack report **0.4.0** adds explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
 
 The September design-review corrections are implemented:
 
@@ -611,8 +613,8 @@ python -m pip install -e .
 
 Requires Python 3.10+, `jsonschema >= 4.18`, and `cryptography >= 46`.
 
-Installing puts four commands on `PATH` — `mib`, `mib-service`, `mib-calibrate`, and
-`mib-same-model-calibrate`. They are console-script entry points declared under
+Installing puts six commands on `PATH` — `mib`, `mib-service`, `mib-calibrate`,
+`mib-same-model-calibrate`, `mib-memory-backend-benchmark`, and `mib-learning-benchmark`. They are console-script entry points declared under
 `[project.scripts]` in `pyproject.toml`; `mib` maps to `mib_runner.cli:main`. Without
 installing, invoke the same entry point directly:
 
@@ -870,3 +872,7 @@ In prose, please refer to the project as:
 > **MIB — Memory Intelligence Benchmark**
 >
 > A benchmark for measuring how effectively an intelligent system uses the past to improve future cognition and behavior.
+
+P6 adds a separately versioned [longitudinal learning development harness](docs/harness/MIB-Learning-Longitudinal.md): strict normal/no-memory/ungated admission, the exact Brain P0 precondition workflow, fixed experiment locks, private-world journal replay and explicit unknown outcomes. Engineering fixtures are not learning evidence; existing persistent adapters do not become native learning adapters by renaming a condition.
+
+Brain P7 product-regression coverage and the public no-model CI entry point are documented in [the legacy migration contract](docs/harness/MIB-Brain-Legacy-Migration.md). The eight Programs cover nine retired product goals using saved draft objects; proactive notification remains unsupported unless explicitly declared. This engineering check does not evaluate real Brain model quality or complete P6 learning admission.
