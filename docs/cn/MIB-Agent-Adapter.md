@@ -1,8 +1,8 @@
 # MIB Agent Adapter 协议规范
 
-> 参考实现 0.10.0：`reset`、`observe`、`respond`、`act`、`maintain`、`session_boundary` 与 `close` 均为可执行操作。本文档后续讨论的可选快照/检查设计并非 Core 的强制要求。参赛者可见的事件/任务/交互 ID 均为不透明标识。修订后的输出与生命周期评分由 `MIB-Specification.md` 修订版 0.3.0 定义。提醒发射可以仅包含结构化载荷（payload）；缺失的 content 保持缺省。非对象载荷元数据不会导致生命周期评分异常崩溃，且规范的标准文本提醒独立于该元数据判定为有效。
+> 参考实现 0.14.1：`reset`、`observe`、`respond`、`act`、`maintain`、`session_boundary`、`restore` 与 `close` 均为可执行操作。本文档后续讨论的可选快照/检查设计并非 Core 的强制要求。参赛者可见的事件/任务/交互/项目 ID 均为不透明标识，且没有任何可见文本将任务指名为练习（practice）或评测（evaluation）。输出与生命周期评分由 `MIB-Specification.md` 修订版 0.5.0 定义；生成程序所使用的提醒契约见 §32。提醒发射可以仅包含结构化载荷（payload）；缺失的 content 保持缺省。非对象载荷元数据不会导致生命周期评分异常崩溃，且规范的标准文本提醒独立于该元数据判定为有效。
 
-参考 `maintain` 操作接受类似 `PT1H` 的虚拟时长字符串；这并不是实测的挂钟耗时或存储上限。HTTP 与 stdio 适配器均会转发该操作。`session_boundary` 携带常规的请求/运行 ID 与虚拟时间并附带空请求体，返回 `{"accepted": true}`。它在清除工作任务/对话上下文的同时保留持久记忆。要求此操作的 Profile 必须显式声明 `session_boundary: true` 能力。固定模型包装器自行强制执行其瞬态边界；任意集成的 Agent 则声明其自身实现。
+参考 `maintain` 操作接受类似 `PT1H` 的虚拟时长字符串；这并不是实测的挂钟耗时或存储上限。HTTP 与 stdio 适配器均会转发该操作。`session_boundary` 携带常规的请求/运行 ID 与虚拟时间并附带空请求体，返回 `{"accepted": true}`。它在清除工作任务/对话上下文的同时保留持久记忆。要求此操作的 Profile 必须显式声明 `session_boundary: true` 能力。在带有 `session_isolation: "persisted_state"` 的 Profile 下，响应还可以携带 `"persisted_state": "<string>"`：此时 Runner 会关闭此 Agent 实例，启动全新实例，发送 `reset` 并随后发送 `restore`（其中 `body.state` 等于该字符串），而新实例必须回复 `{"accepted": true}`。跨越会话边界仅有该字符串得以保留；报告其 UTF-8 字节大小。未返回 `persisted_state` 的 Agent 将以空状态启动下一个会话。固定模型包装器自行强制执行其瞬态边界；HTTP 后的任意集成 Agent 接收相同的序列，但其进程状态仍为其自身的声明。
 
 
 ## MIB Runner 与记忆赋能智能体之间的传输中立通信接口
@@ -877,8 +877,10 @@ Runner 绝不能仅凭 `accepted=true` 就断定系统记忆质量良好，这�
 优秀的记忆系统应当在此刻的 `observe()` 响应中主动返回：
 
 ```text
-“提醒：记得跟 Sarah 确认合同细节。”
+"Reminder: ask Sarah about the contract."
 ```
+
+这是由生成程序评分的标准规范文本形式（§32）。
 
 而无需评测器额外发起一次生硬的提问：“你现在有什么事情要提醒吗？”。
 
@@ -901,12 +903,27 @@ tool_call   主动发起的工具调用
   "emissions": [
     {
       "emission_id": "emit_1",
-      "type": "message",
-      "content": "记得跟 Sarah 确认合同细节。"
+      "type": "reminder",
+      "content": "Reminder: ask Sarah about the contract."
     }
   ]
-]
+}
 ```
+
+仅含载荷（payload-only）的提醒也是等效的：
+
+```json
+{
+  "emissions": [
+    {
+      "type": "reminder",
+      "payload": {"recipient": "Sarah", "topic": "contract", "commitment_ref": "obs_…"}
+    }
+  ]
+}
+```
+
+`commitment_ref` 是可选的。当存在时，它必须是创建该承诺的观测事件的不透明 `observation_id`。
 
 自发涌现属于智能体可观测行为的一部分，直接参与打分评测。
 
@@ -943,7 +960,17 @@ Runner 在事件后**不会**追加任何提示性问答。
 
 这是检验真正前瞻记忆触发能力的标准范式。
 
-在 MIB v0.2 中，仅观察探针的 `input.observation` 像任何其他观察事件一样正常投递；Agent 无法区分触发事件与普通事件。Runner 会将每次 `observe` 结果的 `emissions[]` 条目与产生它的观察事件索引一同记录，并依据在 `[trigger, trigger + window]` 范围内（`oracle.expected_emission.window`，默认为 1）产生的发射对探针进行评测。带有 `must_not_emit` 的拟真干扰探针在窗口内发生任何匹配发射时即判定失败（`premature_trigger` 早熟触发）；触发探针在窗口内无任何匹配时判定失败（`commitment_miss` 承诺缺失）。参见 `MIB-Specification.md` §4.6。
+在 MIB v0.2 中，仅观察探针的 `input.observation` 像任何其他观察事件一样正常投递；Agent 无法区分触发事件与普通事件。Runner 会将每次 `observe` 结果的 `emissions[]` 条目与产生它的观察事件索引一同记录。
+
+生成程序（度量版本 0.5.0）评测**生命周期（lifecycle）**探针：
+
+- 生命周期从承诺观测事件开始，持续到运行结束。
+- 每个预期的提醒必须在其触发观测事件到达时立即发出（窗口为 0）。
+- 提醒在满足以下条件之一时判定为匹配：完全匹配规范化固定句式 `Reminder: ask <person> about the <topic>.`，或 `type: "reminder"` 且 `recipient` 与 `topic` 匹配的载荷。可选的 `commitment_ref` 必须等于该承诺的可见观测 ID；评测方的内部承诺 ID 绝不会展示给 Agent，也绝不作为要求。随载荷附带的文本必须是规范句子。
+- 承诺之后的**所有**其他发射均属于误报（false alarm），包括应答确认、提前或重复提醒、以及针对已取消承诺的提醒。严禁使用发射行为来应答确认普通观测事件。
+- 探针仅在零遗漏且零误报时得 1 分（`commitment_miss`，`premature_trigger`）。
+
+带有 `must_not_emit` 的近触发与重复触发探针属于零权重诊断项：早熟发射仅被生命周期探针惩罚一次。遗留的静态场景保持其声明的 `window`（默认 1）和主题匹配。参见 `MIB-Specification.md` §4.6。
 
 ---
 

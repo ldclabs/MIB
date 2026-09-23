@@ -1,6 +1,6 @@
 # MIB v0.1 同模型实证基准测试框架
 
-> 下方的 v0.1 示例仍为遗留资料。实现版本 0.10.0 同时支持在各个阶梯档位上执行生成的 v0.2 程序。可使用 `same-model-generated.stub.json` 进行工程验证，或使用 `same-model-generated.external-http.json` 进行真实固定模型校准。修订后的适配器为 B1–B3 持久化已完成的任务轨迹，对 B0 则予以丢弃，并支持观测期决策、系统维护以及显式会话边界。可选的近期窗口（recent-window）和特权 Oracle 支持参考作为独立诊断项呈现，绝不纳入发布门控。参见 `MIB-v0.2-Review-Resolution.md` 了解当前流程及后续实证要求。
+> 下方的 v0.1 示例仍为遗留资料。实现版本 0.14.0 同时支持在各个阶梯档位上执行生成的 v0.2 程序。可使用 `same-model-generated.stub.json` 进行工程验证，或使用 `same-model-generated.external-http.json` 进行真实固定模型校准。修订后的适配器为 B1–B3 持久化已完成的任务轨迹，对 B0 则予以丢弃，并支持观测期决策、系统维护以及显式会话边界。可选的近期窗口（recent-window）和特权 Oracle 支持参考作为独立诊断项呈现，绝不纳入发布门控。参见 `MIB-v0.5-Review-Resolution.md` 了解当前流程及后续实证要求。
 
 
 **版本：** 0.1-draft  
@@ -79,6 +79,8 @@ memory_truncations = 0
 ```
 
 若模型上下文窗口导致 B1 发生截断，必须修正场景规模或模型配置，否则不可用于发布级校准。
+
+在有预算实验中（设置了 `memory_char_limits.B1`），B1 是预算内最近的可见历史：属于近期窗口，而非完整上下文。`full_context` 门控、记忆区分度指数（MDI）以及记忆差距分母均来自 `additional_baselines.unbounded_reference` 臂（无预算的 B1），该臂必须报告 `memory_truncations = 0`；若缺失该臂，则这些门控指标为无法评估。预检还会要求每个有界臂的选择策略能够填满其预算（`memory_pressure.arms.*.budget_binds`），从而保证 B2/B3 与 B1 的差异来源于选择策略而非容量差异。
 
 ### B2 — 简单词法检索（Simple Lexical Retrieval）
 
