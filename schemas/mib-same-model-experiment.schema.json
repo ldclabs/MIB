@@ -292,6 +292,10 @@
             "max_memory_chars": {
               "type": "integer",
               "minimum": 1
+            },
+            "unbounded_reference": {
+              "type": "boolean",
+              "description": "Run B1 without a budget as the complete-history reference; required when B1 is bounded."
             }
           }
         },

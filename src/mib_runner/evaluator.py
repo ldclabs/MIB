@@ -130,6 +130,20 @@ def _disclosure(output: AgentOutput, oracle: dict[str, Any], mode: str) -> str |
     return None
 
 
+def _scoped_disclosure(output: AgentOutput, oracle: dict[str, Any], mode: str, value_text: str) -> str | None:
+    """``disclosure_scope: withdrawn`` (measurement 0.5.0).
+
+    Only withdrawn values are scanned across the whole visible output. Other
+    forbidden values are wrong answers, detected in the answer value itself:
+    accurately recalling a superseded value in an explanation is not stale
+    adoption, and its penalty would otherwise grow with interference.
+    """
+    withdrawn = _disclosure(output, {"forbidden": oracle.get("withdrawn") or []}, mode)
+    if withdrawn is not None:
+        return withdrawn
+    return next((str(x) for x in oracle.get("forbidden", []) if normalize(x, mode) == value_text), None)
+
+
 def evaluate_set_match(output: AgentOutput, oracle: dict[str, Any], config: dict[str, Any] | None) -> dict[str, Any]:
     """Score a short answer against accepted / forbidden value sets.
 
@@ -298,7 +312,10 @@ def evaluate_structured(output: AgentOutput, oracle: dict[str, Any], config: dic
     expected_status = oracle.get("expected_status") or "known"
     value_text = normalize(parsed["value"], mode) if parsed["value"] is not None else ""
     abstained = output.type == "abstention" or parsed["status"] == "unknown" or value_text == "unknown"
-    forbidden = _disclosure(output, oracle, mode)
+    scope = config.get("disclosure_scope", "output")
+    if scope not in {"output", "withdrawn"}:
+        raise ValueError(f"unsupported disclosure_scope: {scope}")
+    forbidden = _scoped_disclosure(output, oracle, mode, value_text) if scope == "withdrawn" else _disclosure(output, oracle, mode)
     value_score, failure_codes, details = _score_value(value_text, abstained=abstained, oracle=oracle, mode=mode, match=match,
                                                      forbidden_hit=forbidden)
     # Structured scalar answers cannot smuggle several candidates in a JSON
@@ -357,6 +374,26 @@ def _emission_matches(text: str, tokens: list[str]) -> bool:
     return bool(tokens) and all(str(t).casefold() in folded for t in tokens)
 
 
+def _reminder_payload_matches(payload: Any, item: dict[str, Any], observation_ids: dict[str, str]) -> bool:
+    """A structured reminder names its recipient and topic (measurement 0.5.0).
+
+    It may reference its commitment by the opaque observation ID the Agent saw
+    (``commitment_ref``). A reference to any other observation, or an explicit
+    ``commitment_id`` that differs from the evaluator's, is a wrong reminder.
+    Hidden evaluator commitment IDs are never required, because the Agent never
+    observes them.
+    """
+    if not isinstance(payload, dict):
+        return False
+    if any(normalize(payload.get(k), "answer_normalized") != normalize(item[k], "answer_normalized")
+           for k in ("recipient", "topic")):
+        return False
+    ref = payload.get("commitment_ref")
+    if ref is not None and (not item.get("commitment_event") or ref != observation_ids.get(item["commitment_event"])):
+        return False
+    return payload.get("commitment_id") is None or payload.get("commitment_id") == item.get("commitment_id")
+
+
 def evaluate_emission(emission_log: list[dict[str, Any]], trigger_index: int, oracle: dict[str, Any],
                       config: dict[str, Any] | None) -> dict[str, Any]:
     """Prospective memory: did the Agent emit on its trigger and not before? (MIB-Specification §4.6)"""
@@ -376,9 +413,8 @@ def evaluate_emission(emission_log: list[dict[str, Any]], trigger_index: int, or
             for i, (index, emission) in enumerate(emitted):
                 if i in used or not at <= index <= at + int(spec.get("window", 0)):
                     continue
-                payload = emission.get("payload")
-                structured = emission.get("type") == "reminder" and isinstance(payload, dict) and all(
-                    payload.get(k) == item[k] for k in ["commitment_id", "recipient", "topic"])
+                structured = emission.get("type") == "reminder" and _reminder_payload_matches(
+                    emission.get("payload"), item, (config or {}).get("observation_ids") or {})
                 text = normalize(emission.get("content") or "", "answer_normalized")
                 canonical = normalize(f"Reminder: ask {item['recipient']} about the {item['topic']}.", "answer_normalized")
                 if (structured and (not emission.get("content") or text == canonical)) or text == canonical:
@@ -415,13 +451,15 @@ def evaluate_emission(emission_log: list[dict[str, Any]], trigger_index: int, or
 
 def evaluate_emission_probe(probe: dict[str, Any], evaluator_map: dict[str, dict[str, Any]],
                             emission_log: list[dict[str, Any]], trigger_index: int,
-                            observation_indices: dict[str, int] | None = None) -> tuple[float, list[dict[str, Any]]]:
+                            observation_indices: dict[str, int] | None = None,
+                            observation_ids: dict[str, str] | None = None) -> tuple[float, list[dict[str, Any]]]:
     results = []
     for eid in probe.get("evaluators", []):
         spec = evaluator_map[eid]
         if spec["type"] != "emission":
             raise NotImplementedError(f"observe_only Probes require an emission evaluator, got {spec['type']!r}")
-        config = {**(spec.get("config") or {}), "observation_indices": observation_indices or {}}
+        config = {**(spec.get("config") or {}), "observation_indices": observation_indices or {},
+                  "observation_ids": observation_ids or {}}
         r = evaluate_emission(emission_log, trigger_index, probe.get("oracle") or {}, config)
         results.append({"evaluator_id": eid, "evaluator_type": "emission", **r})
     score = sum(float(x["score"]) for x in results) / len(results) if results else 0.0
@@ -456,6 +494,11 @@ def evaluate_world_state(world: WorldState, oracle: dict[str, Any], config: dict
         ok = _condition_ok(actual, a["operator"], a.get("value"))
         checks.append({"path": a["path"], "operator": a["operator"], "expected": a.get("value"), "actual": actual, "passed": ok})
     score = sum(1.0 for x in checks if x["passed"]) / len(checks)
+    if (config or {}).get("require_all"):
+        # Conjunctive world outcomes (measurement 0.5.0): a workflow completed
+        # after corrective feedback is not a remembered procedure, so partial
+        # assertion credit would be a zero-memory floor.
+        score = float(score == 1.0)
     failures = [] if score == 1.0 else ["trajectory_collapse"]
     return {"score": score, "passed": score == 1.0, "failure_codes": failures, "details": {"assertions": checks}}
 
@@ -556,6 +599,10 @@ def _eval_one(eid: str, spec: dict[str, Any], output: AgentOutput, probe: dict[s
                 failures.update(rr.get("failure_codes", []))
                 rows.append({"evaluator": c["evaluator"], "weight": w, "score": rr["score"], "passed": rr["passed"]})
             score = total / total_w if total_w else 0.0
+            if (spec.get("config") or {}).get("require_all"):
+                # Conjunctive rule compliance: partial credit for one half of a
+                # standing rule would reward doing nothing or guessing.
+                score = float(all(float(row["score"]) >= 1.0 for row in rows))
             r = {"score": score, "passed": score == 1.0, "failure_codes": sorted(failures), "details": {"components": rows}}
     elif etype == "emission":
         raise NotImplementedError("emission evaluators are scored from the emission log by the Runner")
@@ -569,3 +616,16 @@ def evaluate_probe(output: AgentOutput, probe: dict[str, Any], evaluator_map: di
     results = [_eval_one(eid, evaluator_map[eid], output, probe, evaluator_map, context) for eid in probe.get("evaluators", [])]
     score = sum(float(x["score"]) for x in results) / len(results) if results else 0.0
     return score, results
+
+
+def oracle_match(score: float, results: list[dict[str, Any]]) -> bool:
+    """Whether an output carries the oracle's value, independent of rubric metadata.
+
+    Structured answers use their value component; action and emission
+    evaluators use their complete score. Content-following evidence compares
+    this quantity under paired histories.
+    """
+    structured = [r for r in results if r.get("evaluator_type") == "structured"]
+    if structured:
+        return all(float((r.get("details") or {}).get("value_score", 0.0)) >= 1.0 for r in structured)
+    return float(score) >= 1.0

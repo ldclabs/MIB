@@ -135,7 +135,8 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
         "condition_order_policy": "counterbalanced_latin_rotation_v1",
         "conditions": {
             "B0": {"memory_policy": "no_memory"},
-            "B1": {"memory_policy": "full_visible_history"},
+            "B1": {"memory_policy": "full_visible_history" if (cfg["agent"].get("memory_char_limits") or {}).get("B1") is None
+                   else "most_recent_visible_history_within_budget"},
             "B2": {"memory_policy": "lexical_top_k", "top_k": int(cfg["agent"].get("retrieval_top_k", 4))},
             "B3": {
                 "memory_policy": "lexical_salience_heuristic",
@@ -189,6 +190,74 @@ def _transfer_lock_section(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[
     }
 
 
+def memory_pressure(cfg: dict[str, Any], templates: list[dict[str, Any]]) -> dict[str, Any]:
+    """Rendered visible history relative to each bounded memory arm's budget.
+
+    A budget that never binds makes B1 a complete-history reference and turns
+    B2/B3 into arbitrary top-k truncations: the comparison is then not a
+    budgeted memory-architecture experiment. The ratio counts only rendered
+    observation records, so it is a lower bound; lived-task transcripts and
+    persisted dialogue add more.
+    """
+    from statistics import median
+    from .runner import _actor_map, _project_observation
+    from .same_model_agent import bounded_memory_lines, observation_text
+    cal = cfg.get("calibration") or {}
+    seeds = list(cal.get("instance_seeds") or [101, 202, 303, 404])
+    sizes = []
+    records_chars: list[int] = []
+    for template in templates:
+        for seed in seeds:
+            instance = materialize(template, seed)
+            actors = _actor_map(instance)
+            records = [observation_text(_project_observation(e, actors, (e.get("at") or {}).get("time")))
+                       for e in instance.get("timeline", [])
+                       if e.get("visibility") in {"agent", "both"} and e["type"] not in {"task", "checkpoint", "world_update"}]
+            sizes.append(len(bounded_memory_lines(records, None)[0]))
+            records_chars.extend(len(r) + 6 for r in records)
+    limits = {arm: int(v) for arm, v in sorted((cfg["agent"].get("memory_char_limits") or {}).items()) if arm != "B0" and v is not None}
+    # A selection policy can bind before the budget does: B2 keeps ``top_k``
+    # records and B3 at most ``top_k + salient_k``. The budget is the binding
+    # constraint of an arm only when those records could fill it.
+    record_chars = median(records_chars) if records_chars else 0.0
+    agent_cfg = cfg["agent"]
+    selection_records = {"B1": None, "B2": int(agent_cfg.get("retrieval_top_k", 4)),
+                         "B3": int(agent_cfg.get("structured_top_k", 10)) + int(agent_cfg.get("structured_salient_k", 6))}
+    arms = {}
+    for arm, limit in limits.items():
+        ratios = sorted(size / limit for size in sizes)
+        records = selection_records.get(arm)
+        capacity = median(sizes) if records is None else records * record_chars
+        arms[arm] = {"limit_chars": limit, "min_ratio": ratios[0], "median_ratio": median(ratios), "max_ratio": ratios[-1],
+                     "binding_share": sum(r > 1 for r in ratios) / len(ratios),
+                     "selection_records": records, "selection_capacity_chars": capacity, "budget_binds": capacity >= limit}
+    return {
+        "regime": "budgeted" if limits else "unbounded_reference",
+        "unit": "rendered visible observation characters / final memory character budget (lower bound)",
+        "history_chars": {"min": min(sizes), "median": median(sizes), "max": max(sizes)} if sizes else None,
+        "record_chars_median": record_chars,
+        "minimum_median_ratio": float(cal.get("min_memory_pressure", 1.0)),
+        "arms": arms,
+    }
+
+
+def require_memory_pressure(cfg: dict[str, Any], pressure: dict[str, Any]) -> None:
+    """Preflight: a bounded non-smoke experiment must put its memory arms under pressure."""
+    if (cfg.get("calibration") or {}).get("purpose") == "smoke" or pressure["regime"] != "budgeted":
+        return
+    unbound = {arm: row["selection_capacity_chars"] for arm, row in pressure["arms"].items() if not row.get("budget_binds", True)}
+    if unbound:
+        raise ValueError(f"memory budget does not bind: selection capacity {unbound} is below the budget "
+                         f"{ {arm: row['limit_chars'] for arm, row in pressure['arms'].items()} }; raise top_k so every "
+                         "bounded arm can fill its budget, or the arms differ in capacity rather than policy")
+    weak = {arm: row["median_ratio"] for arm, row in pressure["arms"].items()
+            if row["median_ratio"] < pressure["minimum_median_ratio"]}
+    if weak:
+        raise ValueError(f"memory budget does not bind: median history/budget ratios {weak} "
+                         f"are below {pressure['minimum_median_ratio']}; choose a longer rung or a smaller budget, "
+                         "or declare unbounded references")
+
+
 def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) -> dict[str, Any]:
     cal = cfg.get("calibration") or {}
     seeds = list(cal.get("instance_seeds") or [101, 202, 303, 404])
@@ -220,13 +289,14 @@ def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) ->
             causal_ablation_runs += len(instance.get('ablations', [])) * creps
             calls += creps * sum(minimum_calls(instance, a) for a in instance.get('ablations', []))
     additional = cal.get('additional_baselines') or {}
-    extra_count = int(bool(additional.get('recent_window'))) + int(bool(additional.get('oracle_reference')))
+    extra_count = int(bool(additional.get('recent_window'))) + int(bool(additional.get('oracle_reference'))) + int(bool(additional.get('unbounded_reference')))
     extra_runs = len(templates) * len(seeds) * reps * extra_count
     return {
         'template_count': len(templates), 'instance_seeds': len(seeds), 'repetitions': reps,
         'minimum_condition_runs': full_condition_runs + causal_ablation_runs + extra_runs,
         'full_baseline_condition_runs': full_condition_runs, 'additional_causal_ablation_runs': causal_ablation_runs,
         'additional_diagnostic_runs': extra_runs, 'minimum_model_turns': calls,
+        'memory_pressure': memory_pressure(cfg, templates),
         'note': 'minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote.'}
 
 
@@ -439,7 +509,7 @@ def _aggregate_calibration(
     *, templates: list[dict[str, Any]], profile: dict[str, Any], raw: dict[str, dict[str, list[dict[str, Any]]]],
     causal: dict[str, list[dict[str, Any]]], factories: dict[str, Callable[[], Any]],
     thresholds: dict[str, float], bootstrap_resamples: int, bootstrap_seed: str | int,
-    configuration: dict[str, Any],
+    configuration: dict[str, Any], reference_scores: dict[str, float] | None = None,
 ) -> dict[str, Any]:
     templates_by_id = {t["id"]: t for t in templates}
     cards = []
@@ -451,8 +521,15 @@ def _aggregate_calibration(
             for bid in CONDITIONS
         }
         b0, b1, b2, b3 = [stats_by_b[x]["mean"] for x in CONDITIONS]
-        mdi = b1 - b0
-        denom = mdi
+        # With a bounded B1 the complete-history reference comes from the
+        # unbounded reference arm; without one the gate is unassessable rather
+        # than measured on a recency window.
+        if reference_scores is None:
+            full_reference: float | None = b1
+        else:
+            full_reference = reference_scores.get(tid)
+        mdi = (full_reference - b0) if full_reference is not None else None
+        denom = mdi if mdi is not None else 0.0
         mgc_b2 = (b2 - b0) / denom if abs(denom) > 1e-12 else None
         mgc_b3 = (b3 - b0) / denom if abs(denom) > 1e-12 else None
         baseline_means = [b0, b1, b2, b3]
@@ -485,7 +562,8 @@ def _aggregate_calibration(
             "dimensions": list(t.get("dimensions") or []),
             "baseline_scores": stats_by_b,
             "metrics": {
-                "full_context": b1,
+                "full_context": full_reference,
+                "bounded_history": b1 if reference_scores is not None else None,
                 "no_memory": b0,
                 "memory_discriminativeness_index": mdi,
                 "simple_retrieval": b2,
@@ -497,9 +575,9 @@ def _aggregate_calibration(
             },
             "causal_diagnostics": cdiag,
             "gates": {
-                "full_context": b1 >= thresholds["full_context_min"],
+                "full_context": None if full_reference is None else full_reference >= thresholds["full_context_min"],
                 "no_memory": b0 <= thresholds["no_memory_max"],
-                "mdi": mdi >= thresholds["mdi_min"],
+                "mdi": None if mdi is None else mdi >= thresholds["mdi_min"],
                 "baseline_span": (max(baseline_means) - min(baseline_means)) >= thresholds["baseline_span_min"],
                 **causal_checks,
             },
@@ -593,6 +671,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     system_prompt = load_prompt(paths["system_prompt"])
     reasoning_policy = load_prompt(paths["reasoning_policy"])
     execution_plan = estimate_experiment(cfg, templates)
+    require_memory_pressure(cfg, execution_plan["memory_pressure"])
 
     # Statelessness preflight uses a disposable client, then the actual experiment
     # starts with a fresh client process/connection context.
@@ -684,31 +763,19 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
                 ),
             }
 
-        base_report = _aggregate_calibration(
-            templates=templates, profile=profile, raw=raw, causal=causal, factories=factories,
-            thresholds=thresholds,
-            bootstrap_resamples=int(cal_cfg.get("bootstrap_resamples", 2000)),
-            bootstrap_seed=cal_cfg.get("bootstrap_seed", "mib-same-model-0.1"),
-            configuration={
-                "instance_seeds": seeds,
-                "repetitions": reps,
-                "baseline_ids": CONDITIONS,
-                "bootstrap_resamples": int(cal_cfg.get("bootstrap_resamples", 2000)),
-                "causal_baseline_id": "B3",
-                "causal_instance_seeds": cseeds,
-                "causal_repetitions": creps,
-                "thresholds": thresholds,
-                "condition_order_policy": "counterbalanced_latin_rotation_v1",
-            },
-        )
         additional_baselines = {}
         additional_spec = cal_cfg.get('additional_baselines') or {}
-        for label in ['bounded_recent_context', 'oracle_supported_reference']:
-            if (label == 'bounded_recent_context' and not additional_spec.get('recent_window')) or (label == 'oracle_supported_reference' and not additional_spec.get('oracle_reference')):
+        wanted = {'bounded_recent_context': bool(additional_spec.get('recent_window')),
+                  'oracle_supported_reference': bool(additional_spec.get('oracle_reference')),
+                  'unbounded_reference': bool(additional_spec.get('unbounded_reference'))}
+        for label in ['unbounded_reference', 'bounded_recent_context', 'oracle_supported_reference']:
+            if not wanted[label]:
                 continue
             recorder = InvocationRecorder()
             memory = {**common_memory, **({'recent_window': int(additional_spec['recent_window']),
                 'max_memory_chars': int(additional_spec.get('max_memory_chars', 8192))} if label == 'bounded_recent_context' else {})}
+            # The unbounded reference is B1 without a budget: the complete-history
+            # reference that a bounded B1 no longer is (MIB-Specification §9.3).
             def extra_factory():
                 return SameModelAgent(condition='B1', model_client=model_client, system_prompt=system_prompt, reasoning_policy=reasoning_policy,
                     model_parameters=copy.deepcopy(model_cfg.get('parameters') or {}), recorder=recorder, memory_config=memory,
@@ -728,9 +795,31 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
                                             agent_seed=f'same-model:{seed}:{rep}', pre_probe_injections=support)
                         scores.append(run['scenario_score'])
                 rows.append({'template_id': template['id'], 'score': sum(scores)/len(scores), 'n': len(scores)})
-            additional_baselines[label] = {'templates': rows, 'telemetry': recorder.summary(), 'enters_release_gate': False,
-                'interpretation': 'A diagnostic reference, not a deployable participant or guaranteed mathematical upper bound.' if label == 'oracle_supported_reference'
-                                  else 'The fixed model sees only the configured recent observation window.'}
+            additional_baselines[label] = {'templates': rows, 'telemetry': recorder.summary(),
+                'enters_release_gate': label == 'unbounded_reference',
+                'interpretation': {'oracle_supported_reference': 'A diagnostic reference, not a deployable participant or guaranteed mathematical upper bound.',
+                                   'bounded_recent_context': 'The fixed model sees only the configured recent observation window.',
+                                   'unbounded_reference': 'Complete visible history without a budget: the full-context reference for the release gate and the memory-gap denominator when B1 is bounded.'}[label]}
+        reference_scores = {row['template_id']: row['score'] for row in additional_baselines.get('unbounded_reference', {}).get('templates', [])}
+        reference_truncations = int(additional_baselines.get('unbounded_reference', {}).get('telemetry', {}).get('memory_truncations', 0))
+        base_report = _aggregate_calibration(
+            templates=templates, profile=profile, raw=raw, causal=causal, factories=factories,
+            thresholds=thresholds,
+            bootstrap_resamples=int(cal_cfg.get("bootstrap_resamples", 2000)),
+            bootstrap_seed=cal_cfg.get("bootstrap_seed", "mib-same-model-0.1"),
+            reference_scores=reference_scores if memory_limits.get("B1") is not None else None,
+            configuration={
+                "instance_seeds": seeds,
+                "repetitions": reps,
+                "baseline_ids": CONDITIONS,
+                "bootstrap_resamples": int(cal_cfg.get("bootstrap_resamples", 2000)),
+                "causal_baseline_id": "B3",
+                "causal_instance_seeds": cseeds,
+                "causal_repetitions": creps,
+                "thresholds": thresholds,
+                "condition_order_policy": "counterbalanced_latin_rotation_v1",
+            },
+        )
     finally:
         try:
             model_client.close()
@@ -786,7 +875,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "condition_label_not_model_visible": have_evidence and condition_label_leaks == 0,
         "counterbalanced_condition_order": bool(schedule_audit["balanced"]),
         "paired_agent_seed_and_future_probe": bool(pairing_audit["valid"]),
-        "b1_full_context_not_truncated": b1_truncations == 0,
+        "full_context_reference_not_truncated": (reference_truncations == 0 if memory_limits.get("B1") is not None and reference_scores
+                                                  else b1_truncations == 0 if memory_limits.get("B1") is None else False),
         "no_model_transport_or_parse_errors": model_errors == 0,
         "full_lifecycle_execution_clean": bool(full_runs) and all(r.get('validity', {}).get('runner_valid') is True
                                                                    for r in full_runs.values()),

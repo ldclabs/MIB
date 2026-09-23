@@ -152,11 +152,14 @@ def test_prospective_emission_fires_on_trigger_and_not_before():
 def test_counterfactual_content_tracking_separates_memory_from_priors():
     s = generate_instance("mib.temporal.v1", 4, rung=0)
     runs = run_scenario(scenario=s, agent_factory=StructuredMemoryAgent, include_ablations=True)
-    swap = next(r for r in runs if r["condition"] == "counterfactual_content")
+    swap = next(r for r in runs if r["condition"] == "counterfactual_content" and r["ablation_id"] == "a-swap-p-current")
     row = next(p for p in swap["probe_results"] if p["probe_id"] == "p-current")
-    assert row["counterfactual"] == {"tracks": True, "stale": False}
+    assert row["counterfactual"] == {"tracks": True, "stale": False, "follows": True}
+    # The full run records that its output did not already carry the twin value.
+    full_row = next(p for p in runs[0]["probe_results"] if p["probe_id"] == "p-current")
+    assert full_row["counterfactual_cross"]["a-swap-p-current"] is False
     # The replaced event must reach the Agent with the counterfactual value, not the original.
-    ab = next(a for a in s["ablations"] if a["method"] == "swap_parameter")
+    ab = next(a for a in s["ablations"] if a["id"] == "a-swap-p-current")
     pivot = ab["targets"]["event_ids"][0]
     assert ab["counterfactual"]["events"][pivot]["content"] != next(e["content"] for e in s["timeline"] if e["id"] == pivot)
 
@@ -169,7 +172,10 @@ def test_structured_answers_and_abstention_are_scored_by_field():
     assert by["p-status"]["score"] == 1.0
     blind = run_scenario(scenario=s, agent_factory=NoMemoryAgent, include_ablations=False)[0]
     b = {p["probe_id"]: p for p in blind["probe_results"]}
-    assert b["p-unknown"]["score"] == 1.0
+    # Abstaining about a never-established value is credited only with the
+    # matching recall (measurement 0.5.0): a system with no memory abstains too.
+    assert b["p-unknown"]["score"] == 0.0 and b["p-unknown"]["unconditional_score"] == 1.0
+    assert "prerequisite_failed" in b["p-unknown"]["failure_codes"]
     assert b["p-bday"]["failure_codes"] == ["retrieval_miss"]
     recency = run_scenario(scenario=s, agent_factory=RecencyAgent, include_ablations=False)[0]
     r = {p["probe_id"]: p for p in recency["probe_results"]}
@@ -248,7 +254,10 @@ def test_retraction_is_forgotten_and_neighbours_are_kept():
     assert by["p-kept"]["score"] == 1.0
     blind = run_scenario(scenario=s, agent_factory=NoMemoryAgent, include_ablations=False)[0]
     by = {p["probe_id"]: p for p in blind["probe_results"]}
-    assert by["p-forgotten"]["score"] == 1.0 and by["p-kept"]["score"] == 0.0
+    # Forgetting everything is not selective withdrawal (measurement 0.5.0).
+    assert by["p-forgotten"]["score"] == 0.0 and by["p-forgotten"]["unconditional_score"] == 1.0
+    assert by["p-forgotten"]["conditional_on"] == {"probes": ["p-kept"], "met": False}
+    assert by["p-kept"]["score"] == 0.0
 
 
 def test_self_rule_holds_against_a_task_that_asks_for_the_forbidden_step():

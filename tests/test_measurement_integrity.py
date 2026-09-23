@@ -168,7 +168,8 @@ def test_lived_feedback_survives_task_completion_only_with_memory():
                       model_parameters={}, recorder=InvocationRecorder(), memory_config={'parse_retries': 0})
         r = run_scenario(scenario=s, agent_factory=factory, include_ablations=False)[0]
         scores[condition] = r['scenario_score']
-    assert scores == {'B0': 0.5, 'B1': 1.0}
+    # B0 recovers from the feedback inside the task, which is conjunctively scored as nothing (measurement 0.5.0).
+    assert scores == {'B0': 0.0, 'B1': 1.0}
 
 
 def test_a_memoryless_guess_is_not_labelled_negative_transfer():

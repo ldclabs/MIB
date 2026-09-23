@@ -41,15 +41,10 @@ from .scoring import (  # noqa: F401  (re-exported: callers and tests import the
 )
 from .generate import generate_pack
 from .util import utc_now, runner_source_digest
-from .experimental.transfer_diagnostics import (
-    DEFAULT_EPSILON,
-    attach_transfer_diagnostics,
-    build_transfer_diagnostics,
-    transfer_diagnostic_aggregates,
-    transfer_distance_aggregates,
-    transfer_relation_aggregates,
-)
-from .experimental.transfer_matrix import run_transfer_matrix_pack
+# Transfer Intelligence is an experimental, supplemental result family. Its
+# modules are imported only where a static pack requests them, so the core
+# measurement path never depends on experimental code at import time.
+DEFAULT_EPSILON = 0.05
 from .validation import validate_scenario
 
 
@@ -615,7 +610,9 @@ def build_pack_report(
     # Supplemental diagnostics only.  A pack whose Templates carry no Transfer
     # Support Annotation produces a report with no extension at all, so an
     # unannotated MIB-Core report is byte-identical to the pre-extension one.
-    attach_transfer_diagnostics(report, transfer_diagnostics)
+    if transfer_diagnostics:
+        from .experimental.transfer_diagnostics import attach_transfer_diagnostics
+        attach_transfer_diagnostics(report, transfer_diagnostics)
     return report
 
 
@@ -684,6 +681,8 @@ def run_benchmark_pack(
     # The 2x2 diagnostic cells stay in their own list.  Merging them into
     # all_runs would move condition_scores, causal pair sets, and execution
     # counts, and a supplemental diagnostic must never do that.
+    from .experimental.transfer_diagnostics import build_transfer_diagnostics
+    from .experimental.transfer_matrix import run_transfer_matrix_pack
     diagnostic_runs = run_transfer_matrix_pack(
         instances=all_instances,
         agent_factory=agent_factory,
@@ -762,6 +761,7 @@ def run_materialized_pack(
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in templates if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []
+    include_interventions, skip_kinds = _intervention_schedule(profile, descriptor)
 
     all_runs: list[dict[str, Any]] = []
     for instance in instances:
@@ -781,9 +781,11 @@ def run_materialized_pack(
             runs = run_scenario(
                 scenario=instance,
                 agent_factory=agent_factory,
-                include_ablations=include_ablations,
+                include_ablations=include_interventions(instance, include_ablations),
                 repetition=rep,
                 agent_seed=agent_seed,
+                skip_ablation_kinds=skip_kinds,
+                session_isolation=session_isolation_policy(profile),
             )
             _, _, notes = validate_causal_pairs(runs)
             warnings.extend(pair_warnings(runs[0]["scenario_instance_id"], notes))
@@ -802,6 +804,8 @@ def run_materialized_pack(
             seed=bootstrap_seed,
             confidence_level=float(profile.get("statistics", {}).get("confidence_level", 0.95)),
         )
+    from .experimental.transfer_diagnostics import build_transfer_diagnostics
+    from .experimental.transfer_matrix import run_transfer_matrix_pack
     diagnostic_runs = run_transfer_matrix_pack(
         instances=instances,
         agent_factory=agent_factory,
@@ -842,6 +846,44 @@ def run_materialized_pack(
     return report, summary
 
 
+DIAGNOSTIC_INTERVENTIONS = frozenset({"relevant_memory", "irrelevant_memory", "harmful_memory", "no_maintenance", "negative_transfer"})
+
+
+def session_isolation_policy(profile: dict[str, Any]) -> str:
+    """``measurement_regime.session_isolation``: ``acknowledged`` (the Agent only confirms
+    a boundary) or ``persisted_state`` (the Runner discards the Agent instance and
+    restores a fresh one from the state it handed back)."""
+    mode = str((profile.get("measurement_regime") or {}).get("session_isolation") or "acknowledged")
+    if mode not in {"acknowledged", "persisted_state"}:
+        raise ValueError(f"unsupported session_isolation policy: {mode!r}")
+    return mode
+
+
+def _intervention_schedule(profile: dict[str, Any], descriptor: dict[str, Any]):
+    """Which interventions an Instance runs (measurement 0.5.0 Profiles).
+
+    Only canonical-rung interventions enter any aggregate, so other rungs run
+    the full condition for retention curves. A no-maintenance replay is the
+    control for maintenance work; when the Agent declares none, it would only
+    repeat the full condition. Legacy Profiles keep every intervention.
+    """
+    regime = profile.get("measurement_regime") or {}
+    canonical_rung = profile.get("canonical_rung")
+    canonical_only = regime.get("intervention_rungs") == "canonical" and canonical_rung is not None
+    skip = ({"no_maintenance"} if regime.get("maintenance_control") == "declared_maintenance_only"
+            and (descriptor.get("capabilities") or {}).get("maintenance") is not True else set())
+    if regime.get("diagnostics") == "off":
+        # The headline needs the full condition and the twins only; the
+        # relevant/irrelevant/harmful/maintenance/negative-transfer controls
+        # feed causal diagnostics that are not part of it.
+        skip |= DIAGNOSTIC_INTERVENTIONS
+
+    def include(instance: dict[str, Any], requested: bool) -> bool:
+        rung = (instance.get("instantiation") or {}).get("rung")
+        return requested and (not canonical_only or rung is None or int(rung) == int(canonical_rung))
+    return include, skip
+
+
 def run_generated_pack(
     *,
     profile: dict[str, Any],
@@ -859,6 +901,7 @@ def run_generated_pack(
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in descriptors if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []
+    include_interventions, skip_kinds = _intervention_schedule(profile, descriptor)
     all_runs: list[dict[str, Any]] = []
     executed: list[dict[str, Any]] = []
     for instance in instances:
@@ -875,9 +918,11 @@ def run_generated_pack(
             runs = run_scenario(
                 scenario=instance,
                 agent_factory=agent_factory,
-                include_ablations=include_ablations,
+                include_ablations=include_interventions(instance, include_ablations),
                 repetition=rep,
                 agent_seed=agent_seed,
+                skip_ablation_kinds=skip_kinds,
+                session_isolation=session_isolation_policy(profile),
             )
             _, _, notes = validate_causal_pairs(runs)
             warnings.extend(pair_warnings(runs[0]["scenario_instance_id"], notes))

@@ -1,10 +1,10 @@
 # Runtime memory backend and lifecycle contract
 
-Implementation **0.13.0** provides a Track A runtime backend seam. It uses the existing `SameModelAgent`, runner, World tools, deterministic evaluators and score aggregation. The experimental AO `MemoryAdapter` remains a separate diagnostic interface. A participant's integrated Bot belongs to Track B even when it exposes this additional memory-only endpoint.
+Implementation **0.14.0** provides a Track A runtime backend seam. It uses the existing `SameModelAgent`, runner, World tools, deterministic evaluators and score aggregation. The experimental AO `MemoryAdapter` remains a separate diagnostic interface. A participant's integrated Bot belongs to Track B even when it exposes this additional memory-only endpoint.
 
 ## Success gates and report versions
 
-Pack reports are now **0.5.0**; single-scenario reports are **0.1.1**. Scenario format remains **0.2**; the measurement revision is **0.4.0**. Old artifacts retain their original report version and cannot establish compliance with the new lifecycle contract.
+Pack reports are now **0.6.0**; single-scenario reports are **0.1.1**. Scenario format remains **0.2**; the measurement revision is **0.5.0**. Old artifacts retain their original report version and cannot establish compliance with the new lifecycle or dependence contract.
 
 Every run calls `describe`. Required capabilities must be explicitly `true`; an omitted capability is not inferred. Public pack execution reports unsupported coverage when a required capability is not declared. During a scheduled run, `reset`, `observe`, declared `maintain`, and `session_boundary` must return an object with `accepted: true` and no error. Observe success means the write is available to subsequent reads; maintain success means its advertised work reached a terminal successful state, not just that it entered a queue. The participant is responsible for that implementation; receipts alone cannot prove an honest remote service.
 

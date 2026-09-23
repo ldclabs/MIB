@@ -20,10 +20,10 @@
   },
   "system_prompt_sha256": "ed0eba4ec45ffcad20f8d8668d94c98630c64d71177959eda908560e1ce4773e",
   "reasoning_policy_sha256": "70d15a93c194c6452d8233588ac04c4aec3280fd454b792df4844e46e974a8d6",
-  "scenario_schema_sha256": "35671d3909f01ba574671d39bbe0177df6420a86f06026c32093079519b3260b",
-  "profile_sha256": "e3d65ff97e58de9a2989f7fec4e5d4753b70a66409db38c490b8e611c0542c6f",
+  "scenario_schema_sha256": "78ee81539643d87da546d9086dd575c61b0f9dc97d05d36f83d104a625c516b9",
+  "profile_sha256": "33e73a3c775151560f50e9bdbd22889e0bf852d205b8823d70b6caaa9ecb955c",
   "scenario_pack_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-  "runner_source_sha256": "3408ef4ad560857d7558edefe1ee11ae3e75147f760982f81cc7239909f892b3",
+  "runner_source_sha256": "5403cec4c95697dcb743fae963216bbff52b5bfa41be0a74d99d68e1d4a8d232",
   "condition_order_policy": "counterbalanced_latin_rotation_v1",
   "conditions": {
     "B0": {
@@ -37,7 +37,7 @@
       "top_k": 4
     },
     "B3": {
-      "memory_policy": "structured_deterministic",
+      "memory_policy": "lexical_salience_heuristic",
       "top_k": 10,
       "salient_k": 6
     }
@@ -51,6 +51,7 @@
     },
     "parse_retries": 1,
     "observe_decisions": true,
+    "observe_decision_types": null,
     "maintenance_decisions": true,
     "additional_baselines": {
       "recent_window": 12,
@@ -62,5 +63,31 @@
     "memory_selection",
     "memory_context_content"
   ],
-  "digest": "sha256:b8545abb7e59484b2d499935e73d7d43ec825f7ea30e1ac09fc7e421427aa193"
+  "calibration_plan": {
+    "instance_seeds": [
+      101
+    ],
+    "repetitions": 1,
+    "bootstrap_resamples": 100,
+    "bootstrap_seed": "mib-same-model-smoke",
+    "causal_baseline": "B3",
+    "causal_instance_seeds": [
+      101
+    ],
+    "causal_repetitions": 1,
+    "thresholds": {
+      "full_context_min": 0.8,
+      "no_memory_max": 0.6,
+      "mdi_min": 0.25,
+      "baseline_span_min": 0.2,
+      "irrelevant_stability_min": 0.9,
+      "causal_memory_benefit_min": 0.2
+    },
+    "additional_baselines": {
+      "recent_window": 12,
+      "oracle_reference": true
+    },
+    "purpose": "smoke"
+  },
+  "digest": "sha256:f7d3195401244fb52c47a539cc72bbbabce3816396c8e39ae68fc0a142f9ee61"
 }

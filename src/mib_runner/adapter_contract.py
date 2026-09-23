@@ -6,7 +6,7 @@ import json
 from typing import Any
 
 CONTRACT_VERSION = "1.0.0"
-ACKNOWLEDGED = {"reset", "observe", "maintain", "session_boundary"}
+ACKNOWLEDGED = {"reset", "observe", "maintain", "session_boundary", "restore"}
 
 
 class AdapterLifecycleError(RuntimeError):

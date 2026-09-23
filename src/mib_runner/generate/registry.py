@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from .base import ScenarioBuilder, template_id_for
+from .surface import validate_bank
 from .programs import PROGRAM_CLASSES, Program
 from .extended import EXTENDED_PROGRAM_CLASSES
 from .products import PRODUCT_PROGRAM_CLASSES
@@ -56,7 +57,16 @@ def resolve_program_config(entry: str | dict[str, Any], default_ladder: list[int
 
 
 def generate_instance(program_id: str, seed: int | str, *, rung: int = 0, ladder: list[int] | None = None,
-                      session_boundary: bool = False, parameters: dict[str, Any] | None = None) -> dict[str, Any]:
+                      session_boundary: bool = False, parameters: dict[str, Any] | None = None,
+                      surface_bank: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Materialize one Instance.
+
+    ``surface_bank`` is an evaluator-private surface realization (see
+    ``generate.surface.templates_for``). It changes wording only; semantic
+    sampling, world-model assertions and Oracles are unchanged.
+    """
+    if surface_bank is not None:
+        validate_bank(surface_bank)
     p = _program(program_id)
     steps = list(ladder or p.LADDER)
     if rung < 0 or rung >= len(steps):
@@ -65,6 +75,7 @@ def generate_instance(program_id: str, seed: int | str, *, rung: int = 0, ladder
         program_id=p.ID, program_version=p.VERSION, seed=seed, rung=rung, interference_count=int(steps[rung]),
         title=p.TITLE, suite=p.SUITE, dimensions=list(p.DIMENSIONS), dimension_weights=dict(p.WEIGHTS),
         capabilities=list(p.CAPABILITIES), session_boundary=session_boundary, parameters=parameters,
+        surface_bank=surface_bank,
     )
     p.build(builder)
     return builder.finalize()

@@ -1,14 +1,14 @@
 {
   "mib": "0.2",
   "kind": "BenchmarkProfile",
-  "id": "MIB-Core-0.2-Session-Dev",
+  "id": "MIB-Core-0.2-Horizon-Dev",
   "version": "0.5.0",
-  "description": "Fourteen independent semantic Programs, including interleaved load, bitemporal records, scoped authority, revised and composed workflows, cancelled commitments, and authorized relearning. Development only.",
+  "description": "Generated MIB-Core long-horizon development pack for integrated Agents: seven programs on a 100 / 2,000 / 10,000 interference ladder. The capability rung (2,000) shows roughly 90,000 visible characters and the retention rung (10,000) roughly 450,000, beyond a raw-context reading of the transcript for most deployments. Headline only (diagnostics off). Development only; never an official score.",
   "track": "integrated_agent",
   "scale": "MIB-S",
   "official": false,
   "scenario_pack": {
-    "id": "MIB-v0.2-Session-Dev",
+    "id": "MIB-v0.2-Generated-Dev",
     "version": "0.5.0"
   },
   "programs": [
@@ -32,27 +32,6 @@
     },
     {
       "id": "mib.forgetting.v1"
-    },
-    {
-      "id": "mib.interleaved_recall.v1"
-    },
-    {
-      "id": "mib.bitemporal.v1"
-    },
-    {
-      "id": "mib.authority.v1"
-    },
-    {
-      "id": "mib.revised_experience.v1"
-    },
-    {
-      "id": "mib.composed_skill.v1"
-    },
-    {
-      "id": "mib.cancelled_commitment.v1"
-    },
-    {
-      "id": "mib.relearning.v1"
     }
   ],
   "instance_seeds": [
@@ -63,9 +42,9 @@
     505
   ],
   "ladder": [
-    0,
-    20,
-    100
+    100,
+    2000,
+    10000
   ],
   "canonical_rung": 1,
   "repetitions": 1,
@@ -107,14 +86,13 @@
     "min_templates_per_dimension": 5
   },
   "measurement_regime": {
-    "kind": "persistent_across_sessions",
+    "kind": "historical_information_use",
     "context_boundary_enforced": false,
     "interference_time_policy": "fixed_future_time_across_rungs",
     "distance_token_unit": "whitespace_words",
-    "scope": "The boundary protocol is enforced for in-process and stdio Agents: at each boundary the Runner discards the Agent instance and restores a fresh one from the state it handed back; the persisted size is reported. Remote HTTP Agents receive the same reset/restore protocol but their process state is a declared contract.",
-    "session_boundary": true,
+    "scope": "Conditional on the declared Program set; no claim of general memory intelligence. Long visible history is the only pressure the Runner can put on an integrated Agent; it does not identify the memory mechanism.",
     "intervention_rungs": "canonical",
     "maintenance_control": "declared_maintenance_only",
-    "session_isolation": "persisted_state"
+    "diagnostics": "off"
   }
 }

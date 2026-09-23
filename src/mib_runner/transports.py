@@ -196,6 +196,9 @@ class StdioAgentAdapter:
     def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
 
+    def restore(self, *, run_id: str, request_id: str, state: str, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('restore', run_id=run_id, request_id=request_id, virtual_time=virtual_time, state=state)
+
     def close(self, *, run_id: str | None = None) -> None:
         try:
             if run_id and self.proc.poll() is None:
@@ -278,6 +281,9 @@ class HttpAgentAdapter:
 
     def session_boundary(self, *, run_id: str, request_id: str, virtual_time: str | None = None) -> dict[str, Any]:
         return self._lifecycle('session_boundary', run_id=run_id, request_id=request_id, virtual_time=virtual_time)
+
+    def restore(self, *, run_id: str, request_id: str, state: str, virtual_time: str | None = None) -> dict[str, Any]:
+        return self._lifecycle('restore', run_id=run_id, request_id=request_id, virtual_time=virtual_time, state=state)
 
     def close(self, *, run_id: str | None = None) -> None:
         if not run_id:

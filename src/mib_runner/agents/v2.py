@@ -11,7 +11,9 @@ last one win (the naive associative memory the interrogation lane detects);
 
 from __future__ import annotations
 
+import json
 import re
+from dataclasses import asdict
 from typing import Any
 
 from .. import __version__
@@ -283,6 +285,18 @@ class StructuredMemoryAgent(_ActPolicies):
         self.task_states = {}; self.task_results = {}; self.current_task = None
         if self.window:
             self.observations = []
+        # Under persisted-state isolation the Runner discards this instance and
+        # restores a fresh one from exactly this record (MIB-Specification §5.2).
+        state = {'observations': [asdict(o) for o in self.observations], 'fired': sorted(self.fired),
+                 'tool_call_counter': self.tool_call_counter}
+        return {'accepted': True, 'persisted_state': json.dumps(state, ensure_ascii=False)}
+
+    def restore(self, *, run_id: str, request_id: str, state: str, virtual_time: str | None = None) -> dict[str, Any]:
+        record = json.loads(state)
+        self.observations = [Observation(**row) for row in record.get('observations', [])]
+        self.fired = set(record.get('fired', []))
+        # Tool-call IDs must stay unique for the whole run, not only per instance.
+        self.tool_call_counter = int(record.get('tool_call_counter', 0))
         return {'accepted': True}
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
@@ -353,9 +367,15 @@ class StructuredMemoryAgent(_ActPolicies):
         names = state["tools"]
         if 'workflow.submit' in names:
             family = re.search(r'family (F-[0-9a-f]+)', state['goal'])
+            series = re.search(r'in series (S-[0-9a-f]+)', state['goal'])
+            def same_scope(payload: dict[str, Any]) -> bool:
+                # A series-scoped recipe transfers to new families of that series.
+                if series:
+                    return payload.get('series') == series.group(1)
+                return bool(family) and payload.get('family') == family.group(1)
             known = [o.payload for o in self._memory() if o.type == 'tool_result' and isinstance(o.payload, dict)
                      and 'required_recipe' in o.payload and o.observation_id not in self.task_results.get(task_id, set())
-                     and (getattr(self, 'overgeneralizes', False) or (family and o.payload.get('family') == family.group(1)))] if self.learns else []
+                     and (getattr(self, 'overgeneralizes', False) or same_scope(o.payload))] if self.learns else []
             recipe = known[0 if getattr(self, 'overgeneralizes', False) else -1]['required_recipe'] if known else None
             if self.learns and not getattr(self, 'overgeneralizes', False) and family:
                 # Public feature records plus actual feedback; no generator
@@ -418,6 +438,7 @@ class RecencyAgent(StructuredMemoryAgent):
             a.kind = "state" if a.kind != "observation" else "observation"
             a.truth_bearing = True
             a.supersedes = None
+        model.invalidate()
         return model
 
 
@@ -506,3 +527,59 @@ class NoMemoryAgent(_ActPolicies):
             step = ActStep(type="abstention", content="No policy for these tools.")
         self.act_responses[key] = step
         return step
+
+
+class RecoverOnlyAgent(NoMemoryAgent):
+    """Zero cross-task memory that follows corrective feedback inside the current task.
+
+    It never recalls a recipe, rule or context, but after a failed attempt it
+    resubmits what the simulator's feedback asked for. Whatever it scores is
+    credit a Program grants for in-task recovery rather than memory; workflow
+    Probes are conjunctive so that this stays at zero.
+    """
+
+    NAME = "MIB Recover-Only Zero-Memory Fixture"
+
+    def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str],
+            tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
+        key = (run_id, request_id)
+        if key in self.act_responses:
+            return self.act_responses[key]
+        self.current_task = task_id
+        state = self._task_state(task_id, goal, tools)
+        names = state["tools"]
+        if 'workflow.submit' in names:
+            step = self._workflow(task_id, state, None, True)
+        elif any(n.startswith("deployment.") for n in names):
+            step = self._deployment(task_id, state, learned_inspect=False, recover=True)
+        elif any(n.startswith("canvas.") for n in names):
+            step = self._canvas(task_id, state, learned_context=False, recover=True)
+        else:
+            step = ActStep(type="abstention", content="No policy for these tools.")
+        self.act_responses[key] = step
+        return step
+
+
+class GrammarOnlyAgent(NoMemoryAgent):
+    """Adversarial zero-memory fixture that knows only the public Program grammar.
+
+    It stores nothing, answers ``contested`` to status questions and
+    ``unknown`` otherwise, never emits, and ends every task without acting.
+    Whatever it scores is credit a Program grants without memory; the
+    measurement-0.5.0 Programs are designed to hold it at zero.
+    """
+
+    NAME = "MIB Grammar-Only Zero-Memory Fixture"
+
+    def describe(self) -> dict[str, Any]:
+        descriptor = _describe(self.NAME, memory=False)
+        descriptor["capabilities"]["spontaneous_emissions"] = True
+        return descriptor
+
+    def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
+        value = "contested" if "resolved or contested" in str(input_data.get("content") or "") else "unknown"
+        return AgentOutput(type="structured", value={"value": value, "status": value})
+
+    def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str],
+            tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
+        return ActStep(type="final", content="No remembered procedure.")

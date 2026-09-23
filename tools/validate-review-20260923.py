@@ -1,11 +1,11 @@
-"""Reproduce measurement-0.4 engineering evidence without a model or private pack."""
+"""Reproduce measurement-0.5 engineering evidence without a model or private pack."""
 from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
 
 from mib_runner import __version__, MEASUREMENT_REVISION
-from mib_runner.agents import StructuredMemoryAgent
+from mib_runner.agents import GrammarOnlyAgent, RecoverOnlyAgent, StructuredMemoryAgent
 from mib_runner.benchmark import run_generated_pack
 from mib_runner.report import verify_score, validate_report
 from mib_runner.same_model_calibration import load_experiment, load_experiment_templates, estimate_experiment
@@ -36,9 +36,13 @@ def main():
     schema = json.loads((ROOT / 'schemas/mib-scenario.schema.json').read_text())
     report_schema = json.loads((ROOT / 'schemas/mib-report.schema.json').read_text())
     results = []
+    zero_memory = (GrammarOnlyAgent, RecoverOnlyAgent)
     for name, factory in [('MIB-Core-0.2-Dev', StructuredMemoryAgent), ('MIB-Core-0.2-Dev', PrefixMemory),
+                          ('MIB-Core-0.2-Dev', GrammarOnlyAgent), ('MIB-Core-0.2-Dev', RecoverOnlyAgent),
+                          ('MIB-Core-0.2-Expanded-Dev', StructuredMemoryAgent), ('MIB-Core-0.2-Expanded-Dev', GrammarOnlyAgent),
+                          ('MIB-Core-0.2-Expanded-Dev', RecoverOnlyAgent),
                           ('MIB-Core-0.2-Session-Dev', StructuredMemoryAgent),
-                          ('MIB-Mechanism-Challenges-0.1-Dev', StructuredMemoryAgent)]:
+                          ('MIB-Mechanism-Challenges-0.1-Dev', StructuredMemoryAgent), ('MIB-Mechanism-Challenges-0.1-Dev', RecoverOnlyAgent)]:
         profile = json.loads((ROOT / 'profiles' / (name + '.json')).read_text())
         report, summary = run_generated_pack(profile=profile, agent_factory=factory, schema=schema,
             repetitions=profile['repetitions'], bootstrap_resamples=200)
@@ -50,10 +54,15 @@ def main():
             raise ValueError('complete reference regressed')
         if factory is PrefixMemory and summary['mib_score'] >= 90:
             raise ValueError('prefix shortcut remains effective')
+        if factory in zero_memory and (max(summary['dimensions'].values()) > 10 or summary['memory_dependence']['eligible']):
+            raise ValueError('a zero-memory policy earns a structural floor or passes the dependence gate')
         filename = name + '-' + factory.__name__ + '.report.json'
         (output / filename).write_text(json.dumps(report, indent=2) + '\n')
         row = {'profile': name, 'fixture': factory.__name__, 'score': summary['mib_score'],
                'coverage': summary['coverage'], 'dependence_eligible': summary['memory_dependence']['eligible'],
+               'dependence_metric': summary['memory_dependence']['metric'],
+               'dependence_value': summary['memory_dependence'].get(summary['memory_dependence']['metric']),
+               'dimensions': {d: round(v, 3) for d, v in summary['dimensions'].items()},
                'instances': summary['instance_count'], 'runs': summary['run_count'], 'verified': True, 'report_file': filename}
         results.append(row)
         print(json.dumps(row), flush=True)

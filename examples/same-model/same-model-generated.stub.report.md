@@ -3,7 +3,7 @@
 **Experiment:** `MIB-v0.2-generated-engineering-smoke`  
 **Mode:** `same_model_engineering_stub`  
 **Model:** `mib-deterministic-stub/0.1`  
-**Experiment lock:** `sha256:b8545abb7e59484b2d499935e73d7d43ec825f7ea30e1ac09fc7e421427aa193`\
+**Experiment lock:** `sha256:f7d3195401244fb52c47a539cc72bbbabce3816396c8e39ae68fc0a142f9ee61`  
 **Fairness audit:** `PASS`  
 **Leaderboard release eligible:** `false`
 
@@ -34,13 +34,12 @@ The base model, system prompt, reasoning policy, tool interface, decoding parame
 
 | Dimension | B0 | B1 | B2 | B3 |
 |---|---:|---:|---:|---:|
-| retention_retrieval | 0.0 | 6.7 | 3.3 | 3.3 |
+| retention_retrieval | 0.0 | 0.0 | 0.0 | 6.7 |
 | temporal_memory | 0.0 | 0.0 | 0.0 | 0.0 |
-| epistemic_memory | 8.3 | 8.3 | 8.3 | 8.3 |
-| experience_memory | 0.0 | 0.0 | 0.0 | 0.0 |
-| skill_learning_transfer | 0.0 | 0.0 | 0.0 | 0.0 |
-| prospective_self_memory | 64.0 | 64.0 | 64.0 | 64.0 |
-| selective_forgetting | 30.0 | 54.0 | 54.0 | 54.0 |
+| epistemic_memory | 0.0 | 0.0 | 0.0 | 0.0 |
+| procedural_memory | 0.0 | 0.0 | 0.0 | 0.0 |
+| prospective_self_memory | 0.0 | 0.0 | 0.0 | 0.0 |
+| selective_forgetting | 0.0 | 5.3 | 20.7 | 5.3 |
 
 ## Fairness Checks
 
@@ -57,17 +56,18 @@ The base model, system prompt, reasoning policy, tool interface, decoding parame
 - `condition_label_not_model_visible`: **PASS**
 - `counterbalanced_condition_order`: **PASS**
 - `paired_agent_seed_and_future_probe`: **PASS**
-- `b1_full_context_not_truncated`: **PASS**
+- `full_context_reference_not_truncated`: **PASS**
 - `no_model_transport_or_parse_errors`: **PASS**
+- `full_lifecycle_execution_clean`: **PASS**
 
 ## Model / Memory Telemetry
 
 | Condition | Calls | Errors | Memory selections | Selected records | Truncations |
 |---|---:|---:|---:|---:|---:|
-| B0 | 2064 | 0 | 2064 | 0 | 0 |
-| B1 | 2064 | 0 | 2064 | 90518 | 0 |
-| B2 | 2064 | 0 | 2064 | 7992 | 0 |
-| B3 | 17133 | 0 | 17133 | 165709 | 0 |
+| B0 | 2070 | 0 | 2070 | 0 | 0 |
+| B1 | 2070 | 0 | 2070 | 90745 | 0 |
+| B2 | 2070 | 0 | 2070 | 8012 | 0 |
+| B3 | 17802 | 0 | 17802 | 173191 | 0 |
 
 ## Interpretation
 

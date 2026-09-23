@@ -585,6 +585,13 @@ def full_run_metrics(full_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return recurrence_metrics(full_runs) + behaviour_metrics(full_runs) + learning_metrics(full_runs)
 
 
+def session_isolation_summary(full_runs: list[dict[str, Any]]) -> dict[str, Any]:
+    """What survived the session boundaries of the full condition (MIB-Specification §5.2)."""
+    rows = [r["session_isolation"] for r in full_runs if isinstance(r.get("session_isolation"), dict)]
+    return {"mode": rows[0]["mode"], "boundaries": max(int(r.get("boundaries", 0)) for r in rows),
+            "persisted_bytes": max(int(r.get("persisted_bytes", 0)) for r in rows)}
+
+
 def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]]) -> dict[str, Any]:
     """One Scenario Instance aggregate (MIB-Specification §6.3, §7.6).
 
@@ -608,6 +615,8 @@ def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]
         **({"interference_count": int(inst["interference_count"])} if inst.get("interference_count") is not None else {}),
         **({"interference_tokens": int(inst["interference_tokens"])} if inst.get("interference_tokens") is not None else {}),
         **({"distance_hours": float(inst["distance_hours"])} if inst.get("distance_hours") is not None else {}),
+        **({"visible_history_chars": int(inst["visible_history_chars"])} if inst.get("visible_history_chars") is not None else {}),
+        **({"session_isolation": session_isolation_summary(full_runs)} if any(r.get("session_isolation") for r in full_runs) else {}),
         "full_score": mean([float(r.get("scenario_score", 0.0)) for r in full_runs]),
         "dimension_scores": dimensions,
         "condition_scores": condition_scores(runs),

@@ -24,7 +24,7 @@ def test_public_product_programs_are_valid_and_act_on_memory_not_keywords(progra
         assert scenario==generate_instance(program,101,rung=rung,session_boundary=True)
         run=run_scenario(scenario=scenario,agent_factory=ProductMemoryFixture,include_ablations=False)[0]
         assert run['status']=='succeeded' and run['scenario_score']==1.0
-        assert all(p['delivery']=='act' and p['evaluators']==['eval-world'] for p in scenario['probes'])
+        assert all(p['delivery']=='act' and p['evaluators']==['eval-world-strict'] for p in scenario['probes'])
         assert all(p['oracle']['world_assertions'][0]['operator']=='eq' for p in scenario['probes'])
         assert 'SEARCH CONCEPT' not in json.dumps(scenario)
 

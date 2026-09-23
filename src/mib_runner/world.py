@@ -191,7 +191,7 @@ class WorldState:
                 s['first_attempt_correct'] = correct
             s['attempts'] += 1
             s['completed'] = correct
-            result = {'success': correct, 'family': s['family']}
+            result = {'success': correct, 'family': s['family'], **({'series': s['series']} if s.get('series') else {})}
             if not correct:
                 result.update(error='recipe_mismatch', required_recipe=copy.deepcopy(s['recipe']))
         else:

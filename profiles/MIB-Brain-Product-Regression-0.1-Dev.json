@@ -1,8 +1,8 @@
 {
-  "mib":"0.2","kind":"BenchmarkProfile","id":"MIB-Brain-Product-Regression-0.1-Dev","version":"0.1.0",
+  "mib":"0.2","kind":"BenchmarkProfile","id":"MIB-Brain-Product-Regression-0.1-Dev","version":"0.2.0",
   "description":"Public no-model interface regression for eight product programs covering nine retired Brain eval goals. Not independent abilities or empirical Brain competence.",
   "track":"integrated_agent","scale":"MIB-S","official":false,
-  "scenario_pack":{"id":"MIB-Brain-Product-Regression","version":"0.1.0"},
+  "scenario_pack":{"id":"MIB-Brain-Product-Regression","version":"0.2.0"},
   "programs":[{"id":"mib.product_style.v1"},{"id":"mib.product_budget.v1"},{"id":"mib.product_correction.v1"},{"id":"mib.product_reversal.v1"},{"id":"mib.product_boundary.v1"},{"id":"mib.product_travel.v1"},{"id":"mib.product_discount.v1"},{"id":"mib.product_usage.v1"}],
   "instance_seeds":[101,202],"ladder":[0,20],"canonical_rung":1,"repetitions":1,
   "dimensions":{"retention_retrieval":{"weight":1}},"required_coverage":1.0,

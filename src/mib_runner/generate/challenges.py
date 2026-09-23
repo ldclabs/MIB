@@ -13,8 +13,8 @@ class FeaturePolicyProgram(Program):
     ID = 'mib.feature_policy.v1'
     SUITE = 'skill'
     TITLE = 'Compose feedback-derived feature operations for a previously unseen family'
-    DIMENSIONS = ['skill_learning_transfer']
-    WEIGHTS = {'skill_learning_transfer': 1.0}
+    DIMENSIONS = ['procedural_memory']
+    WEIGHTS = {'procedural_memory': 1.0}
     CAPABILITIES = ['observe', 'respond', 'act', 'tools', 'virtual_time']
 
     def build(self, b):
@@ -39,18 +39,21 @@ class FeaturePolicyProgram(Program):
         b.maintenance_window('mw-1')
         b.interfere(subject_id=actor, attribute='office', exclude_values=set(), other_actors=other_actors(b.rng, {'Operator'}))
         b.checkpoint()
-        for index, flags in [(2, [False, False]), (3, [True, True])]:
+        # Both scored items need a remembered flag-to-operation mapping on a new
+        # family. An all-disabled item would accept the empty first attempt that
+        # a policy with no memory submits anyway (measurement 0.5.0).
+        for index, flags in [(2, [False, True]), (3, [True, True])]:
             recipe, goal = setup(index, flags, 'pre_probe')
             b.raw_probe({'id': f'p-{index}', 'kind': 'skill', 'delivery': 'act', 'trigger': {'after_event': f'world-{index}'},
                 'input': {'goal': goal, 'available_tools': ['workflow.submit'], 'constraints': []},
-                'oracle': workflow_oracle(recipe), 'evaluators': ['eval-world'], 'dimensions': self.DIMENSIONS, 'weight': 1})
+                'oracle': workflow_oracle(recipe), 'evaluators': ['eval-world-strict'], 'dimensions': self.DIMENSIONS, 'weight': 1})
         b.ablation({'id': 'a-feature-acquisition', 'kind': 'relevant_memory', 'method': 'replay_excluding_events',
             'targets': {'event_ids': ['acquire-0', 'acquire-1']}, 'probes': ['p-3'], 'expected_effect': 'degrade'})
         b.ablation({'id': 'a-feature-policy', 'kind': 'counterfactual_policy', 'method': 'replay_policy_twin',
-            'targets': {'event_ids': ['world-0', 'world-1', 'world-3']}, 'probes': ['p-3'], 'expected_effect': 'track',
+            'targets': {'event_ids': ['world-0', 'world-1', 'world-2', 'world-3']}, 'probes': ['p-3'], 'expected_effect': 'track',
             'counterfactual': {'events': {}, 'oracle': {'p-3': workflow_oracle(alternate)},
                 'world_updates': {f'world-{i}': [{'op': 'set', 'path': '/workflow', 'value': workflow_state(families[i], recipe)}]
-                    for i, recipe in [(0, alternate[:1]), (1, alternate[1:]), (3, alternate)]}}})
+                    for i, recipe in [(0, alternate[:1]), (1, alternate[1:]), (2, alternate[1:]), (3, alternate)]}}})
 
 
 class CommitmentLifecycleProgram(Program):
@@ -79,13 +82,16 @@ class CommitmentLifecycleProgram(Program):
         commitment('commit-renewed', topics[0])
         b.checkpoint()
         expected = [{'after_event': 'p-trigger', 'commitment_id': f'rem-{b.rng.getrandbits(64):016x}',
-                     'recipient': target, 'topic': topic} for topic in topics]
+                     'recipient': target, 'topic': topic, 'commitment_event': event}
+                    for topic, event in zip(topics, ['commit-renewed', 'commit-other'])]
         oracle = {'expected_emission': {'lifecycle': True, 'start_after': 'commit-original', 'window': 0, 'expected': expected}}
         for pid in ['p-trigger', 'p-repeat']:
             b.raw_probe({'id': pid, 'kind': 'prospective', 'delivery': 'observe_only', 'trigger': {'after_event': 'cp'},
                 'input': {'observation': {'type': 'environment_event', 'actor': 'system', 'content': f'{target} joined the call.'}},
                 'oracle': oracle if pid == 'p-trigger' else {'expected_emission': {'must_not_emit': True, 'topic': target, 'window': 0}},
-                'evaluators': ['eval-emission'], 'dimensions': self.DIMENSIONS, 'weight': 1})
+                # A repeated emission is already a lifecycle false alarm of
+                # p-trigger; p-repeat is a zero-weight diagnostic, not a second penalty.
+                'evaluators': ['eval-emission'], 'dimensions': self.DIMENSIONS, 'weight': 1 if pid == 'p-trigger' else 0})
         b.ablation({'id': 'a-renewal', 'kind': 'relevant_memory', 'method': 'replay_excluding_events',
             'targets': {'event_ids': ['commit-renewed']}, 'probes': ['p-trigger'], 'expected_effect': 'degrade'})
         twin = copy.deepcopy(oracle)

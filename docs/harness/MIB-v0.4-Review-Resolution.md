@@ -1,5 +1,7 @@
 # September 23 design-review implementation
 
+> Historical ledger for measurement 0.4.0. The dependence gate, pilot budget and several Program constructs below were revised in measurement 0.5.0; see [the v0.5 ledger](MIB-v0.5-Review-Resolution.md).
+
 Implementation **0.13.0**, Core measurement **0.4.0**, pack report **0.5.0**, backend report **0.2.0**. Scenario format remains **0.2**. Longitudinal measurement/report are **0.2.0**; the vendored native workflow contract is unchanged.
 
 This ledger resolves the executable defects from [the review](../reviews/MIB-Design-Review-2026-09-23.md). It distinguishes implementation from empirical validation. Earlier reports and example fixtures retain their original version/source identity; they must be verified with their matching executable bundle and must not be compared directly to this revision.

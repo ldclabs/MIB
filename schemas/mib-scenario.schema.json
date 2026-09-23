@@ -87,6 +87,7 @@
           "epistemic_memory",
           "experience_memory",
           "skill_learning_transfer",
+          "procedural_memory",
           "selective_forgetting",
           "prospective_self_memory",
           "causal_memory_impact"
@@ -434,6 +435,16 @@
           "type": "number",
           "minimum": 0,
           "description": "Virtual hours between the last formation event and the probe checkpoint (§8.1)."
+        },
+        "visible_history_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Characters of participant-visible history (observation content, JSON payloads and lived-task goals); a descriptive size unit, not tokenizer tokens."
+        },
+        "surface_bank_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "Digest of an evaluator-private surface realization bank; absent for the public surface."
         }
       }
     },
@@ -1182,6 +1193,10 @@
                   },
                   "topic": {
                     "type": "string"
+                  },
+                  "commitment_event": {
+                    "type": "string",
+                    "description": "Timeline event of the commitment; its opaque observation ID is a valid structured commitment_ref."
                   }
                 }
               }
@@ -1197,6 +1212,13 @@
         },
         "experienced_failure": {
           "type": "string"
+        },
+        "withdrawn": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "description": "Withdrawn values; with disclosure_scope 'withdrawn' they fail anywhere in the visible output (MIB-Specification §4.7)."
         }
       },
       "minProperties": 1
@@ -1273,6 +1295,7 @@
               "epistemic_memory",
               "experience_memory",
               "skill_learning_transfer",
+              "procedural_memory",
               "selective_forgetting",
               "prospective_self_memory",
               "causal_memory_impact"
@@ -1319,6 +1342,15 @@
           "additionalProperties": {
             "$ref": "#/$defs/JsonValue"
           }
+        },
+        "conditional_on": {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          },
+          "description": "Probe IDs whose value must be recalled for this Probe to earn credit (MIB-Specification §4.7)."
         }
       }
     },
@@ -1585,6 +1617,7 @@
               "epistemic_memory",
               "experience_memory",
               "skill_learning_transfer",
+              "procedural_memory",
               "selective_forgetting",
               "prospective_self_memory",
               "causal_memory_impact"

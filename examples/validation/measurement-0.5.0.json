@@ -1,0 +1,265 @@
+{
+  "implementation": "0.14.0",
+  "measurement_revision": "0.5.0",
+  "runner_source_digest": "sha256:751ba16978d703196155bb1ebf06b72fba475d77a90f63dcdb5d53b697aaf3a1",
+  "empirical": false,
+  "release_eligible": false,
+  "results": [
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 1.0,
+      "dimensions": {
+        "retention_retrieval": 100.0,
+        "temporal_memory": 100.0,
+        "epistemic_memory": 100.0,
+        "procedural_memory": 100.0,
+        "prospective_self_memory": 100.0,
+        "selective_forgetting": 100.0
+      },
+      "instances": 105,
+      "runs": 377,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "PrefixMemory",
+      "score": 63.720000000000006,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.611111111111111,
+      "dimensions": {
+        "retention_retrieval": 60.0,
+        "temporal_memory": 33.333,
+        "epistemic_memory": 66.667,
+        "procedural_memory": 100.0,
+        "prospective_self_memory": 90.0,
+        "selective_forgetting": 16.0
+      },
+      "instances": 105,
+      "runs": 377,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-PrefixMemory.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "GrammarOnlyAgent",
+      "score": 0.0,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.0,
+      "dimensions": {
+        "retention_retrieval": 0.0,
+        "temporal_memory": 0.0,
+        "epistemic_memory": 0.0,
+        "procedural_memory": 0.0,
+        "prospective_self_memory": 0.0,
+        "selective_forgetting": 0.0
+      },
+      "instances": 105,
+      "runs": 342,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-GrammarOnlyAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "RecoverOnlyAgent",
+      "score": 0.0,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.0,
+      "dimensions": {
+        "retention_retrieval": 0.0,
+        "temporal_memory": 0.0,
+        "epistemic_memory": 0.0,
+        "procedural_memory": 0.0,
+        "prospective_self_memory": 0.0,
+        "selective_forgetting": 0.0
+      },
+      "instances": 105,
+      "runs": 342,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-RecoverOnlyAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Expanded-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 1.0,
+      "dimensions": {
+        "retention_retrieval": 100.0,
+        "temporal_memory": 100.0,
+        "epistemic_memory": 100.0,
+        "procedural_memory": 100.0,
+        "prospective_self_memory": 100.0,
+        "selective_forgetting": 100.0
+      },
+      "instances": 210,
+      "runs": 742,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Expanded-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Expanded-Dev",
+      "fixture": "GrammarOnlyAgent",
+      "score": 0.0,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.0,
+      "dimensions": {
+        "retention_retrieval": 0.0,
+        "temporal_memory": 0.0,
+        "epistemic_memory": 0.0,
+        "procedural_memory": 0.0,
+        "prospective_self_memory": 0.0,
+        "selective_forgetting": 0.0
+      },
+      "instances": 210,
+      "runs": 672,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Expanded-Dev-GrammarOnlyAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Expanded-Dev",
+      "fixture": "RecoverOnlyAgent",
+      "score": 0.0,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.0,
+      "dimensions": {
+        "retention_retrieval": 0.0,
+        "temporal_memory": 0.0,
+        "epistemic_memory": 0.0,
+        "procedural_memory": 0.0,
+        "prospective_self_memory": 0.0,
+        "selective_forgetting": 0.0
+      },
+      "instances": 210,
+      "runs": 672,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Expanded-Dev-RecoverOnlyAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Session-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 1.0,
+      "dimensions": {
+        "retention_retrieval": 100.0,
+        "temporal_memory": 100.0,
+        "epistemic_memory": 100.0,
+        "procedural_memory": 100.0,
+        "prospective_self_memory": 100.0,
+        "selective_forgetting": 100.0
+      },
+      "instances": 210,
+      "runs": 742,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Session-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Mechanism-Challenges-0.1-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 1.0,
+      "dimensions": {
+        "procedural_memory": 100.0,
+        "prospective_self_memory": 100.0
+      },
+      "instances": 10,
+      "runs": 60,
+      "verified": true,
+      "report_file": "MIB-Mechanism-Challenges-0.1-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Mechanism-Challenges-0.1-Dev",
+      "fixture": "RecoverOnlyAgent",
+      "score": 0.0,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "dependence_metric": "content_following_effect",
+      "dependence_value": 0.0,
+      "dimensions": {
+        "procedural_memory": 0.0,
+        "prospective_self_memory": 0.0
+      },
+      "instances": 10,
+      "runs": 50,
+      "verified": true,
+      "report_file": "MIB-Mechanism-Challenges-0.1-Dev-RecoverOnlyAgent.report.json"
+    }
+  ],
+  "pilot_estimate": {
+    "template_count": 7,
+    "instance_seeds": 5,
+    "repetitions": 1,
+    "minimum_condition_runs": 482,
+    "full_baseline_condition_runs": 140,
+    "additional_causal_ablation_runs": 272,
+    "additional_diagnostic_runs": 70,
+    "minimum_model_turns": 1927,
+    "memory_pressure": {
+      "regime": "budgeted",
+      "unit": "rendered visible observation characters / final memory character budget (lower bound)",
+      "history_chars": {
+        "min": 13864,
+        "median": 14617,
+        "max": 15389
+      },
+      "record_chars_median": 138,
+      "minimum_median_ratio": 4.0,
+      "arms": {
+        "B1": {
+          "limit_chars": 3500,
+          "min_ratio": 3.9611428571428573,
+          "median_ratio": 4.176285714285714,
+          "max_ratio": 4.396857142857143,
+          "binding_share": 1.0,
+          "selection_records": null,
+          "selection_capacity_chars": 14617,
+          "budget_binds": true
+        },
+        "B2": {
+          "limit_chars": 3500,
+          "min_ratio": 3.9611428571428573,
+          "median_ratio": 4.176285714285714,
+          "max_ratio": 4.396857142857143,
+          "binding_share": 1.0,
+          "selection_records": 30,
+          "selection_capacity_chars": 4140,
+          "budget_binds": true
+        },
+        "B3": {
+          "limit_chars": 3500,
+          "min_ratio": 3.9611428571428573,
+          "median_ratio": 4.176285714285714,
+          "max_ratio": 4.396857142857143,
+          "binding_share": 1.0,
+          "selection_records": 32,
+          "selection_capacity_chars": 4416,
+          "budget_binds": true
+        }
+      }
+    },
+    "note": "minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote."
+  }
+}

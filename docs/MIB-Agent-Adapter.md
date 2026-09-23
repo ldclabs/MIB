@@ -1,8 +1,8 @@
 # MIB Agent Adapter
 
-> Reference implementation 0.13.0: reset, observe, respond, act, maintain, session_boundary, and close are executable. The optional snapshot/inspection designs later in this document are not required by Core. Participant-visible event/task/interaction IDs are opaque. Revised output and lifecycle scoring is defined by `MIB-Specification.md` revision 0.4.0. Reminder emissions may contain only a structured payload; missing content stays absent. Non-object payload metadata cannot crash lifecycle scoring, and a correct canonical text reminder remains valid independently of that metadata.
+> Reference implementation 0.14.0: reset, observe, respond, act, maintain, session_boundary, restore, and close are executable. The optional snapshot/inspection designs later in this document are not required by Core. Participant-visible event/task/interaction/item IDs are opaque, and no visible text names a task as practice or evaluation. Output and lifecycle scoring is defined by `MIB-Specification.md` revision 0.5.0; the reminder contract used by generated Programs is in §32. Reminder emissions may contain only a structured payload; missing content stays absent. Non-object payload metadata cannot crash lifecycle scoring, and a correct canonical text reminder remains valid independently of that metadata.
 
-The reference `maintain` operation accepts a virtual duration string such as `PT1H`; this is not a measured wall-time or storage limit. Both HTTP and stdio adapters forward it. `session_boundary` carries the ordinary request/run IDs and virtual time with an empty body, and returns `{"accepted": true}`. It preserves persistent memory while clearing the working task/conversation. A Profile requiring this operation requires an explicit `session_boundary: true` capability. The fixed-model wrapper enforces its own transient boundary; an arbitrary integrated Agent declares its implementation.
+The reference `maintain` operation accepts a virtual duration string such as `PT1H`; this is not a measured wall-time or storage limit. Both HTTP and stdio adapters forward it. `session_boundary` carries the ordinary request/run IDs and virtual time with an empty body, and returns `{"accepted": true}`. It preserves persistent memory while clearing the working task/conversation. A Profile requiring this operation requires an explicit `session_boundary: true` capability. Under a Profile with `session_isolation: "persisted_state"` the reply may also carry `"persisted_state": "<string>"`: the Runner then closes this Agent instance, starts a fresh one, sends `reset` and then `restore` with `body.state` equal to that string, and the fresh instance must answer `{"accepted": true}`. Only that string survives the boundary; its UTF-8 size is reported. An Agent that returns no `persisted_state` starts the next session empty. The fixed-model wrapper enforces its own transient boundary; an arbitrary integrated Agent behind HTTP receives the same sequence but its process state remains its own declaration.
 
 
 ## Transport-Neutral Interface Between the MIB Runner and Memory-Enabled Agents
@@ -917,8 +917,10 @@ Sarah joined the meeting.
 The benchmark should be able to observe:
 
 ```text
-"Remember to ask Sarah about the contract."
+"Reminder: ask Sarah about the contract."
 ```
+
+This is the canonical text form scored by generated Programs (§32).
 
 without asking:
 
@@ -945,12 +947,27 @@ Example:
   "emissions": [
     {
       "emission_id": "emit_1",
-      "type": "message",
-      "content": "Remember to ask Sarah about the contract."
+      "type": "reminder",
+      "content": "Reminder: ask Sarah about the contract."
     }
   ]
 }
 ```
+
+A payload-only reminder is equivalent:
+
+```json
+{
+  "emissions": [
+    {
+      "type": "reminder",
+      "payload": {"recipient": "Sarah", "topic": "contract", "commitment_ref": "obs_…"}
+    }
+  ]
+}
+```
+
+`commitment_ref` is optional. When present, it must be the opaque `observation_id` of the observation that created the commitment.
 
 An emission is part of observable Agent behavior and may be scored.
 
@@ -990,10 +1007,26 @@ This is the preferred pattern for genuine prospective-memory triggering.
 In MIB v0.2 the observe-only Probe's `input.observation` is delivered exactly like any
 other observation; the Agent cannot tell a trigger from an ordinary event. The Runner logs
 every `emissions[]` entry of every `observe` result with the index of the observation that
-produced it and scores the Probe from the emissions within `[trigger, trigger + window]`
-(`oracle.expected_emission.window`, default 1). A near-trigger Probe with `must_not_emit`
-fails on any matching emission in its window (`premature_trigger`); a trigger Probe fails
-when none matches (`commitment_miss`). See `MIB-Specification.md` §4.6.
+produced it.
+
+Generated Programs (measurement 0.5.0) score a **lifecycle** Probe:
+
+- The lifecycle starts at the commitment observation and runs to the end of the run.
+- Each expected reminder must be emitted at its trigger observation (window 0).
+- A reminder matches when it is either the exact normalized sentence
+  `Reminder: ask <person> about the <topic>.`, or a `type: "reminder"` payload whose
+  `recipient` and `topic` match. An optional `commitment_ref` must equal the visible
+  observation ID of that commitment; the evaluator's internal commitment IDs are never
+  shown and never required. Text accompanying a payload must be the canonical sentence.
+- **Every** other emission after the commitment is a false alarm, including acknowledgements,
+  early or repeated reminders, and reminders for cancelled commitments. Do not use emissions
+  to acknowledge ordinary observations.
+- The Probe scores 1 only with no misses and no false alarms (`commitment_miss`,
+  `premature_trigger`).
+
+Near-trigger and repeated-trigger Probes with `must_not_emit` are zero-weight diagnostics:
+a premature emission is penalized once, by the lifecycle Probe. Legacy static Scenarios keep
+their declared `window` (default 1) and topic matching. See `MIB-Specification.md` §4.6.
 
 ---
 

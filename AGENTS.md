@@ -15,7 +15,7 @@ or a passing test suite is not evidence of general memory intelligence.
   implementation. State when a change intentionally leaves mirrors untouched.
 - `docs/proposals/`, `docs/archive/`, and historical review reports explain prior
   decisions; they do not override the current specification. Consult
-  [the current review resolution](docs/harness/MIB-v0.4-Review-Resolution.md)
+  [the current review resolution](docs/harness/MIB-v0.5-Review-Resolution.md)
   for implemented fixes and remaining empirical work.
 - Inspect the worktree before editing. Preserve unrelated changes and respect
   task-specific constraints, including restrictions on subagents.
@@ -39,7 +39,8 @@ or a passing test suite is not evidence of general memory intelligence.
 
 1. **Protect evaluator boundaries.** Never expose hidden oracles, support sets,
    relevance labels, intervention labels, or future probes during formation.
-   Participant-visible IDs must not encode those roles. Never commit evaluator
+   Participant-visible IDs and text must not encode those roles (no "held-out" or
+   "practice" items). Never commit evaluator
    private packs, secret seeds, credentials, or traces that reveal them. The
    public demo store in `fixtures/private-eval-store-demo/` is synthetic.
 2. **Keep comparisons paired.** Hold declared model, prompt, tools, task inputs,
@@ -50,12 +51,15 @@ or a passing test suite is not evidence of general memory intelligence.
    create additional independent Instances or seeds.
 4. **Keep denominators fixed.** Wrong, missing, unsupported and failed outcomes
    must retain their declared treatment and coverage semantics. Do not select
-   joint-twin admission evidence by full-condition correctness. Missing causal
-   evidence is unassessable, not a pass.
+   twin admission evidence by full-condition correctness. Missing causal
+   evidence is unassessable, not a pass. A policy that remembers nothing must not
+   earn structural credit; keep `GrammarOnlyAgent` and `RecoverOnlyAgent` (in-task
+   feedback recovery only) at the floor.
 5. **Score observable behavior.** Scalar answers require exact normalized aliases;
    negation or candidate enumeration is not correctness. Preserve whole-output
    withdrawal checks, actual world outcomes, first-attempt failures and complete
-   commitment lifecycles. Keep signed effects separate from clipped losses.
+   commitment lifecycles. Keep signed effects separate from clipped losses. The
+   dependence gate measures content following, not accuracy.
 6. **Use the shared contracts.** Update execution, aggregation, verification and
    schemas together. New routes must not invent another interpretation of
    identity, weights, lifecycle success, memory budgets or costs.

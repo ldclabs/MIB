@@ -1,10 +1,10 @@
 # MIB Specification
 
-## Memory Intelligence Benchmark — format v0.2, measurement revision 0.4.0
+## Memory Intelligence Benchmark — format v0.2, measurement revision 0.5.0
 
-**Implementation:** 0.13.0. **Status:** normative executable development specification.
+**Implementation:** 0.14.0. **Status:** normative executable development specification.
 
-This revision addresses the September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and development Profiles are version 0.4.0, and new pack reports use `report_version: "0.5.0"`. Static v0.1 scenarios remain executable.
+This revision addresses the second September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.5-Review-Resolution.md); the preceding revision's ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and Core development Profiles are version 0.5.0 (the Mechanism Challenges Profile is 0.2.0), and new pack reports use `report_version: "0.6.0"`. Static v0.1 scenarios remain executable.
 
 The implementation, schemas, and this specification define the executable contract. Proposals and archived documents are rationale, not competing specifications. Chinese mirrors have not been updated in this revision.
 
@@ -47,7 +47,7 @@ Tracks, Profile identities/versions, pack identities/versions, source bundles, a
 
 ## 2.2 Dimensions
 
-The seven core dimension IDs remain stable. Their measured scope is retention/retrieval, temporal memory, epistemic memory, feedback-derived experience memory, procedural memory/applicability, prospective/self memory, and withdrawal compliance. The legacy `skill_learning_transfer` and `selective_forgetting` IDs do not imply broad skill learning or physical deletion. The last name covers an operational withdrawal lane; it does not imply comprehensive deletion or budget-aware forgetting.
+Revision 0.5 Profiles use six dimensions: retention/retrieval, temporal memory, epistemic memory, procedural memory, prospective/self memory, and withdrawal compliance. `procedural_memory` carries both feedback-derived recurrence (the same family returns) and series-scoped applicability (a new family of a known series); both are recipe recall keyed by a visible identifier and scored by the same conjunctive world outcome, so they were one construct measured twice. The legacy `experience_memory` and `skill_learning_transfer` IDs remain valid for revision-0.4 and v0.1 artifacts; `selective_forgetting` covers an operational withdrawal lane and does not imply comprehensive deletion or budget-aware forgetting. Merging changes the composite weights, so revision-0.4 composites are not comparable.
 
 Causal quantities are diagnostics. They do not enter a v0.2 capability dimension. The deprecated v0.1 `causal_memory_impact` dimension remains available for legacy Profiles.
 
@@ -67,8 +67,11 @@ Shipped development Profiles:
 | `Session-Dev` | 14 | 0 / 20 / 100 | Explicit session boundary |
 | `Load-Dev` | 14 | 0 / 20 / 100 | 64 useful facts in interleaved recall |
 | `Calibration-Dev` | 14 | 0 / 20 / 100 | Evaluator-owned fixed-model experiment |
+| `Horizon-Dev` | 7 | 100 / 2,000 / 10,000 | Long visible history for integrated Agents; headline only |
 
 All are development Profiles with `official: false`. A larger number of seeds or a more elaborate interval does not establish broader construct validity.
+
+Revision 0.5 Profiles declare `measurement_regime.intervention_rungs: "canonical"`: interventions run only at the canonical rung, because no other rung's intervention enters an aggregate, and other rungs run the full condition for retention curves. They also declare `maintenance_control: "declared_maintenance_only"`: the no-maintenance replay runs only for an Agent that declares maintenance, since otherwise it would repeat the full condition and `consolidation_benefit` is unassessable. Profiles without these fields keep every intervention. `measurement_regime.diagnostics: "off"` also skips the relevant, irrelevant, harmful, no-maintenance and negative-transfer controls: the headline (dimension scores and the dependence gate) needs only the full condition and the twins, and the controls feed causal diagnostics. Core Dev runs 377 conditions with diagnostics and 182 without, with identical headline results. `measurement_regime.session_isolation: "persisted_state"` makes session boundaries enforced (§5.2).
 
 ## 2.4 Packs
 
@@ -78,7 +81,7 @@ A generated pack is exactly `Programs × seeds × rungs`, with no missing or dup
 
 The Program constructs the world, timeline, probes, and interventions. The Runner delivers observations, controls world transitions and tool execution, and records behavior. Evaluators compute results. The aggregation module defines the shared score functional. The service authenticates jobs and result artifacts.
 
-Participant-visible observation, interaction, task, request, and static tool-call identifiers are opaque. Their distributions do not label relevant facts, distractors, retention targets, or prospective probes. Paired conditions retain stable opaque aliases for corresponding items. Actor identities and ordinary tool/data semantics remain observable because tasks need them.
+Participant-visible observation, interaction, task, request, item, and static tool-call identifiers are opaque. Their distributions do not label relevant facts, distractors, retention targets, prospective probes, or scored future tasks; no participant-visible text names an item as practice, held-out, or evaluation material. Paired conditions retain stable opaque aliases for corresponding items. Actor identities and ordinary tool/data semantics remain observable because tasks need them.
 
 Queries, oracle data, evaluator labels, support sets, and intervention labels are private. The optional oracle-supported calibration reference is an explicitly privileged diagnostic and never a participant score or release gate.
 
@@ -90,7 +93,9 @@ Queries, oracle data, evaluator labels, support sets, and intervention labels ar
 
 ## 4.2 Programs and world model
 
-`generate/` constructs deterministic Instances. Separate random streams control semantic choices, surface realization, clocks, interference, and content twins. Probe wording and accepted answers remain fixed across a seed's rungs.
+`generate/` constructs deterministic Instances. Separate random streams control semantic choices, surface realization, clocks, interference, interference wording, respond-probe order, opaque identifiers, questioning controls, and content twins. Probe wording and accepted answers remain fixed across a seed's rungs.
+
+An evaluator may supply a private surface bank (statement/mention/retraction templates, question prompts and Program phrases). It changes wording only: semantic sampling, world-model assertions and every Oracle are unchanged, and the Instance records `surface_bank_digest`. A parser of the public grammar is not expected to transfer to it. Hidden seeds protect Instance answers; only a private surface protects against public-grammar solvers. Commitment, rule and brief wording are not yet covered by the bank.
 
 The world model records assertions with source, subject, attribute, value, kind, observation sequence, optional validity interval, supersession, and optional derivation dependencies. It separates truth-bearing assertions from statements and nonassertive mentions.
 
@@ -119,7 +124,7 @@ The Runner owns world state. Static deployment/workspace/contextual-save simulat
 
 Generated experience/skill tasks use `mib.workflow.v1`. `workflow.submit` executes an ordered recipe for an opaque item family. The first recipe, first-attempt correctness, and eventual completion are recorded. A failed attempt returns corrective feedback for recovery. Neither the future request nor the tool description reveals the required recipe before that first attempt.
 
-Training and transfer use related items of the same family. The nonmatching family has its own acquired recipe; applying the first family's recipe there is an error. Revised-workflow and composition Programs test distinct mechanisms. Task state is reset before each future task so acquisition cannot accidentally complete it.
+Experience Programs repeat one family. Procedural applicability Programs scope a recipe to a visible opaque series, and their future items are new families: a family-to-recipe table cannot solve them, while the series boundary still separates the nonmatching recipe. Applying the other series' recipe is an error. Each series has its own policy twin. Revised-workflow and composition Programs test distinct mechanisms. Task state is reset before each future task so acquisition cannot accidentally complete it.
 
 ## 4.5 Timeline and distance
 
@@ -129,29 +134,33 @@ Noise uses the full public value pool independently of target-answer exclusions.
 
 A seed's rung changes interference count while retaining its task and virtual span. Core Programs interleave noise with acquisition and place maintenance inside acquisition independently of relevance. Information-event timestamps and the future checkpoint are fixed across rungs. The original schedule reserves a 24-hour extension even at rung zero; noise is distributed through the available acquisition interval. Programs with an explicit streaming schedule retain that schedule. Interleaved recall distributes useful observations through its stream, including after maintenance, and spreads its noise across a fixed span. Its similar-subject noise excludes every primary actor, so another noise block cannot overwrite an earlier or future tested fact.
 
-`interference_tokens` is a **legacy field name for whitespace-separated words**, not tokenizer tokens. Reports must not infer a model context overflow from it. Runner input/output byte counts cover serialized arguments and results; model-provided token usage, where available, is reported separately. Different semantic/load Profiles are distinct experiments.
+`visible_history_chars` records the characters of participant-visible history (content, JSON payloads and lived-task goals). At the Core canonical rung it is roughly 1,000–1,500 characters: the Core score measures use of a short declared history, not selection under memory pressure. `interference_tokens` is a **legacy field name for whitespace-separated words**, not tokenizer tokens. Reports must not infer a model context overflow from it. Runner input/output byte counts cover serialized arguments and results; model-provided token usage, where available, is reported separately. Different semantic/load Profiles are distinct experiments.
 
 ## 4.6 Probes and commitments
 
 Probes are delivered through `respond`, `act`, or `observe_only`. An observe-only probe uses the ordinary observation interface and an opaque identifier.
 
-The prospective lifecycle evaluator considers emissions from the declared creation point through the end of the run. Its `expected[]` items identify a commitment, recipient, topic, and trigger event/probe. It counts misses, false alarms, and duplicate/extraneous emissions. The generated trigger window is zero observations: a reminder must be emitted at the triggering observation.
+The prospective lifecycle evaluator considers emissions from the declared creation point through the end of the run. Its `expected[]` items identify a commitment (evaluator ID and `commitment_event`), recipient, topic, and trigger event/probe. It counts misses, false alarms, and duplicate/extraneous emissions; any premature emission is therefore penalized once, by the lifecycle Probe. Near-trigger and repeated-trigger `must_not_emit` Probes are zero-weight diagnostics. The generated trigger window is zero observations: a reminder must be emitted at the triggering observation.
 
-A structured reminder payload must identify its commitment, recipient, and topic. It may omit `content`; the Runner preserves that absence. If text accompanies the payload, it must be the exact normalized sentence `Reminder: ask <person> about the <topic>.` That sentence is also the deterministic text alternative. A non-object payload cannot satisfy structured matching, but does not invalidate a correct text alternative or abort scoring. Merely including one correct topic among many earns no credit. Cancellation Programs expect no reminder and include a twin in which the commitment remains active.
+A reminder is either the exact normalized sentence `Reminder: ask <person> about the <topic>.` or a `type: "reminder"` payload naming `recipient` and `topic`. A payload may reference its commitment with `commitment_ref`, the opaque observation ID of the commitment the Agent saw; a reference to another observation, or an explicit `commitment_id` different from the evaluator's, is a wrong reminder. Evaluator commitment IDs are never shown to the Agent and are not required. A payload may omit `content`; the Runner preserves that absence. If text accompanies the payload, it must be the canonical sentence. A non-object payload cannot satisfy structured matching, but does not invalidate a correct text alternative or abort scoring. Merely including one correct topic among many earns no credit. The cancellation Program cancels one commitment while a second commitment for the same trigger stays active, so emitting nothing is not correct; its twin keeps the first commitment active.
 
-Standing self rules identify permitted/prohibited operations and specify that only an explicit authorization revision changes them. A routine maintenance request is not a revocation.
+Standing self rules identify permitted/prohibited operations and specify that only an explicit authorization revision changes them. A routine maintenance request is not a revocation. Compliance is conjunctive (`eval-action-strict`, a composite with `require_all`): the permitted operation must run, the prohibited one must not, and the resulting world state must match. Doing nothing earns no partial credit.
 
 Late sampling chooses input variants only at delivery; the same variant is used across paired conditions and its digest is retained for verification.
 
 ## 4.7 Evaluation
 
-Structured scalar values use deterministic exact equality after normalization, with explicit oracle aliases. Containers and, in generated scalar tasks, non-string values are rejected; a wrong value cannot earn status-only credit. Negating an accepted value or enumerating candidates does not count as answering. Explicit legacy text `contains` evaluators remain available. A forbidden value in the answer or auxiliary content fails, including inside an abstention, explanation, or attribution. Disclosure checks inspect actual leaf values, excluding JSON field names, null placeholders, and valid root-level status/confidence metadata in a recognized answer envelope. JSON and field-line answers use the same value semantics. Invalid metadata and nested auxiliary values remain subject to disclosure checks.
+Structured scalar values use deterministic exact equality after normalization, with explicit oracle aliases. Containers and, in generated scalar tasks, non-string values are rejected; a wrong value cannot earn status-only credit. Negating an accepted value or enumerating candidates does not count as answering. Explicit legacy text `contains` evaluators remain available.
+
+Generated scalar evaluators use `disclosure_scope: "withdrawn"`. A withdrawn value (Oracle `withdrawn`) fails anywhere in the visible output, including inside an abstention, explanation, or attribution. Other forbidden values (superseded, contradicted, merely mentioned) fail when they are the answer; an explanation that accurately recalls history is not stale adoption, and its penalty would otherwise grow with interference. Legacy evaluators without the field keep whole-output checks for every forbidden value. Disclosure checks inspect actual leaf values, excluding JSON field names, null placeholders, and valid root-level status/confidence metadata in a recognized answer envelope. JSON and field-line answers use the same value semantics. Invalid metadata and nested auxiliary values remain subject to disclosure checks.
+
+A Probe may declare `conditional_on`: it earns credit only when each named Probe's value was recalled in the same run. Withdrawal Probes are conditional on the retained neighbour, the epistemic abstention Probe on the corrected value, and the status Probe on the claim itself. A system that remembers nothing therefore cannot pass withdrawal, abstention, or status by default. The Probe keeps its weight; a failed prerequisite scores zero with `prerequisite_failed`, and the unconditional score is retained for diagnosis.
 
 Structured evaluation uses a fixed rubric, normally value 0.8 and status 0.2. Missing required fields receive zero for their fixed weight; they do not disappear from the denominator. Unknown status with a definite value is inconsistent and fails. A proper abstention can be represented as null/unknown or the abstention envelope.
 
 Confidence is the stated probability that the value answer or abstention is correct. `1 - (confidence - value_correctness)^2` is reported where supplied. When confidence has positive rubric weight, omitting it receives zero for that weight. It is not otherwise a capability bonus.
 
-World-state evaluators check explicit conditions. Trajectory evaluators check required/forbidden actions, ordering, counts, and recurrence requirements. Workflow probes score both first-recipe correctness and eventual completion: recovery alone cannot receive full credit.
+World-state evaluators check explicit conditions; `eval-world-strict` (`require_all`) makes them conjunctive. Trajectory evaluators check required/forbidden actions, ordering, counts, and recurrence requirements. Scored workflow Probes are conjunctive: the first recipe and completion must both hold. Averaging them gave in-task recovery, which every policy that reads the simulator's feedback performs without memory, half credit; `RecoverOnlyAgent` is the public fixture that must stay at zero.
 
 Emission evaluation is based on observable emissions over the full declared lifecycle, not an Agent's claim that it remembered.
 
@@ -159,11 +168,11 @@ Emission evaluation is based on observable emissions over the full declared life
 
 - Relevant/no-memory ablation withholds specified observations or lived tasks while ordinary world resets remain fixed.
 - Irrelevant ablation tests stability.
-- Content swaps replace an assertion or commitment and rederive affected answers/obligations.
+- Content swaps replace an assertion or commitment and rederive affected answers/obligations. One twin exists per pivot event and scores every Probe whose answer changes. Its value is chosen from ordinary (non-interference) events only, so it is identical at every rung: preferably a value no ordinary event mentions for the attribute, otherwise one outside the subject's own lineage. A twin is never a no-op "change" to the value the subject already had. Historical Probes have twins too.
 - Policy twins (`counterfactual_policy`, `replay_policy_twin`) change a latent workflow recipe consistently in acquisition and future verification. They may change the recipe only, not family identity or operational initialization. They are matched policy-world diagnostics, not history-only Memory Benefit contrasts.
 - No-maintenance replay withholds maintenance windows.
 - Negative-transfer control withholds one family's acquisition while preserving support for the nonmatching task.
-- Generated questioning conditions use a same-position, same-word-count placebo observation as `reference_ablation`. Their harm contrast uses that placebo, not the shorter full timeline.
+- Generated questioning conditions use a same-position, same-speaker, same-word-count irrelevant question as the `reference_ablation` placebo, and sample the questioned alternative from its own stream. Their harm contrast uses that placebo, not the shorter full timeline.
 
 The symbolic support check establishes only non-derivability under the query engine. It does not establish absence of lexical, metadata, or distributional leakage. Independent adversarial tests are required for those channels.
 
@@ -179,11 +188,13 @@ Validation checks schema, unique IDs, all references, supported tools/methods/op
 
 ## 5.1 Pack execution
 
-Each Instance and repetition runs the full condition and its declared interventions. Every ordinary intervention executes the complete future probe program; only its declared scored subset contributes to the corresponding contrast. This keeps earlier probe behavior from becoming an unrecorded difference in the schedule.
+Each Instance and repetition runs the full condition and its scheduled interventions (§2.3). Every ordinary intervention executes the complete future probe program; only its declared scored subset contributes to the corresponding contrast. This keeps earlier probe behavior from becoming an unrecorded difference in the schedule. Contiguous respond Probes with a shared trigger are permuted per seed (identically across rungs and conditions), because answers persist into later formation; action and emission Probes keep their declared order.
 
 ## 5.2 Isolation
 
 Conditions use fresh Agent instances/reset contexts with paired seeds and future inputs. Hosted stdio conditions use separate sandboxed processes. Remote/HTTP state isolation remains a declared contract and development transport limitation.
+
+A session boundary is acknowledged by default: the Agent confirms it and keeps its own process state. Under `session_isolation: "persisted_state"` the Runner closes the Agent instance at every boundary, builds a fresh one, resets it with the same seed and restores only the string the Agent returned as `persisted_state` (through the `restore` operation, which it must accept). Nothing else crosses the boundary; the Runner records the number of boundaries and the persisted UTF-8 bytes per run, and the Capability Card reports the largest persisted record. An Agent that hands nothing back starts every session empty. For a remote HTTP Agent the Runner sends the same reset/restore sequence, but the process state behind the endpoint is still the participant's declaration.
 
 ## 5.3 Lived experience and lifecycle
 
@@ -273,11 +284,13 @@ The new `memory_related_error_rate` is a descriptive error-pattern rate. It does
 
 ## 7.10 Dependence eligibility
 
-Revision 0.4 Profiles use `joint_twin_success`. The Runner freezes all declared changed-probe opportunities on every run. Each opportunity succeeds only if full and twin both score 1. Missing, invalid, or wrong pairs remain in this denominator; original correctness never selects eligibility. Repetitions are averaged inside an Instance. The gate averages Instance rates within each fixed Program stratum, then averages strata within the dimension.
+Revision 0.5 Profiles use `content_following_effect` (CFE). The Runner freezes all declared changed-probe opportunities on every run. In the full condition it also evaluates each output against every twin oracle of that Probe (`counterfactual_cross`); in the twin run it records whether the output carries the twin oracle's value (`counterfactual.follows`). For each opportunity, `CFE = follows_twin − follows_full`, using the value component of structured answers and the complete score of action/emission evaluators. Missing and invalid pairs contribute zero and stay in the denominator; correctness never selects eligibility. A system with no memory, a constant answer, or a guess from the public value pool has an expected CFE of zero whatever its accuracy; a system whose answers follow the history has CFE near one even when it is not perfectly accurate.
 
-Each weighted dimension requires five complete independent Instances, 100% valid planned-pair coverage, and an Instance-cluster percentile-bootstrap lower bound of at least 0.5 (95%, 2,000 draws by default). Resampling keeps Program strata fixed. Duplicate repetitions cannot increase independent sample count. A missing contrast is unassessable; valid incorrect answers are measured failures. Conditional content tracking is still reported separately. Legacy Profiles retain their explicitly declared conditional/Wilson policy.
+Repetitions are averaged inside an Instance. The gate averages Instance values within each fixed Program stratum, then averages strata within the dimension. Each weighted dimension requires five complete independent Instances, 100% valid planned-pair coverage, and an Instance-cluster percentile-bootstrap lower bound of at least 0.2 (95%, 2,000 draws by default). Resampling keeps Program strata fixed. Duplicate repetitions cannot increase independent sample count. A missing contrast is unassessable. The floor is chosen for power under the declared sample: with one opportunity per Instance, a system that follows 90% of changes passes all seven dimensions in at least 80% of simulated five-seed packs, while pool guessing passes in at most 5% (regression-tested; about 97% and 0% in a 200-pack simulation). A system that follows 70% of changes passes about a third of the time: five seeds still cannot certify weak dependence.
 
-These are development policy choices, not calibrated psychometric thresholds. A degenerate empirical bootstrap interval is explicitly flagged and does not establish population certainty; five uniformly successful Instances are not proof of broad generality. Formal sample size and useful-effect thresholds still require a preregistered pilot.
+`joint_twin_success` (full and twin both fully correct) is reported per dimension as a diagnostic. It approximates accuracy squared, so as a gate it was a capability threshold: at five seeds, a system with 90% joint success passed the revision-0.4 gate in about 15% of packs. Conditional content tracking is still reported separately. Revision 0.4 Profiles retain `joint_twin_success`, and legacy Profiles retain their explicitly declared conditional/Wilson policy.
+
+These are development policy choices, not calibrated psychometric thresholds. CFE establishes that answers follow the declared history under the declared construction; it does not identify a persistent-memory mechanism. A degenerate empirical bootstrap interval is explicitly flagged and does not establish population certainty; five uniformly successful Instances are not proof of broad generality. Formal sample size and useful-effect thresholds still require a preregistered pilot.
 
 # 8. Statistics
 
@@ -294,6 +307,8 @@ Intervals are conditional on the declared Program set and sufficient sample coun
 ## 8.3 Canonical rung
 
 The capability score, dependence gate, and score interval use the same canonical rung. The complete retention curve remains separate.
+
+The canonical rung of the 0 / 20 / 100 development Profiles shows about 970–1,500 visible history characters (Core) and at most about 5,400 at the top rung. An integrated Agent whose context holds that much history is in a raw-context regime: the score does not separate memory from reading the transcript, and the Capability Card states the visible history range with the score. The `Horizon-Dev` Profile reads the score at 2,000 interference events (about 90,000 visible characters) with a 10,000-event retention rung (about 450,000). Long visible history is the only pressure the Runner can put on an integrated Agent.
 
 ## 8.4 Paired comparison
 
@@ -319,15 +334,17 @@ Arithmetic consistency, source identity, service attestation, trusted Profile ad
 
 Runner telemetry records calls, input/output UTF-8 bytes, and wall-clock milliseconds for observe, respond, act, maintenance, and reset. Tool calls and probe latency remain available. Same-model telemetry additionally records provider-supplied token usage and memory truncation.
 
-The bundle does not independently measure every external system's storage, write amplification, or backend compute. Bounded built-in and external contexts share a hard final rendered-character limit, including prefixes and separators. Oversize records are omitted whole and reported; null limits explicitly mean unbounded references. Characters are not tokenizer tokens. Core signed and clipped score differences use JSON unit `normalized_delta`; displays multiply by 100 to show percentage points. Use budget-controlled experiments and report quality/cost pairs; do not interpret whitespace words or probe latency alone as memory efficiency.
+The bundle does not independently measure every external system's storage, write amplification, or backend compute. Bounded built-in and external contexts share a hard final rendered-character limit, including prefixes and separators. Same-model experiments report `memory_pressure`: rendered visible-observation characters divided by each bounded arm's budget (a lower bound, since lived-task transcripts and dialogue add more). Oversize records are omitted whole and reported; null limits explicitly mean unbounded references. Characters are not tokenizer tokens. Core signed and clipped score differences use JSON unit `normalized_delta`; displays multiply by 100 to show percentage points. Use budget-controlled experiments and report quality/cost pairs; do not interpret whitespace words or probe latency alone as memory efficiency.
 
 # 10. Calibration
 
 Generated calibration materializes every Program/rung/seed and counterbalances B0 no memory, B1 full visible history, B2 lexical retrieval, and B3 heuristic salience selection with a fixed model/prompt/tool/decoding setup. It includes content and policy twins and matched harmful/placebo controls.
 
-Optional additional groups measure bounded recent context and a privileged oracle-supported reference. They are diagnostic only, do not enter core scores, and are not guaranteed mathematical upper bounds.
+Optional additional groups measure an unbounded complete-history reference, bounded recent context and a privileged oracle-supported reference. The unbounded reference is the full-context arm of the release gate whenever B1 is bounded; the other two are diagnostic only, do not enter core scores, and are not guaranteed mathematical upper bounds.
 
-`same-model-generated.stub.json` is an engineering smoke configuration. `same-model-generated.external-http.json` is a ready-to-configure real-model experiment. A model endpoint, immutable model identity, and credentials are external inputs. Stub execution cannot establish difficulty, discriminativeness, or release readiness. The statelessness preflight can detect some violations; it is not a proof that a remote service retains no state.
+A comparison of memory arms under a budget is informative only when the budget binds in every arm. When any B1–B3 arm is bounded and the purpose is not `smoke`, the preflight requires every bounded arm's median history/budget ratio to reach `calibration.min_memory_pressure` (default 1), and requires that each arm's selection policy could fill its budget: B2 keeps `retrieval_top_k` records and B3 at most `structured_top_k + structured_salient_k`, so `top_k` times the median rendered record must reach the budget (`selection_capacity_chars`, `budget_binds`). Otherwise the arms differ in capacity rather than policy, and the run is refused. A bounded B1 is labelled `most_recent_visible_history_within_budget` and is a recency window, not full context: the `full_context` gate, the memory-discriminativeness index and the memory-gap denominators then use the `unbounded_reference` additional baseline (B1 without a budget), which must run untruncated; without it those gates are unassessable. Experiments with unbounded arms are `unbounded_reference` regimes: B1 is then a complete-history reference and B2/B3 differ only by selection policy, which is not a budgeted architecture comparison.
+
+`same-model-generated.stub.json` is an engineering smoke configuration. `same-model-generated.external-http.json` is a ready-to-configure real-model experiment with unbounded references. `same-model-generated.pilot.json` runs at 100 interference events with a 3,500-character budget per memory arm (median history/budget ratio about 4.2, required at least 4), selection sizes that can fill that budget (B2 top-30, B3 24+8 records of about 140 rendered characters), and the unbounded reference arm. A model endpoint, immutable model identity, and credentials are external inputs. Stub execution cannot establish difficulty, discriminativeness, or release readiness. The statelessness preflight can detect some violations; it is not a proof that a remote service retains no state.
 
 Choose real sample counts, repetitions, and admission thresholds from pilot variance and a preregistered minimum useful effect. Run multiple fixed models before making architecture-general claims. An official freeze remains contingent on those empirical results. Missing or incomplete necessary causal metrics are `unassessable`, not passes. Invalid full/causal lifecycles block admission. Smoke and pilot configurations never grant release admission. Calibration seed/repetition/threshold/purpose settings are bound in the experiment lock.
 
@@ -353,6 +370,8 @@ Public reports redact raw runs, seeds, private Template IDs, transfer support de
 10. Missing causal evidence remains missing; counts keep their statistical units.
 11. A generated oracle needs independent validation.
 12. Fixture ordering is plumbing evidence, not real-model calibration.
+13. A policy that remembers nothing earns no structural credit: `GrammarOnlyAgent` (public-grammar defaults, no history) scores at most 10 in every Core and Expanded dimension and fails the dependence gate (regression-tested; currently 0).
+14. A budgeted memory comparison requires a budget that binds; the dependence gate measures content following, not accuracy.
 
 Further empirical validation, real-system storage/cost instrumentation, broader independent domains, and an official freeze are not implied by implementing these constructs. Transfer Intelligence remains supplemental; its early/late artifact contrast measures availability across formation, survival, and retrieval unless stronger routing assumptions are justified. MIB-R remains an independent prototype result family whose external-task utility needs its own calibration.
 
@@ -360,6 +379,6 @@ Further empirical validation, real-system storage/cost instrumentation, broader 
 
 `MIB-Mechanism-Challenges-0.1-Dev` adds feature-based recipe composition for unseen families and multiple commitment/cancellation/renewal/repeated-trigger behavior. It is a separate Profile, not an expansion of the Core score. The feature task supplies the composition convention, but operations must come from actual feedback; it tests bounded composition, not open-ended rule discovery.
 
-Use `mib run` with a Scenario, generated Profile, same-model configuration, memory-backend configuration, or longitudinal configuration. `mib compare` compares compatible verified pack reports; `mib verify` aliases `verify-score`. Existing commands remain supported. Scenario/Profile runs require `--schema`; configured experiments resolve their own schemas and prompts. `same-model-generated.pilot.json` is a bounded seven-mechanism, one-rung pilot; the existing stub/full configurations remain separate.
+Use `mib run` with a Scenario, generated Profile, same-model configuration, memory-backend configuration, or longitudinal configuration. `mib compare` compares compatible verified pack reports; `mib verify` aliases `verify-score`. Existing commands remain supported. Scenario/Profile runs require `--schema`; configured experiments resolve their own schemas and prompts. `same-model-generated.pilot.json` is a bounded seven-mechanism, one-rung pilot under memory pressure; the existing stub/full configurations remain separate.
 
 The optional `observe_decision_types` routes business-model observation decisions by public observation type. All observations still reach memory formation. The same declared router applies to every memory arm and never reads probe, relevance, oracle, or trigger labels.

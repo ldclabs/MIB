@@ -1,3 +1,4 @@
+from mib_runner import PACK_REPORT_VERSION
 import copy
 import json
 import threading
@@ -178,7 +179,7 @@ def test_executable_backend_experiment_verifies_and_preserves_failed_maintenance
     report=run_backend_benchmark(config(tmp_path,url),model_client=Model())
     result=verify_score(report)
     assert result['valid'],result
-    assert report['reports']['candidate']['report_version']=='0.5.0'
+    assert report['reports']['candidate']['report_version']==PACK_REPORT_VERSION
     assert report['total_cost'] is None and report['accounting_complete'] is False
     if not reject_maintenance:
         assert report['fairness_audit']['valid'], report['fairness_audit']

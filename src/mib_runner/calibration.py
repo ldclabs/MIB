@@ -205,17 +205,21 @@ def _recommend(card: dict[str, Any], th: dict[str, float]) -> tuple[str, list[st
     mdi = card["metrics"]["memory_discriminativeness_index"]
     span = card["metrics"]["baseline_span"]
     reasons = []
-    if fc < th["full_context_min"]:
-        reasons.append("fixture_full_context_below_target")
+    if fc is None or mdi is None:
+        # A bounded B1 without an unbounded reference: no full-context evidence.
+        reasons.append("full_context_reference_unavailable")
+    else:
+        if fc < th["full_context_min"]:
+            reasons.append("fixture_full_context_below_target")
+        if mdi < th["mdi_min"]:
+            reasons.append("memory_discriminativeness_below_target")
     if nm > th["no_memory_max"]:
         reasons.append("no_memory_too_strong")
-    if mdi < th["mdi_min"]:
-        reasons.append("memory_discriminativeness_below_target")
     if span < th["baseline_span_min"]:
         reasons.append("baseline_separation_too_small")
     if not reasons:
         return "provisional_pass", []
-    if nm >= 0.85 or (fc >= 0.8 and mdi < 0.10):
+    if nm >= 0.85 or (fc is not None and mdi is not None and fc >= 0.8 and mdi < 0.10):
         return "retire_or_redesign_candidate", reasons
     return "revise_or_empirically_review", reasons
 

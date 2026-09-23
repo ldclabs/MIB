@@ -2,14 +2,14 @@
   "mib": "0.2",
   "kind": "BenchmarkProfile",
   "id": "MIB-Core-0.2-Pilot-Dev",
-  "version": "0.4.0",
-  "description": "Seven mechanism pilot at one fixed interference rung; development only, not release admission.",
+  "version": "0.5.0",
+  "description": "Seven mechanism pilot at one fixed interference rung (100 events), chosen so the pilot memory budget binds; development only, not release admission.",
   "track": "memory_system",
   "scale": "MIB-S",
   "official": false,
   "scenario_pack": {
     "id": "MIB-Core-0.2-Pilot-Dev",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "programs": [
     {
@@ -42,37 +42,34 @@
     505
   ],
   "ladder": [
-    20
+    100
   ],
   "canonical_rung": 0,
   "repetitions": 1,
   "dimensions": {
     "retention_retrieval": {
-      "weight": 0.15
+      "weight": 0.17
     },
     "temporal_memory": {
-      "weight": 0.15
+      "weight": 0.17
     },
     "epistemic_memory": {
-      "weight": 0.18
+      "weight": 0.2
     },
-    "experience_memory": {
-      "weight": 0.15
-    },
-    "skill_learning_transfer": {
-      "weight": 0.14
+    "procedural_memory": {
+      "weight": 0.2
     },
     "prospective_self_memory": {
-      "weight": 0.12
+      "weight": 0.14
     },
     "selective_forgetting": {
-      "weight": 0.11
+      "weight": 0.12
     }
   },
   "required_coverage": 1.0,
   "memory_dependence": {
-    "metric": "joint_twin_success",
-    "floor": 0.5,
+    "metric": "content_following_effect",
+    "floor": 0.2,
     "require_per_dimension": true,
     "min_instances": 5,
     "min_coverage": 1.0,
@@ -91,6 +88,8 @@
     "context_boundary_enforced": false,
     "interference_time_policy": "fixed_future_time_across_rungs",
     "distance_token_unit": "whitespace_words",
-    "scope": "Conditional on the declared Program set; no claim of general memory intelligence or context overflow."
+    "scope": "Conditional on the declared Program set; no claim of general memory intelligence or context overflow.",
+    "intervention_rungs": "canonical",
+    "maintenance_control": "declared_maintenance_only"
   }
 }

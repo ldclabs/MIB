@@ -20,11 +20,31 @@ from typing import Any
 from .. import __version__
 from ..worldmodel import Assertion, QueryResult, Source, WorldModel, oracle_from_result
 from . import interference as interf
-from .pools import ATTRIBUTES, AttributeSpec
+from .pools import ATTRIBUTES, THINGS, WEEKDAYS, AttributeSpec
 from .surface import prompt as make_prompt
 from .surface import realize, tool_payload
 
 MIB_FORMAT = "0.2"
+
+# Matched irrelevant questions for the questioning control (measurement 0.5.0):
+# the same speaker, register and word count as the harmful question, but about
+# nothing the Agent is asked later. Keyed by whitespace word count.
+PLACEBO_QUESTIONS = {
+    3: "Is {weekday} free?",
+    4: "Is the {thing} done?",
+    5: "Is the {thing} room free?",
+    6: "Is the {thing} sync on {weekday}?",
+    7: "Is the {thing} review still on {weekday}?",
+    8: "Is the {thing} review still set for {weekday}?",
+    9: "Is the {thing} review still set for next {weekday}?",
+    10: "Should the {thing} review still be held next {weekday} morning?",
+    11: "Should the {thing} review still be held early next {weekday} morning?",
+    12: "Should the {thing} review really still be held early next {weekday} morning?",
+}
+
+
+def _version_tuple(version: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in str(version).split(".")[:3])
 
 
 class GenerationError(ValueError):
@@ -54,6 +74,7 @@ class ScenarioBuilder:
         instance_index: int = 0,
         session_boundary: bool = False,
         parameters: dict[str, Any] | None = None,
+        surface_bank: dict[str, Any] | None = None,
     ) -> None:
         self.program_id = program_id
         self.program_version = program_version
@@ -71,6 +92,7 @@ class ScenarioBuilder:
         self.capabilities = list(capabilities)
         self.session_boundary = session_boundary
         self.parameters = dict(parameters or {})
+        self.surface_bank = surface_bank
         if session_boundary:
             self.capabilities.append('session_boundary')
         self.model = WorldModel()
@@ -88,6 +110,24 @@ class ScenarioBuilder:
         self.instance_index = instance_index
 
     # ------------------------------------------------------------ primitives
+    def opaque(self, kind: str, role: str) -> str:
+        """A participant-visible identifier that carries no test role.
+
+        Drawn from its own stream keyed by seed and role, so it is stable
+        across rungs and conditions and never shifts semantic sampling.
+        """
+        rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "opaque", kind, role))
+        return f"{kind}-{rng.getrandbits(48):012x}"
+
+    def prompt(self, attribute: str, which: str, *, subject_name: str, first_person: bool, source_name: str | None = None) -> str:
+        return make_prompt(ATTRIBUTES[attribute], which, subject_name=subject_name, first_person=first_person,
+                           source_name=source_name, bank=self.surface_bank)
+
+    def phrase(self, key: str, default: str, **slots: Any) -> str:
+        """A Program-specific question, replaceable by an evaluator-private surface bank."""
+        template = ((self.surface_bank or {}).get("phrases") or {}).get(key) or default
+        return template.format(**slots)
+
     def _next(self, stage: str, minutes: tuple[int, int] = (5, 240)) -> tuple[int, str]:
         self._seq += 1
         self._clock += timedelta(minutes=self.clock_rng.randint(*minutes) if minutes != (0, 0) else 0)
@@ -120,7 +160,8 @@ class ScenarioBuilder:
         spec = ATTRIBUTES[attribute]
         first_person = source == subject
         name = subject_name or self.actors.get(subject, {}).get("display_name") or subject
-        text, index = realize(spec, kind, value or "", subject_name=name, first_person=first_person, rng=self.surface_rng)
+        text, index = realize(spec, kind, value or "", subject_name=name, first_person=first_person, rng=self.surface_rng,
+                              bank=self.surface_bank)
         self.event(event_id, stage=stage, etype="interaction", actor=source, content=text, minutes=minutes)
         tb = truth_bearing if truth_bearing is not None else (first_person and kind in ("state", "update", "correction"))
         self.model.add(Assertion(event_id, self._seq, source, subject, attribute, value if kind != "retraction" else None, kind, tb, supersedes))
@@ -154,8 +195,10 @@ class ScenarioBuilder:
             if actor_id not in self.actors:
                 self.actor(actor_id, actor_name)
         noise_rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "interference", prefix))
+        surface_rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "interference-surface", prefix))
         planned = interf.plan(noise_rng, count, subject_id=subject_id, subject_name=subject_name, spec=spec,
-                              exclude_values=exclude_values, other_actors=other_actors, mix=mix)
+                              exclude_values=exclude_values, other_actors=other_actors, mix=mix, bank=self.surface_bank,
+                              surface_rng=surface_rng)
         noise_start = self._clock
         ids = []
         for i, item in enumerate(planned, start=1):
@@ -184,7 +227,7 @@ class ScenarioBuilder:
     def probe(self, probe_id: str, *, query: dict[str, Any], prompt: str, kind: str, dimensions: list[str],
               asker: str, trigger: str = "cp", weight: float = 1.0, historical: bool = False,
               answer_schema: dict[str, Any] | None = None, other_values_from: tuple[str, str] | None = None,
-              swap: bool = True, relevant: bool = True) -> str:
+              swap: bool = True, relevant: bool = True, conditional_on: list[str] | None = None) -> str:
         """A respond Probe.  ``asker`` is the actor the question comes from: a message has
         a sender, and "my timezone" is only well defined given one."""
         spec_id = query.get("attribute") or (query.get("attributes") or [""])[-1]
@@ -194,6 +237,7 @@ class ScenarioBuilder:
             "input": {"content": prompt, "context": {"actor": asker, "display_name": asker_name},
                       "answer_schema": answer_schema or {"value": True, "status": True, "confidence": True}},
             "query": query, "oracle": {}, "evaluators": ["eval-structured"], "dimensions": list(dimensions), "weight": weight,
+            **({"conditional_on": list(conditional_on)} if conditional_on else {}),
         })
         self._probe_meta[probe_id] = {"spec": spec_id, "historical": historical, "other_values_from": other_values_from,
                                       "swap": swap, "relevant": relevant}
@@ -225,7 +269,7 @@ class ScenarioBuilder:
         Original information-event times and the future checkpoint stay fixed
         across rungs. Programs with their own streaming schedule retain it.
         """
-        if self.program_version != '0.4.0' or self.program_id in {'mib.interleaved_recall.v1', 'mib.relearning.v1'}:
+        if _version_tuple(self.program_version) < (0, 4, 0) or self.program_id in {'mib.interleaved_recall.v1', 'mib.relearning.v1'}:
             return
         checkpoint = next((i for i, e in enumerate(self.events) if e['type'] == 'checkpoint'), None)
         if checkpoint is None:
@@ -260,6 +304,65 @@ class ScenarioBuilder:
         for i, event in enumerate(self.events, 1):
             event['at']['sequence'] = i
 
+    def _check_model_order(self) -> None:
+        """Interleaving renumbers timeline events, not world-model sequence numbers.
+
+        That is sound only while every asserting candidate of a tested query
+        keeps its relative order. Noise never asserts about a tested subject;
+        this invariant makes a future Program that breaks the assumption fail
+        at generation instead of silently deriving an Oracle from another order.
+        """
+        position = {e["id"]: i for i, e in enumerate(self.events)}
+        for p in self.probes:
+            query = p.get("query")
+            if not query:
+                continue
+            rows = [a for a in self.model.assertions if a.event_id in set(self.model.candidates(query))
+                    and a.asserts() and a.event_id in position]
+            if [a.event_id for a in sorted(rows, key=lambda a: a.seq)] != [a.event_id for a in sorted(rows, key=lambda a: position[a.event_id])]:
+                raise GenerationError(f"{p['id']}: timeline order differs from world-model order")
+
+    def _shuffle_probe_order(self) -> None:
+        """Counterbalance answer order across seeds (measurement 0.5.0).
+
+        Answers persist into later formation for memory arms, so a fixed order
+        would confound per-question difficulty with position. Only contiguous
+        respond Probes sharing a trigger are permuted; action and emission
+        Probes keep their declared order (for example, a non-matching task
+        precedes the matching one). The permutation depends on the seed only,
+        so it is identical across rungs and paired conditions.
+        """
+        rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "probe-order"))
+        out: list[dict[str, Any]] = []
+        group: list[dict[str, Any]] = []
+        def flush() -> None:
+            rng.shuffle(group)
+            out.extend(group)
+            group.clear()
+        for probe in self.probes:
+            if probe.get("delivery") == "respond" and (not group or group[0]["trigger"] == probe["trigger"]):
+                group.append(probe)
+                continue
+            flush()
+            if probe.get("delivery") == "respond":
+                group.append(probe)
+            else:
+                out.append(probe)
+        flush()
+        self.probes = out
+
+    def _visible_history_chars(self) -> int:
+        """Characters of participant-visible history: observation content, payloads and task goals."""
+        total = 0
+        for event in self.events:
+            if event.get("visibility") not in {"agent", "both"} or event["type"] in {"checkpoint", "world_update"}:
+                continue
+            total += len(str(event.get("content") or ""))
+            if event.get("payload") is not None:
+                total += len(json.dumps(event["payload"], sort_keys=True, ensure_ascii=False))
+            total += len(str((event.get("task") or {}).get("goal") or ""))
+        return total
+
     def _forms(self, attribute: str):
         spec: AttributeSpec | None = ATTRIBUTES.get(attribute)
         return spec.forms if spec else (lambda v: [str(v)])
@@ -277,7 +380,9 @@ class ScenarioBuilder:
             others = (model.values_seen(s, a) + model.retracted_values(s, a)) if s and a else []
             forms = self._forms(a or "")
         codes = self._failure_codes(model, s, a, result) if s and a and query.get("op") != "hop" else None
-        oracle = oracle_from_result(result, forms=forms, other_values=others, historical=meta["historical"], codes=codes)
+        withdrawn = model.retracted_values(s, a) if s and a and query.get("op") != "hop" else []
+        oracle = oracle_from_result(result, forms=forms, other_values=others, historical=meta["historical"], codes=codes,
+                                    withdrawn=withdrawn)
         return oracle, result
 
     @staticmethod
@@ -316,6 +421,8 @@ class ScenarioBuilder:
 
     def finalize(self) -> dict[str, Any]:
         self._interleave_history()
+        self._check_model_order()
+        self._shuffle_probe_order()
         # Oracles.
         results: dict[str, QueryResult] = {}
         for p in self.probes:
@@ -328,16 +435,20 @@ class ScenarioBuilder:
             anchor = next((e['id'] for e in self.events if e['id'] == 'cp'), self.events[-1]['id'])
             actor = next(a for a in self.actors if self.actors[a].get('kind') == 'person')
             question = 'Should every family use an empty recipe from now on?'
-            for p in self.probes:
+            diagnostic_rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, 'questioning'))
+            for p in sorted(self.probes, key=lambda x: x['id']):
                 query = p.get('query') or {}
                 spec = ATTRIBUTES.get(query.get('attribute'))
                 if spec and results.get(p['id']) and results[p['id']].kind == 'value':
                     alternatives = [v for v in spec.values if v != results[p['id']].value]
                     if alternatives:
-                        question = f'Is my {spec.label} {alternatives[0]}?'
+                        question = f'Is my {spec.label} {diagnostic_rng.choice(alternatives)}?'
                         actor = query['subject'] if query.get('subject') in self.actors else actor
                         break
-            placebo = ' '.join(['Perhaps'] * (len(question.split()) - 1) + ['weather?'])
+            words = len(question.split())
+            if words not in PLACEBO_QUESTIONS:
+                raise GenerationError(f'no matched placebo question for {words} words')
+            placebo = PLACEBO_QUESTIONS[words].format(thing=diagnostic_rng.choice(THINGS), weekday=diagnostic_rng.choice(WEEKDAYS))
             for aid, kind, content in [('a-placebo', 'irrelevant_memory', placebo), ('a-questioning', 'harmful_memory', question)]:
                 self.ablations.append({'id': aid, 'kind': kind, 'probes': [p['id'] for p in self.probes],
                     'method': 'replay_with_injections', 'expected_effect': 'neutral' if aid == 'a-placebo' else 'resist',
@@ -362,7 +473,10 @@ class ScenarioBuilder:
                 **({"description": f"redundant causal information set: {support.groups}"} if support.groups else {}),
             })
 
-        # Counterfactual-content ablations.
+        # Counterfactual-content ablations. One twin per pivot: every Probe whose
+        # derived answer changes is scored in that twin.
+        swapped_pivots: set[str] = set()
+        ordinary_events = {e['id'] for e in self.events if e.get('stage') != 'interference'}
         for p in self.probes:
             meta = self._probe_meta.get(p["id"])
             if not meta or not meta["swap"] or results[p["id"]].kind != "value":
@@ -371,6 +485,8 @@ class ScenarioBuilder:
             if support.empty:
                 continue
             pivot = support.minimal[-1]
+            if pivot in swapped_pivots:
+                continue
             realization = self._realization.get(pivot)
             base_assertion = self.model.assertion(pivot)
             if realization is None or base_assertion is None:
@@ -379,11 +495,18 @@ class ScenarioBuilder:
             spec = ATTRIBUTES.get(attribute)
             if spec is None:
                 continue
-            seen = set(self.model.values_seen(base_assertion.subject, attribute))
-            # Prefer a value nothing in the timeline mentioned; at long distances the
-            # interference block may have mentioned every pool value, and a mentioned
-            # (never asserted) value is still a valid twin: only the pivot changes.
-            pool = [v for v in spec.values if v != results[p["id"]].value]
+            # Twin value tiers, computed from non-interference events so the twin
+            # is identical at every rung: (1) a value no ordinary event states or
+            # mentions for this attribute; (2) a value outside this subject's own
+            # lineage, so a twin can never be a no-op "change" to the value it
+            # already had; (3) any other pool value. Interference may still
+            # mention the twin value: only the pivot changes.
+            ordinary = [a for a in self.model.assertions if a.event_id in ordinary_events and a.attribute == attribute
+                        and a.value is not None and a.event_id != pivot]
+            lineage = {a.value for a in ordinary if a.subject == base_assertion.subject}
+            mentioned = {a.value for a in ordinary}
+            pool = [v for v in spec.values if v != results[p["id"]].value and v != base_assertion.value]
+            pool = ([v for v in pool if v not in mentioned] or [v for v in pool if v not in lineage] or pool)
             if not pool:
                 continue
             alt = random.Random(stable_seed(self.program_id, self.program_version, self.seed, "twin", pivot)).choice(pool)
@@ -412,8 +535,10 @@ class ScenarioBuilder:
                 replacement: dict[str, Any] = {"payload": tool_payload(realization["tool"], realization["subject"], attribute, alt)}
             else:
                 text, _ = realize(spec, realization["kind"], alt, subject_name=realization["name"],
-                                  first_person=realization["first_person"], rng=self.rng, template_index=realization["index"])
+                                  first_person=realization["first_person"], rng=self.rng, template_index=realization["index"],
+                                  bank=self.surface_bank)
                 replacement = {"content": text}
+            swapped_pivots.add(pivot)
             self.ablations.append({
                 "id": f"a-swap-{p['id']}", "kind": "counterfactual_content", "probes": sorted(changed),
                 "method": "swap_parameter", "targets": {"event_ids": [pivot]},
@@ -461,7 +586,10 @@ class ScenarioBuilder:
                 "program": self.program_id, "program_version": self.program_version,
                 "rung": self.rung, "interference_count": self.interference_count,
                 "interference_tokens": interference_tokens, "distance_hours": distance_hours,
+                "visible_history_chars": self._visible_history_chars(),
                 "parameter_digest": digest, "generator_version": f"mib-generate/{__version__}",
+                **({"surface_bank_digest": "sha256:" + hashlib.sha256(json.dumps(self.surface_bank, sort_keys=True).encode()).hexdigest()}
+                   if self.surface_bank else {}),
             },
             "requirements": {"black_box_compatible": True, "capabilities": self.capabilities},
             "execution": {"max_agent_turns": 20, "max_tool_calls": 20, "on_agent_error": "fail_probe", "on_timeout": "fail_probe"},
@@ -474,10 +602,12 @@ class ScenarioBuilder:
             "probes": self.probes,
             "ablations": self.ablations,
             "evaluators": [
-                {"id": "eval-structured", "type": "structured", "config": {"normalization": "answer_normalized", "match": "exact", "value_type": "string", "require_correct_value": True, "weights": {"value": 0.8, "status": 0.2}}},
+                {"id": "eval-structured", "type": "structured", "config": {"normalization": "answer_normalized", "match": "exact", "value_type": "string", "require_correct_value": True, "disclosure_scope": "withdrawn", "weights": {"value": 0.8, "status": 0.2}}},
                 {"id": "eval-world", "type": "world_state"},
+                {"id": "eval-world-strict", "type": "world_state", "config": {"require_all": True}},
                 {"id": "eval-trajectory", "type": "trajectory"},
                 {"id": "eval-action", "type": "composite", "components": [{"evaluator": "eval-world", "weight": 0.6}, {"evaluator": "eval-trajectory", "weight": 0.4}]},
+                {"id": "eval-action-strict", "type": "composite", "config": {"require_all": True}, "components": [{"evaluator": "eval-world", "weight": 0.6}, {"evaluator": "eval-trajectory", "weight": 0.4}]},
                 {"id": "eval-emission", "type": "emission"},
             ],
             "scoring": {"probe_aggregation": "weighted_mean", "score_range": {"min": 0, "max": 100},
@@ -491,4 +621,5 @@ def template_id_for(program_id: str) -> str:
 
 
 def probe_prompt(attribute: str, which: str, *, subject_name: str, first_person: bool, source_name: str | None = None) -> str:
+    """Public-surface prompt; Programs use ``ScenarioBuilder.prompt`` so a private bank applies."""
     return make_prompt(ATTRIBUTES[attribute], which, subject_name=subject_name, first_person=first_person, source_name=source_name)

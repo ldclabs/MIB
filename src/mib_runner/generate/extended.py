@@ -1,11 +1,10 @@
 """Independent semantic mechanisms for the expanded development profile."""
 from __future__ import annotations
 
-import copy
 from datetime import timedelta
 
 from ..worldmodel import Assertion
-from .base import ScenarioBuilder, probe_prompt
+from .base import ScenarioBuilder
 from .interference import other_actors
 from .pools import ATTRIBUTES, NAMES
 from .programs import (RecallProgram, TemporalProgram, EpistemicProgram, ExperienceProgram,
@@ -38,7 +37,7 @@ class InterleavedRecallProgram(RecallProgram):
                         other_actors=other_actors(b.rng, set(names)), count=noise_count, prefix=f'noise-{i}')
             if i in selected:
                 b.probe(f'p-{i}', asker=pid, query={'op': 'current', 'subject': pid, 'attribute': attr},
-                        prompt=probe_prompt(attr, 'current', subject_name=name, first_person=True),
+                        prompt=b.prompt(attr, 'current', subject_name=name, first_person=True),
                         kind='factual', dimensions=self.DIMENSIONS)
         b.checkpoint()
 
@@ -68,7 +67,7 @@ class BitemporalProgram(TemporalProgram):
         b.checkpoint()
         for i, (valid, recorded) in enumerate([(15, 20), (15, 35), (36, 45)]):
             b.probe(f'p-time-{i}', asker=pid, query={'op': 'bitemporal', 'subject': pid, 'attribute': 'office', 'valid_at': valid, 'recorded_at': recorded},
-                    prompt=f'At valid time {valid}, using records received by time {recorded}, what was my office?',
+                    prompt=b.phrase('bitemporal', 'At valid time {valid}, using records received by time {recorded}, what was my office?', valid=valid, recorded=recorded),
                     kind='historical', dimensions=self.DIMENSIONS, historical=True)
 
 
@@ -92,7 +91,7 @@ class AuthorityProgram(EpistemicProgram):
         b.interfere(subject_id=pid, attribute='city', exclude_values=set(), other_actors=other_actors(b.rng, set(names)))
         b.checkpoint()
         b.probe('p-owner', asker=pid, query={'op': 'according_to_authority', 'subject': pid, 'attribute': 'office'},
-                prompt='According to the decision owner, what is my office?', kind='audit', dimensions=self.DIMENSIONS)
+                prompt=b.phrase('authority', 'According to the decision owner, what is my office?'), kind='audit', dimensions=self.DIMENSIONS)
 
 
 class RevisedExperienceProgram(ExperienceProgram):
@@ -113,24 +112,8 @@ class CompositionProgram(SkillProgram):
 
 class CancelledCommitmentProgram(ProspectiveProgram):
     ID = 'mib.cancelled_commitment.v1'
-    TITLE = 'Cancel a commitment without forgetting the standing authorization'
-
-    def build(self, b: ScenarioBuilder) -> None:
-        super().build(b)
-        probe = next(p for p in b.probes if p['id'] == 'p-trigger')
-        expected = copy.deepcopy(probe['oracle'])
-        item = expected['expected_emission']['expected'][0]
-        event = next(e for e in b.events if e['id'] == 'e-near-1')
-        event['type'] = 'interaction'
-        event['actor'] = next(e['actor'] for e in b.events if e['id'] == 'e-commit')
-        event['content'] = f"Cancel the reminder for {item['recipient']} about the {item['topic']}."
-        probe['oracle']['expected_emission']['expected'] = []
-        b.ablations = [a for a in b.ablations if a['id'] not in {'a-swap-commitment', 'a-relevant-p-trigger'}]
-        b.ablation({'id': 'a-relevant-cancellation', 'kind': 'relevant_memory', 'method': 'replay_excluding_events',
-                    'probes': ['p-trigger'], 'targets': {'event_ids': ['e-near-1']}, 'expected_effect': 'degrade'})
-        b.ablation({'id': 'a-swap-cancellation', 'kind': 'counterfactual_content', 'method': 'swap_parameter',
-                    'probes': ['p-trigger'], 'targets': {'event_ids': ['e-near-1']}, 'expected_effect': 'track',
-                    'counterfactual': {'events': {'e-near-1': {'content': 'The earlier reminder remains active.'}}, 'oracle': {'p-trigger': expected}}})
+    TITLE = 'Cancel one commitment while another stays active, without forgetting the standing authorization'
+    CANCELLED = True
 
 
 class RelearningProgram(ForgettingProgram):

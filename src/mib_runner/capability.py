@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from .experimental.transfer import TRANSFER_DIAGNOSTICS_EXTENSION
 
 DISPLAY = {
     "retention_retrieval": "Retention & Retrieval",
@@ -10,6 +9,7 @@ DISPLAY = {
     "epistemic_memory": "Epistemic Memory",
     "experience_memory": "Experience Memory",
     "skill_learning_transfer": "Procedural Memory & Applicability",
+    "procedural_memory": "Procedural Memory",
     "selective_forgetting": "Withdrawal Compliance",
     "prospective_self_memory": "Prospective & Self Memory",
     "causal_memory_impact": "Causal Memory Impact",
@@ -42,15 +42,23 @@ def render_capability_card(report: dict[str, Any]) -> str:
         f"Track     {bench['track']}",
         f"Scale     {bench['scale']}",
         f"Agent     {agent.get('name', 'Unknown')} {agent.get('version', '')}".rstrip(),
-        "",
-        f"MIB Score {score['final_score']:.1f}",
     ]
-    if ci:
-        lines.append(f"95% CI    [{ci['lower']:.1f}, {ci['upper']:.1f}]")
+    # Headline (measurement 0.5.0): per-dimension capability, dependence
+    # evidence and resources. The composite is a Profile-weighted summary
+    # shown with its weight sensitivity; causal quantities are diagnostics.
     lines += ["", "Capability"]
     for d in report["aggregates"]["dimensions"]:
         lines.append(f"  {DISPLAY.get(d['dimension'], d['dimension']):28s} {d['score']:5.1f}  coverage {100*d['coverage']:5.1f}%")
-    lines += ["", "Causal Diagnostics"]
+    lines += _dependence_lines(report)
+    lines += ["", f"Composite MIB Score {score['final_score']:.1f} (Profile weights)"]
+    if ci:
+        lines.append(f"  95% CI    [{ci['lower']:.1f}, {ci['upper']:.1f}]")
+    sensitivity = composite_sensitivity(report["aggregates"]["dimensions"])
+    if sensitivity:
+        lines.append(f"  Equal weights {sensitivity['equal_weight']:.1f}; leave-one-dimension-out range "
+                     f"[{sensitivity['leave_one_out_min']:.1f}, {sensitivity['leave_one_out_max']:.1f}]")
+    lines += _resource_lines(report)
+    diagnostics = []
     for name, label, fmt in [
         ("memory_benefit", "Memory Benefit", "pp"),
         ("memory_harm_effect", "Signed Harm Effect", "pp"),
@@ -68,25 +76,79 @@ def render_capability_card(report: dict[str, Any]) -> str:
             continue
         v = float(m["value"])
         if fmt == "pp":
-            lines.append(f"  {label:28s} {100*v:+5.1f} pp")
+            diagnostics.append(f"  {label:28s} {100*v:+5.1f} pp")
         elif fmt == "rate":
-            lines.append(f"  {label:28s} {100*v:5.1f}%")
+            diagnostics.append(f"  {label:28s} {100*v:5.1f}%")
         else:
-            lines.append(f"  {label:28s} {100*v:5.1f}")
+            diagnostics.append(f"  {label:28s} {100*v:5.1f}")
+    if diagnostics:
+        lines += ["", "Causal Diagnostics (not part of the headline)"] + diagnostics
     lines += _behaviour_lines(report)
     lines += _retention_lines(report)
-    lines += _dependence_lines(report)
     lines += _transfer_lines(report)
     lines += [
-        "",
-        f"Coverage  {100*report['coverage']['overall']:.1f}%",
-        f"Execution Failure Rate  {100*report['execution'].get('execution_failure_rate', 0.0):.2f}%",
         "",
         score_status,
         "```",
         "",
     ]
     return "\n".join(lines)
+
+
+def composite_sensitivity(dimensions: list[dict[str, Any]]) -> dict[str, float] | None:
+    """How much the composite depends on the unvalidated Profile weights."""
+    rows = [(float(d["score"]), float(d.get("weight", 0.0))) for d in dimensions if float(d.get("weight", 0.0)) > 0]
+    if len(rows) < 2:
+        return None
+    def weighted(items: list[tuple[float, float]]) -> float:
+        total = sum(w for _, w in items)
+        return sum(s * w for s, w in items) / total if total else 0.0
+    loo = [weighted(rows[:i] + rows[i + 1:]) for i in range(len(rows))]
+    return {"equal_weight": sum(s for s, _ in rows) / len(rows), "leave_one_out_min": min(loo), "leave_one_out_max": max(loo)}
+
+
+def _history_lines(report: dict[str, Any]) -> list[str]:
+    """How much history the capability rung shows, and what survived session boundaries.
+
+    A Track B score at a rung whose visible history fits the Agent's context
+    does not separate memory from reading the transcript, so the size is part
+    of the headline's resource statement rather than a footnote.
+    """
+    policy = report.get('evaluation_policy', {}).get('profile', {})
+    canonical = policy.get('canonical_rung')
+    instances = (report.get('aggregates') or {}).get('scenario_instances') or []
+    rows = [i for i in instances if i.get('visible_history_chars') is not None
+            and (canonical is None or i.get('rung') is None or int(i['rung']) == int(canonical))]
+    lines = []
+    if rows:
+        chars = [int(i['visible_history_chars']) for i in rows]
+        lines.append(f"  Visible history at the capability rung: {min(chars):,}\u2013{max(chars):,} characters ({len(rows)} Instances).")
+        lines.append("  An integrated Agent whose context holds this much history is in a raw-context regime: the score does not"
+                     " separate memory from reading the transcript.")
+    isolation = [i['session_isolation'] for i in instances if isinstance(i.get('session_isolation'), dict)]
+    if isolation:
+        mode = isolation[0].get('mode')
+        persisted = max(int(i.get('persisted_bytes', 0)) for i in isolation)
+        lines.append(f"  Session isolation: {mode}; persisted state up to {persisted:,} UTF-8 bytes per Instance"
+                     + (" (only this record survives a boundary)." if mode == 'persisted_state' else " (boundaries acknowledged, not enforced)."))
+    return lines
+
+
+def _resource_lines(report: dict[str, Any]) -> list[str]:
+    lines = ["", "Resources and Boundaries",
+             f"  Coverage                     {100*report['coverage']['overall']:5.1f}%",
+             f"  Execution Failure Rate       {100*report['execution'].get('execution_failure_rate', 0.0):5.2f}%"]
+    regime = report.get('evaluation_policy', {}).get('profile', {}).get('measurement_regime', {})
+    if regime:
+        lines.append(f"  Regime: {regime.get('kind')}; internal mechanism is not independently identified.")
+    lines.extend(_history_lines(report))
+    operations = report.get('efficiency', {}).get('runner_measured', {}).get('operations', {})
+    if operations:
+        lines.append('  Runner operations (all evaluation conditions; UTF-8 bytes, not tokens)')
+        for name, row in sorted(operations.items()):
+            lines.append(f"    {name:16s} {int(row['calls']):6d} calls; {row['latency_ms']:.1f} ms; "
+                         f"{int(row['input_bytes'])} input bytes; {int(row['output_bytes'])} output bytes")
+    return lines
 
 
 def _behaviour_lines(report: dict[str, Any]) -> list[str]:
@@ -154,15 +216,6 @@ def _dependence_lines(report: dict[str, Any]) -> list[str]:
         status = {True: 'pass', False: 'below policy', None: 'unassessable'}[row['eligible']]
         lines.append(f"  {DISPLAY.get(row['dimension'], row['dimension']):28s} {row['eligible_instances']} Instances; "
                      f"{row['eligible_n']}/{row['total_n']} pairs; lower bound {bound}; {status}")
-    regime = report.get('evaluation_policy', {}).get('profile', {}).get('measurement_regime', {})
-    if regime:
-        lines.append(f"  Regime: {regime.get('kind')}; internal mechanism is not independently identified.")
-    operations = report.get('efficiency', {}).get('runner_measured', {}).get('operations', {})
-    if operations:
-        lines += ['', 'Runner operations (all evaluation conditions; UTF-8 bytes, not tokens)']
-        for name, row in sorted(operations.items()):
-            lines.append(f"  {name:16s} {int(row['calls']):6d} calls; {row['latency_ms']:.1f} ms; "
-                         f"{int(row['input_bytes'])} input bytes; {int(row['output_bytes'])} output bytes")
     return lines
 
 
@@ -172,6 +225,7 @@ def _transfer_lines(report: dict[str, Any]) -> list[str]:
     These are supplemental diagnostics.  They do not enter the MIB Score, and
     an absent metric is omitted rather than shown as zero.
     """
+    from .experimental.transfer import TRANSFER_DIAGNOSTICS_EXTENSION
     body = (report.get("extensions") or {}).get(TRANSFER_DIAGNOSTICS_EXTENSION)
     if not body:
         return []

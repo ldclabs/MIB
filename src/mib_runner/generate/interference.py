@@ -45,13 +45,18 @@ def plan(
     exclude_values: set[str],
     other_actors: list[tuple[str, str]],
     mix: dict[str, float] | None = None,
+    bank: dict[str, Any] | None = None,
+    surface_rng: random.Random | None = None,
 ) -> list[InterferenceEvent]:
     """Plan ``count`` interference events for one target attribute.
 
     ``exclude_values`` is retained for source compatibility and deliberately
     ignored: conditioning noise on the answer leaks that answer by absence.
     The same value may occur for another subject or in a nonassertive mention.
+    ``surface_rng`` chooses wording only, so a different surface bank cannot
+    change which interference assertions exist.
     """
+    surface_rng = surface_rng or rng
     mix = mix or DEFAULT_MIX
     kinds = list(mix)
     weights = [mix[k] for k in kinds]
@@ -62,7 +67,7 @@ def plan(
         if kind == "similar" and other_actors and pool_values:
             actor_id, actor_name = rng.choice(other_actors)
             value = rng.choice(pool_values)
-            text, _ = realize(spec, "state", value, subject_name=actor_name, first_person=True, rng=rng)
+            text, _ = realize(spec, "state", value, subject_name=actor_name, first_person=True, rng=surface_rng, bank=bank)
             out.append(InterferenceEvent("similar", text, actor_id, {
                 "source": actor_id, "subject": actor_id, "attribute": spec.id, "value": value,
                 "kind": "state", "truth_bearing": True,
@@ -70,7 +75,7 @@ def plan(
         elif kind == "confusable" and pool_values:
             value = rng.choice(pool_values)
             mention_kind = rng.choice(["question", "hypothetical"])
-            text, _ = realize(spec, mention_kind, value, subject_name=subject_name, first_person=True, rng=rng)
+            text, _ = realize(spec, mention_kind, value, subject_name=subject_name, first_person=True, rng=surface_rng, bank=bank)
             out.append(InterferenceEvent("confusable", text, subject_id, {
                 "source": subject_id, "subject": subject_id, "attribute": spec.id, "value": value,
                 "kind": mention_kind, "truth_bearing": False,

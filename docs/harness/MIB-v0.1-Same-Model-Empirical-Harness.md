@@ -1,6 +1,6 @@
 # MIB v0.1 Same-Model Empirical Baseline Harness
 
-> The v0.1 examples below remain legacy material. Implementation 0.13.0 also executes generated v0.2 Programs at every rung. Use `same-model-generated.stub.json` for engineering validation or `same-model-generated.external-http.json` for real fixed-model calibration. The revised adapter persists completed task transcripts for B1–B3, discards them for B0, and supports observe-time decisions, maintenance, and explicit session boundaries. Optional recent-window and privileged oracle-supported references are separate diagnostics and never enter a release gate. See `MIB-v0.4-Review-Resolution.md` for the current procedure and remaining empirical requirements.
+> The v0.1 examples below remain legacy material. Implementation 0.14.0 also executes generated v0.2 Programs at every rung. Use `same-model-generated.stub.json` for engineering validation or `same-model-generated.external-http.json` for real fixed-model calibration. The revised adapter persists completed task transcripts for B1–B3, discards them for B0, and supports observe-time decisions, maintenance, and explicit session boundaries. Optional recent-window and privileged oracle-supported references are separate diagnostics and never enter a release gate. See `MIB-v0.4-Review-Resolution.md` for the current procedure and remaining empirical requirements.
 
 
 **Version:** 0.1-draft  
@@ -71,6 +71,8 @@ memory_truncations = 0
 ```
 
 If the model context window forces B1 truncation, release calibration is ineligible until the Scenario scale/model context configuration is corrected.
+
+In a budgeted experiment (`memory_char_limits.B1` set) B1 is the most recent visible history within the budget: a recency window, not full context. The `full_context` gate, the memory-discriminativeness index and the memory-gap denominators then come from the `additional_baselines.unbounded_reference` arm (B1 without a budget), which must report `memory_truncations = 0`; without that arm they are unassessable. The preflight also requires every bounded arm's selection policy to be able to fill its budget (`memory_pressure.arms.*.budget_binds`), so that B2/B3 differ from B1 by policy rather than by capacity.
 
 ### B2 — Simple Lexical Retrieval
 

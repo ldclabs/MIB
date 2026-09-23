@@ -7,16 +7,18 @@ import json
 import secrets
 import time
 import uuid
+from collections import defaultdict
 
 import jsonschema
 from dataclasses import asdict
 from .adapter_contract import (ACKNOWLEDGED, CONTRACT_VERSION, AdapterLifecycleError,
                                check_descriptor, digest, require_accepted, required_capabilities)
-from typing import Any
+from typing import Any, Callable
 
-from .evaluator import evaluate_emission_probe, evaluate_probe, recurrence_checks
+from .evaluator import evaluate_emission_probe, evaluate_probe, oracle_match, recurrence_checks
 from .late_sampling import sample_probe_for_delivery
 from .scoring import CONDITION_BY_ABLATION_KIND, instance_key, scenario_score_from_probes
+from .transports import AgentTransportError
 from .types import AgentAdapter, AgentOutput, Observation, ActStep
 from .util import advance_iso_time, utc_now
 from .world import WorldState
@@ -104,9 +106,13 @@ def _virtual_time_for_event(event: dict[str, Any], current: str | None) -> str |
     return current
 
 
-def _tool_result_observation(call_id: str, tool: str, payload: dict[str, Any], virtual_time: str | None) -> Observation:
+def _tool_result_observation(call_id: str, tool: str, payload: dict[str, Any], virtual_time: str | None, task_id: str) -> Observation:
+    # Tool-call IDs only need to be unique within a task, so the observation ID
+    # carries the task as well: a later result must never share an ID with an
+    # earlier one (an Agent that restarts its counter would otherwise see its
+    # new feedback deduplicated against old feedback).
     return Observation(
-        observation_id=f"obs_tool_{call_id}",
+        observation_id=f"obs_tool_{task_id}_{call_id}",
         type="tool_result",
         virtual_time=virtual_time,
         payload=copy.deepcopy(payload),
@@ -146,8 +152,17 @@ def run_condition(
     past_injections: list[tuple[str, str]] | None = None,
     pre_probe_injections: dict[str, list[str]] | None = None,
     close_agent_on_complete: bool = True,
+    agent_factory: Callable[[], Any] | None = None,
+    session_isolation: str = "acknowledged",
+    transport_retries: int = 1,
 ) -> dict[str, Any]:
     """Execute one condition of a Scenario Instance (MIB-Specification §5).
+
+    ``session_isolation="persisted_state"`` makes a session boundary a real
+    boundary: the Runner closes the Agent instance and builds a fresh one from
+    ``agent_factory``, restoring only the string the Agent handed back from
+    ``session_boundary``. ``transport_retries`` bounds retries of a transport
+    failure (never of an Agent answer); each retry is recorded.
 
     ``excluded_event_ids``, ``probe_ids``, ``past_injections``,
     ``pre_probe_injections``, and ``close_agent_on_complete`` exist for
@@ -217,6 +232,17 @@ def run_condition(
         else:
             removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
 
+    # Content-following evidence (MIB-Specification §7.10): in the full
+    # condition, record whether each output would satisfy each declared twin
+    # oracle. The twin run records the same quantity under its own history.
+    cross_oracles: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+    if condition == "full" and ablation is None and probe_ids is None:
+        for a in scenario.get("ablations", []):
+            if a.get("kind") in {"counterfactual_content", "counterfactual_policy"}:
+                for pid, twin_oracle in sorted(((a.get("counterfactual") or {}).get("oracle") or {}).items()):
+                    if pid in set(a.get("probes") or []):
+                        cross_oracles[pid].append((str(a["id"]), twin_oracle))
+
     probes_by_trigger: dict[str, list[dict[str, Any]]] = {}
     for p in scenario.get("probes", []):
         if execution_probe_ids is not None and p["id"] not in execution_probe_ids:
@@ -237,7 +263,11 @@ def run_condition(
     request_counter = 0
     observation_counter = 0
     observation_indices: dict[str, int] = {}
+    observation_ids: dict[str, str] = {}
     operation_usage: dict[str, dict[str, float]] = {}
+    if session_isolation not in {"acknowledged", "persisted_state"}:
+        raise RunnerError(f"unsupported session_isolation: {session_isolation!r}")
+    session_state = {"mode": session_isolation, "boundaries": 0, "persisted_bytes": 0}
 
     contract = {"version": CONTRACT_VERSION, "required_capabilities": required_capabilities(scenario),
                 "protocol": None, "capabilities": {}, "operations": [], "valid": True,
@@ -258,7 +288,21 @@ def run_condition(
         row["calls"] += 1
         row["input_bytes"] += len(json.dumps(kwargs, default=lambda x: asdict(x), ensure_ascii=False).encode())
         try:
-            result = getattr(agent, operation)(**kwargs)
+            attempt = 0
+            while True:
+                try:
+                    result = getattr(agent, operation)(**kwargs)
+                    break
+                except AgentTransportError as exc:
+                    # A transport fault is infrastructure, not Agent behaviour. A
+                    # bounded retry keeps one dropped connection from making a
+                    # whole Instance unassessable; every retry stays on the record.
+                    attempt += 1
+                    if attempt > max(0, int(transport_retries)):
+                        raise
+                    row["transport_retries"] = row.get("transport_retries", 0) + 1
+                    run_warnings.append(f"transport retry {attempt} for {operation} ({kwargs.get('request_id')}): {exc!r}")
+                    time.sleep(min(2.0, 0.2 * attempt))
             if operation in ACKNOWLEDGED:
                 require_accepted(operation, result)
                 record_receipt(operation, "success", request_id=kwargs.get("request_id"),
@@ -328,13 +372,21 @@ def run_condition(
             row = {**row, "weight": 0.0}
         probe_results.append(row)
 
-    def counterfactual_extra(p: dict[str, Any], output: AgentOutput, context: dict[str, Any], score: float) -> dict[str, Any]:
-        """Under swap_parameter, record whether the answer tracked the counterfactual or stayed with the original."""
+    def counterfactual_extra(p: dict[str, Any], output: AgentOutput, context: dict[str, Any], score: float,
+                             eval_results: list[dict[str, Any]]) -> dict[str, Any]:
+        """Under a twin, record tracking/staleness; under full, match against every twin oracle."""
+        if condition == 'full' and p["id"] in cross_oracles:
+            cross = {}
+            for aid, twin_oracle in cross_oracles[p["id"]]:
+                s, results = evaluate_probe(output, {**p, "oracle": twin_oracle}, evaluator_map, context)
+                cross[aid] = oracle_match(s, results)
+            return {"counterfactual_cross": cross}
         if condition != 'counterfactual_content' or p["id"] not in counterfactual_oracles:
             return {}
         original = {**p, "oracle": p.get("oracle") or {}}
         stale_score, _ = evaluate_probe(output, original, evaluator_map, context)
-        return {"counterfactual": {"tracks": score >= 1.0, "stale": stale_score >= 1.0}}
+        return {"counterfactual": {"tracks": score >= 1.0, "stale": stale_score >= 1.0,
+                                   "follows": oracle_match(score, eval_results)}}
 
     def execute_respond_probe(p: dict[str, Any]) -> None:
         started_ns = time.perf_counter_ns()
@@ -348,7 +400,7 @@ def run_condition(
         scored = {**p, "oracle": probe_oracle(p)}
         context = {"world": world, "action_trace": []}
         score, eval_results = evaluate_probe(output, scored, evaluator_map, context)
-        extra = counterfactual_extra(p, output, context, score)
+        extra = counterfactual_extra(p, output, context, score, eval_results)
         traps = sorted(set((scored["oracle"].get("failure_code_by_value") or {}).values()))
         if traps:
             extra["traps"] = traps   # the memory failures this Probe could elicit; eligibility for §7.9 rates
@@ -404,7 +456,7 @@ def run_condition(
                 }
                 trace.append(row)
                 run_action_trace.append({"task_id": task_id, **copy.deepcopy(row)})
-                deliver_observation(_tool_result_observation(step.tool_call_id, step.tool, execution_result.result, virtual_time))
+                deliver_observation(_tool_result_observation(step.tool_call_id, step.tool, execution_result.result, virtual_time, task_id))
                 continue
             if step.type in {"final", "abstention"}:
                 final_step = step
@@ -430,7 +482,7 @@ def run_condition(
         scored = {**p, "oracle": probe_oracle(p)}
         context = {"world": world, "action_trace": trace}
         score, eval_results = evaluate_probe(output, scored, evaluator_map, context)
-        extra = counterfactual_extra(p, output, context, score)
+        extra = counterfactual_extra(p, output, context, score, eval_results)
         recurrence = recurrence_checks(trace, scored.get("oracle") or {})
         failure = scored.get('oracle', {}).get('experienced_failure')
         if failure:
@@ -505,6 +557,7 @@ def run_condition(
         ))
         pending_emission_probes.append((p, index))
         observation_indices[p['id']] = index
+        observation_ids[p['id']] = wire_id("obs", p['id'])
 
     def execute_probe(p: dict[str, Any]) -> None:
         sampled, variant_digest = sample_probe_for_delivery(scenario=scenario, probe=p, repetition=repetition)
@@ -569,12 +622,40 @@ def run_condition(
     def score_pending_emission_probes() -> None:
         for p, index in pending_emission_probes:
             scored = {**p, "oracle": probe_oracle(p)}
-            score, eval_results = evaluate_emission_probe(scored, evaluator_map, emission_log, index, observation_indices)
+            score, eval_results = evaluate_emission_probe(scored, evaluator_map, emission_log, index, observation_indices, observation_ids)
             extra = {}
-            if p['id'] in counterfactual_oracles:
-                stale, _ = evaluate_emission_probe(p, evaluator_map, emission_log, index, observation_indices)
-                extra['counterfactual'] = {'tracks': score >= 1.0, 'stale': stale >= 1.0}
+            if condition == 'counterfactual_content' and p['id'] in counterfactual_oracles:
+                stale, _ = evaluate_emission_probe(p, evaluator_map, emission_log, index, observation_indices, observation_ids)
+                extra['counterfactual'] = {'tracks': score >= 1.0, 'stale': stale >= 1.0, 'follows': oracle_match(score, eval_results)}
+            elif condition == 'full' and p['id'] in cross_oracles:
+                extra['counterfactual_cross'] = {}
+                for aid, twin_oracle in cross_oracles[p['id']]:
+                    s, results = evaluate_emission_probe({**p, 'oracle': twin_oracle}, evaluator_map, emission_log, index,
+                                                         observation_indices, observation_ids)
+                    extra['counterfactual_cross'][aid] = oracle_match(s, results)
             append_probe_result(p, None, score, eval_results, 0.0, extra=extra)
+
+    def apply_conditional_probes() -> None:
+        """``conditional_on`` (measurement 0.5.0): selective behavior earns credit
+        only with its declared prerequisite. Abstaining about a withdrawn fact is
+        withdrawal compliance only when the retained neighbour is still recalled;
+        otherwise a system that remembers nothing would pass. The denominator is
+        unchanged: the Probe keeps its weight and scores zero."""
+        by_id = {r["probe_id"]: r for r in probe_results}
+        for p in scenario.get("probes", []):
+            row = by_id.get(p["id"])
+            required = list(p.get("conditional_on") or [])
+            if not required or row is None or row.get("outcome") != "scored":
+                continue
+            met = all((q := by_id.get(pid)) is not None and q.get("outcome") == "scored"
+                      and oracle_match(float(q.get("score", 0.0)), q.get("evaluator_results") or []) for pid in required)
+            row["conditional_on"] = {"probes": required, "met": met}
+            if not met and float(row.get("score", 0.0)) > 0:
+                row["unconditional_score"] = row["score"]
+                row["score"] = 0.0
+                row["failure_codes"] = sorted(set(row.get("failure_codes") or []) | {"prerequisite_failed"})
+                if isinstance(row.get("counterfactual"), dict):
+                    row["counterfactual"]["tracks"] = False
 
     def maintain(event: dict[str, Any]) -> None:
         declared = contract["capabilities"].get("maintenance")
@@ -648,7 +729,7 @@ def run_condition(
         return base, after
 
     def process_event(event: dict[str, Any], *, injected: bool = False) -> None:
-        nonlocal virtual_time
+        nonlocal agent, virtual_time
         virtual_time = _virtual_time_for_event(event, virtual_time)
         if not injected:
             # World updates apply in every condition: memory is the only treatment variable.
@@ -661,6 +742,7 @@ def run_condition(
             return
         if event["type"] in _HARNESS_EVENT_TYPES:
             return
+        observation_ids[event['id']] = wire_id("obs", event['id'])
         index = deliver_observation(_project_observation(event, actor_by_id, virtual_time, replacements.get(str(event["id"])),
                                    observation_id=wire_id("obs", event['id']),
                                    tool_call_id=wire_id("call", event['tool_call_id']) if event.get('tool_call_id') else None))
@@ -671,6 +753,20 @@ def run_condition(
             result = invoke('session_boundary', run_id=run_id, request_id=req_id(), virtual_time=virtual_time)
             if not isinstance(result, dict) or result.get('accepted') is not True:
                 raise RunnerError('Agent did not acknowledge the required session boundary')
+            session_state["boundaries"] += 1
+            if session_isolation == "persisted_state":
+                # Only the returned record crosses the boundary (MIB-Specification §5.2).
+                if agent_factory is None:
+                    raise RunnerError("persisted_state session isolation requires an Agent factory")
+                state = result.get("persisted_state")
+                if state is not None and not isinstance(state, str):
+                    raise AdapterLifecycleError("session_boundary: persisted_state must be a string")
+                session_state["persisted_bytes"] += len(state.encode("utf-8")) if state is not None else 0
+                close_agent()
+                agent = agent_factory()
+                invoke("reset", run_id=run_id, seed=seed, virtual_time=virtual_time)
+                if state is not None:
+                    invoke("restore", run_id=run_id, request_id=req_id(), state=state, virtual_time=virtual_time)
 
     try:
         # Reset inside the guarded region: any failure after this point must
@@ -698,6 +794,7 @@ def run_condition(
                     deliver_injection(content)
                 execute_probe(p)
         score_pending_emission_probes()
+        apply_conditional_probes()
 
         expected_probe_ids = {
             p["id"] for p in scenario.get("probes", [])
@@ -763,6 +860,7 @@ def run_condition(
         **({"ablation_tolerance": float(ablation["tolerance"])} if ablation and ablation.get("tolerance") is not None else {}),
         "repetition": repetition,
         "agent_seed": seed,
+        **({"session_isolation": dict(session_state)} if session_state["boundaries"] else {}),
         "status": status,
         "started_at": started,
         "completed_at": completed,
@@ -789,11 +887,16 @@ def run_condition(
     return result
 
 
-def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: bool = True, repetition: int = 0, agent_seed: int | str | None = None) -> list[dict[str, Any]]:
-    runs = [run_condition(scenario=scenario, agent=agent_factory(), condition="full", repetition=repetition, agent_seed=agent_seed)]
+def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: bool = True, repetition: int = 0,
+                 agent_seed: int | str | None = None, skip_ablation_kinds: set[str] | frozenset[str] = frozenset(),
+                 session_isolation: str = "acknowledged") -> list[dict[str, Any]]:
+    runs = [run_condition(scenario=scenario, agent=agent_factory(), condition="full", repetition=repetition, agent_seed=agent_seed,
+                          agent_factory=agent_factory, session_isolation=session_isolation)]
     if include_ablations:
         for a in scenario.get("ablations", []):
             if a.get("method") not in {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}:
+                continue
+            if a.get("kind") in skip_ablation_kinds:
                 continue
             runs.append(run_condition(
                 scenario=scenario,
@@ -802,5 +905,7 @@ def run_scenario(*, scenario: dict[str, Any], agent_factory, include_ablations: 
                 ablation=a,
                 repetition=repetition,
                 agent_seed=agent_seed,
+                agent_factory=agent_factory,
+                session_isolation=session_isolation,
             ))
     return runs

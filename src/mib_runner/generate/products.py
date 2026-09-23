@@ -23,7 +23,7 @@ TOOL = {'id':'workspace','version':'1.0.0','visibility':'agent','simulator_bindi
 
 
 class ProductProgram(Program):
-    VERSION='0.1.0'
+    VERSION='0.2.0'
     SUITE='cross'
     DIMENSIONS=['retention_retrieval']
     WEIGHTS={'retention_retrieval':1.0}
@@ -95,7 +95,7 @@ class ProductProgram(Program):
                     'constraints':['Use the requested actor and subject only. Save a local draft; do not send messages or book anything.']},
                 'oracle':{'world_assertions':[{'path':'/workspace','operator':'eq','value':{'workspace_required':True,
                     'selected_workspace':subject,'edited':True,'saved':True,'last_error':None,'value':expected[actor]}}]},
-                'evaluators':['eval-world'],'dimensions':self.DIMENSIONS,'weight':1})
+                'evaluators':['eval-world-strict'],'dimensions':self.DIMENSIONS,'weight':1})
         for index,actor in enumerate(expected):probe(actor,index)
         if self.CASE=='usage':
             boundary_start=len(b.events)

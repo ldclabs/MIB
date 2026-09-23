@@ -263,6 +263,12 @@
         },
         "interval_scope": {
           "type": "string"
+        },
+        "content_following_effect": {
+          "type": [
+            "number",
+            "null"
+          ]
         }
       }
     },
@@ -782,6 +788,7 @@
               "adapter_error",
               "tool_error",
               "evaluator_error",
+              "prerequisite_failed",
               "custom"
             ]
           }
@@ -879,6 +886,7 @@
               "epistemic_memory",
               "experience_memory",
               "skill_learning_transfer",
+              "procedural_memory",
               "selective_forgetting",
               "prospective_self_memory",
               "causal_memory_impact"
@@ -922,6 +930,7 @@
               "adapter_error",
               "tool_error",
               "evaluator_error",
+              "prerequisite_failed",
               "custom"
             ]
           }
@@ -948,6 +957,9 @@
             },
             "stale": {
               "type": "boolean"
+            },
+            "follows": {
+              "type": "boolean"
             }
           }
         },
@@ -968,7 +980,36 @@
           "items": {
             "type": "string"
           },
-          "description": "Memory failures this Probe's Oracle could elicit (eligibility for \u00a77.9 rates)."
+          "description": "Memory failures this Probe's Oracle could elicit (eligibility for §7.9 rates)."
+        },
+        "counterfactual_cross": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "description": "Full condition only: whether the output carries each declared twin oracle's value."
+        },
+        "conditional_on": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "probes",
+            "met"
+          ],
+          "properties": {
+            "probes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "met": {
+              "type": "boolean"
+            }
+          }
+        },
+        "unconditional_score": {
+          "$ref": "#/$defs/Score01"
         }
       },
       "allOf": [
@@ -1177,7 +1218,7 @@
               }
             }
           },
-          "description": "Lived-trial outcomes (\u00a75.3, \u00a77.9): learning-curve samples, never scores."
+          "description": "Lived-trial outcomes (§5.3, §7.9): learning-curve samples, never scores."
         },
         "reference_ablation_id": {
           "type": "string"
@@ -1185,6 +1226,33 @@
         "adapter_contract": {
           "type": "object",
           "description": "Versioned evaluator lifecycle receipts; verify-score enforces semantic consistency."
+        },
+        "session_isolation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "boundaries",
+            "persisted_bytes"
+          ],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "acknowledged",
+                "persisted_state"
+              ]
+            },
+            "boundaries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "persisted_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "Session boundaries of this run. Under persisted_state the Runner rebuilt the Agent and restored only persisted_bytes of state."
         }
       }
     },
@@ -1295,6 +1363,38 @@
           "items": {
             "type": "object"
           }
+        },
+        "visible_history_chars": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Participant-visible history characters of the Instance (content, payloads, task goals)."
+        },
+        "session_isolation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "boundaries",
+            "persisted_bytes"
+          ],
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "acknowledged",
+                "persisted_state"
+              ]
+            },
+            "boundaries": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "persisted_bytes": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "description": "Session boundaries of this run. Under persisted_state the Runner rebuilt the Agent and restored only persisted_bytes of state."
         }
       }
     },
@@ -1366,6 +1466,7 @@
             "epistemic_memory",
             "experience_memory",
             "skill_learning_transfer",
+            "procedural_memory",
             "selective_forgetting",
             "prospective_self_memory",
             "causal_memory_impact"
@@ -1412,6 +1513,7 @@
           "epistemic_memory",
           "experience_memory",
           "skill_learning_transfer",
+          "procedural_memory",
           "selective_forgetting",
           "prospective_self_memory",
           "causal_memory_impact"
@@ -1430,6 +1532,7 @@
           "epistemic_memory",
           "experience_memory",
           "skill_learning_transfer",
+          "procedural_memory",
           "selective_forgetting",
           "prospective_self_memory",
           "causal_memory_impact"
@@ -1448,6 +1551,7 @@
           "epistemic_memory",
           "experience_memory",
           "skill_learning_transfer",
+          "procedural_memory",
           "selective_forgetting",
           "prospective_self_memory",
           "causal_memory_impact"
@@ -1742,6 +1846,7 @@
               "epistemic_memory",
               "experience_memory",
               "skill_learning_transfer",
+              "procedural_memory",
               "selective_forgetting",
               "prospective_self_memory",
               "causal_memory_impact"
@@ -1856,6 +1961,7 @@
                   "epistemic_memory",
                   "experience_memory",
                   "skill_learning_transfer",
+                  "procedural_memory",
                   "selective_forgetting",
                   "prospective_self_memory",
                   "causal_memory_impact"

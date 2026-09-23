@@ -7,12 +7,6 @@ from typing import Any
 
 import jsonschema
 
-from .experimental.transfer import (
-    TRANSFER_EXTENSION,
-    TransferAnnotationError,
-    parse_transfer_support,
-    validate_transfer_support,
-)
 
 
 # What the reference Runner can execute.  The schema is deliberately wider (it
@@ -126,6 +120,11 @@ def validate_scenario(
                 for expected in emission.get('expected') or []:
                     if expected.get('after_event') not in timeline_ids | probe_ids:
                         errors.append(f"semantic:{p.get('id')}: lifecycle emission trigger does not resolve")
+                    if expected.get('commitment_event') is not None and expected['commitment_event'] not in timeline_ids:
+                        errors.append(f"semantic:{p.get('id')}: lifecycle commitment_event does not resolve")
+        for required in p.get("conditional_on") or []:
+            if required not in probe_ids or required == p.get("id"):
+                errors.append(f"semantic:{p.get('id')}: conditional_on must reference another Probe")
         for assertion in oracle.get("world_assertions") or []:
             if assertion.get("operator") not in RUNNER_WORLD_OPERATORS:
                 errors.append(f"unsupported:{p.get('id')}: world assertion operator {assertion.get('operator')!r}")
@@ -166,7 +165,11 @@ def validate_scenario(
                 errors.append(f"unsupported:{e.get('id')}: normalization {cfg.get('normalization')!r}")
             if cfg.get("match", "contains") not in RUNNER_MATCH_MODES:
                 errors.append(f"unsupported:{e.get('id')}: match mode {cfg.get('match')!r}")
+        if e.get("type") == "structured" and cfg.get("disclosure_scope", "output") not in {"output", "withdrawn"}:
+            errors.append(f"unsupported:{e.get('id')}: disclosure_scope {cfg.get('disclosure_scope')!r}")
         if e.get("type") == "composite":
+            if "require_all" in cfg and not isinstance(cfg["require_all"], bool):
+                errors.append(f"semantic:{e.get('id')}: require_all must be boolean")
             for c in e.get("components", []):
                 if c.get("evaluator") not in evaluator_ids:
                     errors.append(f"semantic:{e.get('id')}: unresolved composite evaluator {c.get('evaluator')}")
@@ -316,6 +319,9 @@ def _validate_transfer_extension(
     transfer_schema: dict[str, Any] | None,
     require_transfer_annotations: bool,
 ) -> None:
+    # Experimental result family: imported only by the validation step that
+    # needs it, never by the core measurement path at import time.
+    from .experimental.transfer import TRANSFER_EXTENSION, TransferAnnotationError, parse_transfer_support, validate_transfer_support
     try:
         support = parse_transfer_support(scenario)
     except TransferAnnotationError as exc:

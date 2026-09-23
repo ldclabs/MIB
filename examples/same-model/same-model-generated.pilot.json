@@ -19,15 +19,15 @@
   "agent": {
     "system_prompt": "../../prompts/same-model-agent-v0.2.txt",
     "reasoning_policy": "../../prompts/reasoning-policy-v0.1.txt",
-    "retrieval_top_k": 4,
-    "structured_top_k": 10,
-    "structured_salient_k": 6,
+    "retrieval_top_k": 30,
+    "structured_top_k": 24,
+    "structured_salient_k": 8,
     "parse_retries": 1,
     "memory_char_limits": {
-      "B0": 8192,
-      "B1": 8192,
-      "B2": 8192,
-      "B3": 8192
+      "B0": 3500,
+      "B1": 3500,
+      "B2": 3500,
+      "B3": 3500
     },
     "observe_decisions": true,
     "maintenance_decisions": true,
@@ -64,10 +64,10 @@
       "causal_memory_benefit_min": 0.2
     },
     "additional_baselines": {
-      "recent_window": 12,
-      "max_memory_chars": 8192,
+      "unbounded_reference": true,
       "oracle_reference": true
     },
-    "purpose": "pilot"
+    "purpose": "pilot",
+    "min_memory_pressure": 4
   }
 }

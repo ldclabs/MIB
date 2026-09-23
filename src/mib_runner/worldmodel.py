@@ -105,6 +105,14 @@ class WorldModel:
     def __init__(self) -> None:
         self.sources: dict[str, Source] = {}
         self.assertions: list[Assertion] = []
+        # Live-row cache keyed by record length and exclusion set. Long ladders
+        # evaluate thousands of queries over thousands of assertions; withdrawal
+        # closure and ordering are identical for every query over the same rows.
+        self._live_cache: dict[tuple[int, frozenset[str]], tuple[list[Assertion], set[str]]] = {}
+
+    def invalidate(self) -> None:
+        """Drop cached live rows after mutating assertions in place."""
+        self._live_cache = {}
 
     # ------------------------------------------------------------------ build
     def add_source(self, source: Source) -> Source:
@@ -131,10 +139,13 @@ class WorldModel:
             if original is None or original.seq >= assertion.seq:
                 raise WorldModelError('derived_from must reference an earlier assertion')
         self.assertions.append(assertion)
+        self._live_cache = {}
         return assertion
 
     def copy(self) -> "WorldModel":
-        return copy.deepcopy(self)
+        twin = copy.deepcopy(self)
+        twin._live_cache = {}
+        return twin
 
     def with_value(self, event_id: str, value: Any) -> "WorldModel":
         """A counterfactual twin in which one assertion carries another value."""
@@ -176,16 +187,21 @@ class WorldModel:
         and asserts nothing itself.  Withholding the retraction restores the
         assertion, which is exactly what its relevant-memory Ablation tests.
         """
-        gone = set(exclude)
-        rows = sorted((a for a in self.assertions if a.event_id not in gone), key=lambda a: a.seq)
-        retracted = self._withdrawn(rows)
+        rows, retracted = self._rows(exclude)
         return [a for a in rows if a.event_id not in retracted and a.kind not in RETRACTING_KINDS]
+
+    def _rows(self, exclude: Iterable[str]) -> tuple[list[Assertion], set[str]]:
+        key = (len(self.assertions), frozenset(exclude))
+        hit = self._live_cache.get(key)
+        if hit is None:
+            rows = sorted((a for a in self.assertions if a.event_id not in key[1]), key=lambda a: a.seq)
+            hit = (rows, self._withdrawn(rows))
+            self._live_cache[key] = hit
+        return hit
 
     def retracted_values(self, subject: str, attribute: str, exclude: Iterable[str] = ()) -> list[Any]:
         """Values withdrawn by live retractions: forbidden in an Oracle, since using them is the failure."""
-        gone = set(exclude)
-        rows = [a for a in self.assertions if a.event_id not in gone]
-        retracted = self._withdrawn(rows)
+        rows, retracted = self._rows(exclude)
         out: list[Any] = []
         for a in rows:
             if a.event_id in retracted and (a.subject, a.attribute) == (subject, attribute) and a.value is not None and a.value not in out:
@@ -398,6 +414,7 @@ def oracle_from_result(
     other_values: Iterable[Any] = (),
     historical: bool = False,
     codes: dict[Any, str] | None = None,
+    withdrawn: Iterable[Any] = (),
 ) -> dict[str, Any]:
     """Turn a query result into a Probe Oracle.
 
@@ -405,6 +422,16 @@ def oracle_from_result(
     other value ever mentioned for the attribute becomes ``forbidden``, so a
     stale, superseded, or merely-asked-about value is detected as such.
     """
+    withdrawn = [v for v in withdrawn if v is not None]
+    def withdrawn_forms(accepted: list[Any]) -> dict[str, Any]:
+        # Withdrawn values are scanned across the whole visible output; ordinary
+        # forbidden values only in the answer (disclosure_scope "withdrawn").
+        out = []
+        for v in withdrawn:
+            for f in forms(v):
+                if f not in accepted and f not in out and str(f).casefold() != "unknown":
+                    out.append(f)
+        return {"withdrawn": out} if out else {}
     if result.kind == "value":
         accepted = list(forms(result.value))
         forbidden: list[str] = []
@@ -419,6 +446,7 @@ def oracle_from_result(
             "accepted": accepted,
             **({"forbidden": forbidden} if forbidden else {}),
             **_codes_block(forbidden, forms, codes),
+            **withdrawn_forms(accepted),
         }
     if result.kind == "unknown":
         forbidden = []
@@ -430,6 +458,7 @@ def oracle_from_result(
             "expected_status": "unknown", "accepted": ["unknown"],
             **({"forbidden": forbidden} if forbidden else {}),
             **_codes_block(forbidden, forms, codes),
+            **withdrawn_forms(["unknown"]),
         }
     if result.kind == "status":
         status = result.status or "resolved"

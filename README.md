@@ -155,7 +155,7 @@ MIB-Core evaluates seven capability dimensions in v0.2:
 | **Withdrawal Compliance**    | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
 
 Whether memory made a causal difference is no longer a seventh dimension. It is a set of
-causal diagnostics reported beside the score. Fixed-opportunity joint full/twin success gates
+causal diagnostics reported beside the score. A fixed-opportunity content-following effect gates
 whether the score counts as a memory score at all (see below).
 
 Future profiles will expand first-class evaluation of:
@@ -172,7 +172,9 @@ Privacy Boundaries
 
 MIB reports capability and causal evidence separately. Relevant-history ablation asks whether withholding the past changes later performance. Content twins ask whether answers follow changed historical content. Policy twins change a latent workflow convention consistently in acquisition feedback and future verification; they test learned behavior under matched rule worlds.
 
-The revised development Profiles require evidence in **every weighted dimension**. The gate uses joint success on a fixed set of full/twin probe pairs, retaining incorrect and missing opportunities in the denominator. Repetitions stay inside each independent Instance. Each dimension needs five complete Instances, 100% valid-pair coverage, and an Instance-cluster bootstrap lower bound of at least 0.5. These are provisional development thresholds, not empirical proof of general memory ability; degenerate intervals are explicitly flagged.
+The revised development Profiles require evidence in **every weighted dimension**. The gate uses the **content-following effect** on a fixed set of full/twin probe pairs: how often the answer carries the twin value under the twin history, minus how often it already carried that value under the original history. Missing and invalid opportunities stay in the denominator, and accuracy never selects them, so a system with no memory or a constant answer scores zero while an imperfect system that follows its history can still pass. Repetitions stay inside each independent Instance. Each dimension needs five complete Instances, 100% valid-pair coverage, and an Instance-cluster bootstrap lower bound of at least 0.2. Joint full/twin success is reported as a diagnostic. These are provisional development thresholds, not empirical proof of general memory ability; degenerate intervals are explicitly flagged.
+
+Withdrawal, abstention and status answers earn credit only together with the recall they depend on, the cancelled-commitment Program keeps a second commitment active, and self-rule compliance is conjunctive. A policy that remembers nothing (`GrammarOnlyAgent`) therefore scores 0 in every Core and Expanded dimension.
 
 Diagnostics include Memory Benefit, Content Tracking, matched-control Memory Harm, Irrelevant Stability, Negative Transfer, Consolidation Benefit, first-attempt behavior, and learning curves. Full-run memory-related error patterns are descriptive; an error label alone does not prove memory caused the error.
 
@@ -445,6 +447,8 @@ Track B asks:
 
 > **How memory-capable is this complete agent?**
 
+At the 0 / 20 / 100 development ladder the capability rung shows about 1,000–1,500 visible characters, which any current model reads from context; the Capability Card states that range with the score, and `MIB-Core-0.2-Horizon-Dev` reads the score at about 90,000 visible characters. Long visible history is the only pressure the Runner can put on an integrated Agent.
+
 Track A and Track B must not share one ranking.
 
 ---
@@ -488,11 +492,35 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB uses scenario format v0.2, measurement revision **0.4.0**, and implementation **0.13.0**.
+MIB uses scenario format v0.2, measurement revision **0.5.0**, and implementation **0.14.0**.
 
-Pack report **0.5.0** adds explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
+Pack report **0.6.0** adds content-following evidence, conditional-credit records and the scheduled-intervention policy; report 0.5.0 added explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
 
-The September 23 corrections are implemented in measurement revision **0.4.0**:
+The second September 23 review is implemented in measurement revision **0.5.0** ([review](docs/reviews/MIB-Design-Review-2026-09-23b.md), [ledger](docs/harness/MIB-v0.5-Review-Resolution.md)):
+
+- scored future tasks no longer carry visible role labels such as "held-out" or "practice"; items are opaque;
+- zero-memory policies earn no structural floor: conditional credit for withdrawal/abstention/status, a second active commitment in the cancellation Program, conjunctive self-rule compliance, and zero-weight near-trigger diagnostics;
+- the dependence gate uses the content-following effect instead of joint twin success, which behaved as an accuracy threshold with little power at five seeds;
+- reminders follow one documented contract; structured reminders may reference the visible commitment observation, and a premature reminder is penalized once;
+- only withdrawn values are scanned across the whole output, so an explanation that recalls history is not penalized and retention curves do not measure verbosity;
+- twin values are real changes, identical across rungs; temporal and epistemic histories and both procedural series gain twin opportunities;
+- procedural applicability transfers a series-scoped recipe to new families, so a family-to-recipe table no longer solves it;
+- the questioning control uses a matched natural placebo and a sampled alternative; respond-probe order is counterbalanced by seed;
+- interventions run only at the canonical rung, and the no-maintenance control only for Agents that declare maintenance (Core Dev: 864 to 377 runs);
+- same-model experiments report memory pressure, and a bounded non-smoke experiment whose budget does not bind is refused; the pilot runs at 100 interference events with a 3,500-character budget;
+- an evaluator-private surface bank changes wording without changing Oracles and defeats public-grammar parsers; core modules no longer import experimental result families.
+
+A third review of the same revision, folded into it before release, closed the remaining zero-memory floor and the half-finished pressure regime:
+
+- workflow Probes are conjunctive: a policy that only follows corrective feedback inside the task (`RecoverOnlyAgent`) scored 50 on both procedural dimensions and now scores 0;
+- experience and skill are one `procedural_memory` dimension (six dimensions; weights 0.17/0.17/0.20/0.20/0.14/0.12);
+- the same-model release gate and memory-gap denominators use an unbounded reference arm when B1 is bounded, and the preflight refuses arms whose `top_k` binds before the budget (the pilot's B2 used about 16% of its budget);
+- the Session Profile enforces boundaries: the Runner discards the Agent instance and restores only the state it handed back, and reports its size;
+- the epistemic authority-resolution branch alternates by seed instead of a Bernoulli draw that left every Core seed unresolved;
+- the Capability Card states the visible history at the capability rung, and the `Horizon-Dev` Profile reads the score at about 90,000 visible characters;
+- `diagnostics: "off"` runs the headline alone (Core Dev 377 to 182 conditions, identical results); transport faults are retried once and recorded; surface banks are validated for readability; scored prompts are checked for value leakage.
+
+The first September 23 corrections were implemented in measurement revision **0.4.0**:
 
 - exact scalar answers reject negation and candidate enumeration;
 - fixed-opportunity joint twins replace correctness-selected admission;
@@ -511,7 +539,7 @@ The earlier September corrections remain in place:
 - required scoring fields keep a fixed denominator;
 - participant IDs are opaque; prospective scoring checks the complete declared lifecycle;
 - noise no longer reveals an answer through exclusion from a public value pool;
-- workflow recipes are instance-specific, learned through actual feedback, and scored on the first attempt and eventual completion;
+- workflow recipes are instance-specific, learned through actual feedback, and scored conjunctively on the first attempt and eventual completion;
 - content/policy twins cover all seven dimensions, with counts and eligibility reported per dimension;
 - scoring, paired comparison, and policy verification share the same aggregation;
 - task experience persists across task completion in the fixed-model memory conditions;
@@ -526,7 +554,7 @@ The extended same-model smoke run is an engineering check. **Real fixed-model ca
 
 The hosted external-Agent service accepts Track B. Track A uses the evaluator-owned same-model harness. Linux process isolation and evaluator-private packs remain environmental requirements for their respective tests.
 
-See [the specification](docs/MIB-Specification.md) and [the current review resolution ledger](docs/harness/MIB-v0.4-Review-Resolution.md) for exact semantics, verification evidence, and remaining empirical work. Earlier example artifacts retain their original version identity; new and old measurement revisions are not interchangeable.
+See [the specification](docs/MIB-Specification.md) and [the current review resolution ledger](docs/harness/MIB-v0.5-Review-Resolution.md) for exact semantics, verification evidence, and remaining empirical work. Earlier example artifacts retain their original version identity; new and old measurement revisions are not interchangeable.
 
 ---
 
@@ -631,9 +659,9 @@ mib verify /tmp/mib-core-report.json
 mib compare /tmp/mib-agent-a.json /tmp/mib-agent-b.json
 ```
 
-The pilot fixes seven mechanisms, one rung, five independent seeds, one repetition, and a common 8,192-character context budget. Business-model observation decisions use the public `environment_event` type; every observation still reaches memory formation. It is not release calibration. The existing `.stub.json` and `.external-http.json` configurations cover smoke and full calibration respectively. Small pilot results determine the next preregistered sample plan; they do not establish general superiority.
+The pilot fixes seven mechanisms, one rung (100 interference events), five independent seeds, one repetition, and a common 3,500-character context budget; the median visible history is about 4.2 times that budget, and the preflight refuses a bounded experiment whose budget does not bind. Business-model observation decisions use the public `environment_event` type; every observation still reaches memory formation. It is not release calibration. The existing `.stub.json` and `.external-http.json` configurations cover smoke and full calibration respectively. Small pilot results determine the next preregistered sample plan; they do not establish general superiority.
 
-The Core fixture examples retained from previous revisions keep their original source/version identity. New validation evidence must name measurement revision 0.4.0; old reports require their matching executable bundle.
+The Core fixture examples retained from previous revisions keep their original source/version identity. New validation evidence must name measurement revision 0.5.0 (see `examples/validation/measurement-0.5.0.json`); old reports require their matching executable bundle.
 
 
 Install the reference implementation:
