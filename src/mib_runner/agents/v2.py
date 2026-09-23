@@ -261,6 +261,7 @@ class StructuredMemoryAgent(_ActPolicies):
         if not m:
             return []
         name = m.group("name")
+        emissions = []
         for o in self._memory():
             if not o.content:
                 continue
@@ -272,8 +273,8 @@ class StructuredMemoryAgent(_ActPolicies):
                 if any((x.content or '').casefold() == cancellation for x in memories[position + 1:]):
                     continue
                 self.fired.add(o.observation_id)
-                return [{"type": "reminder", "content": f"Reminder: ask {name} about the {c.group('topic')}."}]
-        return []
+                emissions.append({"type": "reminder", "content": f"Reminder: ask {name} about the {c.group('topic')}."})
+        return emissions
 
     def maintain(self, *, run_id: str, request_id: str, budget: str | None = None, virtual_time: str | None = None) -> dict[str, Any]:
         return {"accepted": True, "consolidated": len(self.observations)}
@@ -356,6 +357,21 @@ class StructuredMemoryAgent(_ActPolicies):
                      and 'required_recipe' in o.payload and o.observation_id not in self.task_results.get(task_id, set())
                      and (getattr(self, 'overgeneralizes', False) or (family and o.payload.get('family') == family.group(1)))] if self.learns else []
             recipe = known[0 if getattr(self, 'overgeneralizes', False) else -1]['required_recipe'] if known else None
+            if self.learns and not getattr(self, 'overgeneralizes', False) and family:
+                # Public feature records plus actual feedback; no generator
+                # recipe or oracle is consulted by this composition fixture.
+                records = {o.payload['family']: o.payload['flags'] for o in self._memory()
+                    if isinstance(o.payload, dict) and o.payload.get('format') == 'mib.feature-recipe/1'}
+                flags = records.get(family.group(1))
+                if flags is not None:
+                    bindings = {}
+                    for o in self._memory():
+                        payload = o.payload if isinstance(o.payload, dict) else {}
+                        trained = records.get(payload.get('family'))
+                        learned = payload.get('required_recipe')
+                        if trained is not None and sum(trained) == 1 and isinstance(learned, list) and len(learned) == 1:
+                            bindings[trained.index(True)] = learned[0]
+                    recipe = [bindings[i] for i, enabled in enumerate(flags) if enabled and i in bindings]
             step = self._workflow(task_id, state, recipe, self.recovers)
         elif any(n.startswith("deployment.") for n in names):
             if any("must never run migrations" in (o.content or "").lower() for o in self._memory()):

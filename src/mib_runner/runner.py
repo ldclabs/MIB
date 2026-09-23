@@ -749,6 +749,7 @@ def run_condition(
     # An infrastructure failure on any of them is still a failed run.
     status = "invalid" if not contract["valid"] else ("failed" if any(p["outcome"] == "execution_failure" for p in probe_results) else "succeeded")
     instance = scenario.get("instantiation") or {}
+    from .dependence import counterfactual_plan
     result = {
         "run_id": run_id,
         "scenario_instance_id": instance_key(scenario),
@@ -769,6 +770,7 @@ def run_condition(
         "probe_results": probe_results,
         **({"task_results": task_results} if task_results else {}),
         "validity": {"causal_pair_valid": contract["valid"], "runner_valid": contract["valid"], "notes": [], "probe_input_digests": probe_variant_digests,
+                     "counterfactual_plan": counterfactual_plan(scenario),
                      "instance_spec_digest": hashlib.sha256(json.dumps(scenario, sort_keys=True, ensure_ascii=False).encode()).hexdigest()},
         **({"warnings": run_warnings} if run_warnings else {}),
         "adapter_contract": contract,

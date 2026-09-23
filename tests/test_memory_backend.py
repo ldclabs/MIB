@@ -2,6 +2,7 @@ import copy
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 import pytest
 
@@ -150,6 +151,26 @@ def config(tmp_path, url):
     path=tmp_path/'experiment.json';path.write_text(json.dumps(value));return path
 
 
+def test_generated_backend_execution_preserves_each_rung_in_frozen_schedule(server, tmp_path):
+    url, _ = server
+    path = config(tmp_path, url)
+    cfg = json.loads(path.read_text())
+    profile = json.loads((BASE / 'profiles/MIB-Core-0.2-Dev.json').read_text())
+    profile['programs'] = [{'id': 'mib.recall.v1'}]
+    profile['dimensions'] = {'retention_retrieval': {'weight': 1}}
+    Path(cfg['profile']).write_text(json.dumps(profile))
+    cfg['execution']['include_ablations'] = False
+    path.write_text(json.dumps(cfg))
+    report = run_backend_benchmark(path, model_client=Model())
+    assert verify_backend_report(report)['valid']
+    assert len(report['experiment_lock']['episode_plan']) == len(report['schedule']) == 3
+    for child in report['reports'].values():
+        assert child['coverage']['overall'] == 1
+        assert len(child['retention']) == 1 and len(child['retention'][0]['rungs']) == 3
+    report['schedule'].pop()
+    assert not verify_backend_report(report)['valid']
+
+
 @pytest.mark.parametrize('reject_maintenance', [False, True])
 def test_executable_backend_experiment_verifies_and_preserves_failed_maintenance(server, tmp_path, reject_maintenance):
     url,state=server
@@ -157,7 +178,7 @@ def test_executable_backend_experiment_verifies_and_preserves_failed_maintenance
     report=run_backend_benchmark(config(tmp_path,url),model_client=Model())
     result=verify_score(report)
     assert result['valid'],result
-    assert report['reports']['candidate']['report_version']=='0.4.0'
+    assert report['reports']['candidate']['report_version']=='0.5.0'
     assert report['total_cost'] is None and report['accounting_complete'] is False
     if not reject_maintenance:
         assert report['fairness_audit']['valid'], report['fairness_audit']

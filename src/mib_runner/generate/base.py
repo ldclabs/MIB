@@ -217,6 +217,49 @@ class ScenarioBuilder:
         self.ablations.append(ablation)
 
     # ---------------------------------------------------------------- derive
+    def _interleave_history(self) -> None:
+        """Remove the maintenance/prefix shortcut without changing semantic order.
+
+        New core Programs mix noise throughout acquisition. Maintenance is an
+        ordinary scheduled boundary inside acquisition, not a relevance label.
+        Original information-event times and the future checkpoint stay fixed
+        across rungs. Programs with their own streaming schedule retain it.
+        """
+        if self.program_version != '0.4.0' or self.program_id in {'mib.interleaved_recall.v1', 'mib.relearning.v1'}:
+            return
+        checkpoint = next((i for i, e in enumerate(self.events) if e['type'] == 'checkpoint'), None)
+        if checkpoint is None:
+            return
+        head, tail = self.events[:checkpoint], self.events[checkpoint:]
+        noise = [e for e in head if e.get('stage') == 'interference']
+        maintenance = [e for e in head if e['type'] in {'maintenance_window', 'session_boundary'}]
+        ordinary = [e for e in head if e.get('stage') != 'interference'
+                    and e['type'] not in {'maintenance_window', 'session_boundary'}]
+        if len(ordinary) < 2 or not maintenance:
+            return
+        rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, 'schedule'))
+        cut = rng.randrange(1, len(ordinary))
+        left = datetime.fromisoformat(ordinary[cut - 1]['at']['time'].replace('Z', '+00:00'))
+        right = datetime.fromisoformat(ordinary[cut]['at']['time'].replace('Z', '+00:00'))
+        for i, event in enumerate(maintenance, 1):
+            event['at']['time'] = (left + (right - left) * i / (len(maintenance) + 1)).isoformat().replace('+00:00', 'Z')
+        anchors = ordinary[:cut] + maintenance + ordinary[cut:]
+        gaps: dict[int, list[dict[str, Any]]] = {}
+        for event in noise:
+            gaps.setdefault(rng.randrange(len(anchors)), []).append(event)
+        merged = []
+        for i, event in enumerate(anchors):
+            merged.append(event)
+            start = datetime.fromisoformat(event['at']['time'].replace('Z', '+00:00'))
+            end = datetime.fromisoformat((anchors[i + 1] if i + 1 < len(anchors) else tail[0])['at']['time'].replace('Z', '+00:00'))
+            block = gaps.get(i, [])
+            for j, extra in enumerate(block, 1):
+                extra['at']['time'] = (start + (end - start) * j / (len(block) + 1)).isoformat().replace('+00:00', 'Z')
+                merged.append(extra)
+        self.events = merged + tail
+        for i, event in enumerate(self.events, 1):
+            event['at']['sequence'] = i
+
     def _forms(self, attribute: str):
         spec: AttributeSpec | None = ATTRIBUTES.get(attribute)
         return spec.forms if spec else (lambda v: [str(v)])
@@ -272,6 +315,7 @@ class ScenarioBuilder:
         return codes
 
     def finalize(self) -> dict[str, Any]:
+        self._interleave_history()
         # Oracles.
         results: dict[str, QueryResult] = {}
         for p in self.probes:
@@ -430,7 +474,7 @@ class ScenarioBuilder:
             "probes": self.probes,
             "ablations": self.ablations,
             "evaluators": [
-                {"id": "eval-structured", "type": "structured", "config": {"normalization": "answer_normalized", "weights": {"value": 0.8, "status": 0.2}}},
+                {"id": "eval-structured", "type": "structured", "config": {"normalization": "answer_normalized", "match": "exact", "value_type": "string", "require_correct_value": True, "weights": {"value": 0.8, "status": 0.2}}},
                 {"id": "eval-world", "type": "world_state"},
                 {"id": "eval-trajectory", "type": "trajectory"},
                 {"id": "eval-action", "type": "composite", "components": [{"evaluator": "eval-world", "weight": 0.6}, {"evaluator": "eval-trajectory", "weight": 0.4}]},

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import random
 from typing import Any
+from .. import MEASUREMENT_REVISION
 
 from .base import ScenarioBuilder, probe_prompt
 from .interference import other_actors
@@ -45,7 +46,7 @@ def _person(b: ScenarioBuilder, exclude: set[str] = frozenset()) -> tuple[str, s
 
 class Program:
     ID = ""
-    VERSION = "0.3.0"
+    VERSION = MEASUREMENT_REVISION
     SUITE = ""
     TITLE = ""
     DIMENSIONS: list[str] = []
@@ -197,7 +198,7 @@ class ExperienceProgram(Program):
 class SkillProgram(Program):
     ID = "mib.skill.v1"
     SUITE = "skill"
-    TITLE = "A learned precondition, transferred where it applies and withheld where it does not"
+    TITLE = "Feedback-derived recipe memory with family-specific applicability"
     DIMENSIONS = ["skill_learning_transfer"]
     WEIGHTS = {"skill_learning_transfer": 1.0}
     CAPABILITIES = ["observe", "respond", "act", "tools", "virtual_time"]

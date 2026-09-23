@@ -86,7 +86,46 @@ def _load_materialized(path: str, schema_path: str, seed: str | int):
 
 
 def cmd_run(args) -> int:
-    seed = _parse_seed(args.seed)
+    source = load_json(args.scenario)
+    experiment = bool(source.get('model') or source.get('submissions'))
+    if args.estimate_only and (not source.get('model') or source.get('memory_backend')):
+        raise SystemExit('--estimate-only requires a same-model calibration experiment')
+    if experiment and (args.full_only or args.agent or args.submission or args.seed):
+        raise SystemExit('experiment model, agent, seeds and condition schedule must be set in its locked configuration')
+    if source.get('kind') == 'BenchmarkProfile':
+        if not args.schema:
+            raise SystemExit('--schema is required for a BenchmarkProfile')
+        return cmd_benchmark(argparse.Namespace(path=None, profile=args.scenario, schema=args.schema,
+            report_schema=args.report_schema, agent=args.agent, submission=args.submission,
+            allow_degraded_sandbox=False, allow_remote_http=args.allow_remote_http,
+            seeds=args.seed, repetitions=None, bootstrap_resamples=None, bootstrap_seed='20260923',
+            full_only=args.full_only, transfer_diagnostics=False, output_report=args.output,
+            output_summary=None, card=None))
+    if source.get('memory_backend'):
+        from .backend_benchmark import main
+        if not args.output:
+            raise SystemExit('--output is required for a backend experiment')
+        return main([args.scenario, '--output-json', args.output])
+    if source.get('model') and source.get('profile'):
+        from .same_model_cli import main
+        options = [args.scenario]
+        if args.estimate_only:
+            options.append('--estimate-only')
+        elif not args.output:
+            raise SystemExit('--output is required unless --estimate-only is used')
+        if args.output:
+            options.extend(['--output-json', args.output])
+        return main(options)
+    if source.get('submissions') and source.get('profile'):
+        if not args.output:
+            raise SystemExit('--output is required for a longitudinal experiment')
+        return cmd_learning_benchmark(argparse.Namespace(config=args.scenario, output=args.output,
+            allow_remote_http=args.allow_remote_http, resume_lock=None))
+    if args.estimate_only:
+        raise SystemExit('--estimate-only requires a same-model experiment')
+    if not args.schema:
+        raise SystemExit('--schema is required for a Scenario')
+    seed = _parse_seed(args.seed or '101')
     scenario = _load_materialized(args.scenario, args.schema, seed)
     factory = _load_agent_factory(args.agent)
     agent_desc = factory().describe()
@@ -247,11 +286,27 @@ def cmd_learning_benchmark(args) -> int:
 
 def cmd_verify_score(args) -> int:
     report = load_json(args.report)
+    if isinstance(report.get('report'), dict) and report['report'].get('kind') == 'MIBReport':
+        report = report['report']
     if args.report_schema:
         validate_report(report, load_json(args.report_schema))
     result = verify_score(report, tolerance=args.tolerance)
     print(json.dumps(result, indent=2))
     return 0 if result["valid"] else 3
+
+
+def cmd_compare(args) -> int:
+    from .leaderboard import paired_compare_reports
+    reports = [load_json(path) for path in [args.first, args.second]]
+    for report in reports:
+        if report.get('kind') != 'MIBReport' or not verify_score(report)['valid']:
+            raise SystemExit('compare requires two verified MIBReports from the matching executable bundle')
+    result = paired_compare_reports(*reports, resamples=args.resamples, seed=args.seed)
+    text = json.dumps(result, indent=2, ensure_ascii=False)
+    if args.output:
+        Path(args.output).write_text(text + '\n', encoding='utf-8')
+    print(text)
+    return 0
 
 
 
@@ -458,12 +513,16 @@ def build_parser() -> argparse.ArgumentParser:
     it.add_argument("--output")
     it.set_defaults(func=cmd_inspect_transfer)
 
-    r = sub.add_parser("run", help="Run one Scenario/Template")
+    r = sub.add_parser("run", help="Run a Scenario, generated Profile, or locked experiment configuration")
     r.add_argument("scenario")
-    r.add_argument("--schema", required=True)
+    r.add_argument("--schema")
     r.add_argument("--report-schema")
-    r.add_argument("--agent", default="reference")
-    r.add_argument("--seed", default="101")
+    participant = r.add_mutually_exclusive_group()
+    participant.add_argument("--agent")
+    participant.add_argument("--submission")
+    r.add_argument("--seed")
+    r.add_argument("--allow-remote-http", action="store_true")
+    r.add_argument("--estimate-only", action="store_true")
     r.add_argument("--full-only", action="store_true")
     r.add_argument("--output")
     r.set_defaults(func=cmd_run)
@@ -521,11 +580,19 @@ def build_parser() -> argparse.ArgumentParser:
     lb.add_argument("--resume-lock")
     lb.set_defaults(func=cmd_learning_benchmark)
 
-    vs = sub.add_parser("verify-score", help="Recompute Template, Dimension, and final report scores")
+    vs = sub.add_parser("verify-score", aliases=['verify'], help="Recompute Template, Dimension, and final report scores")
     vs.add_argument("report")
     vs.add_argument("--report-schema")
     vs.add_argument("--tolerance", type=float, default=1e-9)
     vs.set_defaults(func=cmd_verify_score)
+
+    compare = sub.add_parser('compare', help='Compare compatible paired MIBReports')
+    compare.add_argument('first')
+    compare.add_argument('second')
+    compare.add_argument('--resamples', type=int, default=2000)
+    compare.add_argument('--seed', default='20260923')
+    compare.add_argument('--output')
+    compare.set_defaults(func=cmd_compare)
 
 
     rb = sub.add_parser("reality-benchmark", help="Execute a MIB-R Reality Pack under paired memory conditions (prototype)")

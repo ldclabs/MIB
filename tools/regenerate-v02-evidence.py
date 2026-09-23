@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from mib_runner import MEASUREMENT_REVISION
 from mib_runner.agents import (ConsolidatingAgent, NoMemoryAgent, OvergeneralizingAgent, StructuredMemoryAgent, WindowMemoryAgent)
 from mib_runner.benchmark import run_generated_pack
 from mib_runner.capability import render_capability_card
@@ -60,7 +61,7 @@ def main() -> None:
                'instances': summary['instance_count'], 'runs': summary['run_count']}
         evidence.append(row)
         print(json.dumps(row), flush=True)
-    result = {'mib': '0.2', 'kind': 'MIBReviewFixtureValidation', 'version': '0.3.0',
+    result = {'mib': '0.2', 'kind': 'MIBReviewFixtureValidation', 'version': MEASUREMENT_REVISION,
               'empirical': False, 'release_eligible': False, 'results': evidence}
     validate_report(result, load_json(ROOT / 'schemas/mib-review-validation.schema.json'))
     write_json(ROOT / 'examples/validation/v02-review-fixture-validation.json', result)

@@ -111,15 +111,17 @@ def aggregate_benchmark_causal_metrics(instances_by_template: dict[str, list[dic
             template_metric_values[name].append((mean(vals), evidence_w))
     out = []
     unit_map = {
-        "memory_benefit": "percentage_points",
-        "memory_harm": "percentage_points",
-        "net_memory_gain": "percentage_points",
-        "consolidation_benefit": "percentage_points",
+        "memory_benefit": "normalized_delta",
+        "memory_harm": "normalized_delta",
+        "memory_harm_effect": "normalized_delta",
+        "negative_transfer_effect": "normalized_delta",
+        "net_memory_gain": "normalized_delta",
+        "consolidation_benefit": "normalized_delta",
         "headroom_normalized_memory_benefit": "normalized",
         "irrelevant_memory_stability": "normalized",
         "harm_resistance": "normalized",
-        "negative_transfer": "percentage_points",
-        "learning_gain": "percentage_points",
+        "negative_transfer": "normalized_delta",
+        "learning_gain": "normalized_delta",
     }
     for name, rows in sorted(template_metric_values.items()):
         denom = math.fsum(w for _, w in rows)
@@ -141,7 +143,7 @@ def aggregate_benchmark_causal_metrics(instances_by_template: dict[str, list[dic
     mb = next((m["value"] for m in out if m["name"] == "memory_benefit"), None)
     mh = next((m["value"] for m in out if m["name"] == "memory_harm"), None)
     if mb is not None and mh is not None and not any(m["name"] == "net_memory_gain" for m in out):
-        out.append({"name": "net_memory_gain", "value": mb - mh, "unit": "percentage_points", "scope": "benchmark"})
+        out.append({"name": "net_memory_gain", "value": mb - mh, "unit": "normalized_delta", "scope": "benchmark"})
     return out
 
 

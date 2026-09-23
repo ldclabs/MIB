@@ -7,6 +7,7 @@ import uuid
 from dataclasses import asdict
 
 from ..adapter_contract import AdapterLifecycleError, check_descriptor, digest, require_accepted
+from .bindings import validate_budget, valid_reference
 
 EXTENSION = "mib.learning_longitudinal.v1"
 AUDIT_FORMAT = "mib-learning-audit/0.1"
@@ -28,8 +29,9 @@ def check_learning_descriptor(descriptor, mode):
         if not re.fullmatch(r"sha256:[0-9a-f]{64}", str(extension["business_identity"].get(field, ""))):
             raise AdapterLifecycleError(f"business identity lacks {field}")
     recall = extension.get("recall_budget", {})
-    if not isinstance(recall, dict) or recall.get("tokenizer") != "o200k_base@tiktoken-rs-0.12.0" or type(recall.get("max_tokens")) is not int or not 1 <= recall["max_tokens"] <= 65536 or type(recall.get("context_tokens")) is not int or not 1 <= recall["context_tokens"] <= 131072:
+    if not isinstance(recall, dict) or type(recall.get("max_tokens")) is not int or not 1 <= recall["max_tokens"] <= 65536 or type(recall.get("context_tokens")) is not int or not 1 <= recall["context_tokens"] <= 131072:
         raise AdapterLifecycleError("missing pinned P5 Recall budget")
+    validate_budget(extension.get('audit_binding', 'brain_native_v1'), recall)
     if extension.get("audit_operation") != "learning_audit":
         raise AdapterLifecycleError("learning_audit operation must be explicitly declared")
     flags = ("native_comparison_and_review", "independent_observer", "isolated_trial_application", "cross_task_state")
@@ -49,7 +51,7 @@ def check_learning_descriptor(descriptor, mode):
     return extension
 
 
-def check_audit(body, run_id, mode):
+def check_audit(body, run_id, mode, binding='brain_native_v1'):
     if not isinstance(body, dict) or body.get("format") != AUDIT_FORMAT or body.get("run_id") != run_id or body.get("mode") != mode:
         raise AdapterLifecycleError("learning audit format/run/mode mismatch")
     if type(body.get("complete")) is not bool or type(body.get("native_sequence")) is not int or body["native_sequence"] < 0:
@@ -64,13 +66,13 @@ def check_audit(body, run_id, mode):
         raise AdapterLifecycleError("learning audit skills must be bounded")
     seen = set()
     for row in skills:
-        if not isinstance(row, dict) or not re.fullmatch(r"C-[1-9][0-9]*", str(row.get("skill_ref", ""))) or "revision_ref" not in row or row["revision_ref"] is not None and not re.fullmatch(r"C-[1-9][0-9]*", str(row["revision_ref"])):
+        if not isinstance(row, dict) or not valid_reference(binding, 'skill', row.get('skill_ref')) or "revision_ref" not in row or row["revision_ref"] is not None and not valid_reference(binding, 'revision', row['revision_ref']):
             raise AdapterLifecycleError("learning audit requires exact native Skill/revision refs")
         if row["skill_ref"] in seen or not isinstance(row.get("status"), str):
             raise AdapterLifecycleError("learning audit duplicate skill or missing status")
         seen.add(row["skill_ref"])
         for field in ("evaluation_ref", "trial_ref"):
-            if field not in row or row[field] is not None and not re.fullmatch(r"X-[1-9][0-9]*", str(row[field])):
+            if field not in row or row[field] is not None and not valid_reference(binding, field, row[field]):
                 raise AdapterLifecycleError("learning audit verdict/trial must be native Activity refs or null")
         if row.get("recommendation_allowed") is not None and type(row["recommendation_allowed"]) is not bool:
             raise AdapterLifecycleError("invalid recommendation flag")
@@ -115,7 +117,7 @@ class AuditedAgent:
         try:
             raw = self.agent.learning_audit(run_id=self.run_id, request_id="audit_" + uuid.uuid4().hex)
             row["body"] = copy.deepcopy(raw)
-            check_audit(raw, self.run_id, self.mode)
+            check_audit(raw, self.run_id, self.mode, self.descriptor['extensions'][EXTENSION].get('audit_binding', 'brain_native_v1'))
         except Exception as exc:
             row["error"] = repr(exc)
             self.snapshots.append(row)

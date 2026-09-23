@@ -292,7 +292,7 @@ def evaluate_structured(output: AgentOutput, oracle: dict[str, Any], config: dic
     """
     config = config or {}
     mode = config.get("normalization", "answer_normalized")
-    match = config.get("match", "contains")
+    match = config.get("match", "exact")
     weights = dict(config.get("weights") or {"value": 0.8, "status": 0.2})
     parsed = parse_structured(output)
     expected_status = oracle.get("expected_status") or "known"
@@ -301,6 +301,14 @@ def evaluate_structured(output: AgentOutput, oracle: dict[str, Any], config: dic
     forbidden = _disclosure(output, oracle, mode)
     value_score, failure_codes, details = _score_value(value_text, abstained=abstained, oracle=oracle, mode=mode, match=match,
                                                      forbidden_hit=forbidden)
+    # Structured scalar answers cannot smuggle several candidates in a JSON
+    # container. Free-text/legacy set matching remains an explicit evaluator.
+    invalid_type = isinstance(parsed["value"], (dict, list))
+    if config.get("value_type") == "string":
+        invalid_type |= parsed["value"] is not None and not isinstance(parsed["value"], str)
+    if invalid_type:
+        value_score = 0.0
+        failure_codes.append("retrieval_miss")
 
     # The evaluator, never the answer, determines the rubric's denominator.
     status_score = float(parsed["status"] in _STATUS_CLASS.get(expected_status, {expected_status}))
@@ -317,7 +325,7 @@ def evaluate_structured(output: AgentOutput, oracle: dict[str, Any], config: dic
     total_w = sum(w for _, w, _ in components)
     score = sum(w * s for _, w, s in components) / total_w if total_w else value_score
     inconsistent = parsed["status"] == "unknown" and parsed["value"] is not None and value_text not in {"", "unknown", "null"}
-    if forbidden is not None or inconsistent:
+    if forbidden is not None or inconsistent or invalid_type or (config.get("require_correct_value") and value_score == 0):
         score = 0.0
         value_score = 0.0
         calibration = 1.0 - parsed["confidence"] ** 2 if parsed["confidence"] is not None else None

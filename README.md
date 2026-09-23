@@ -150,12 +150,12 @@ MIB-Core evaluates seven capability dimensions in v0.2:
 | **Temporal Memory**           | Can the system distinguish the current, previous, and original values of a changing state?                                              |
 | **Epistemic Memory**          | Can it remember who said what, tell correction from contradiction, respect authority, and keep unknown distinct from false?              |
 | **Experience Memory**         | Does a failure the Agent itself lived through change what it does next time?                                                            |
-| **Skill Learning & Transfer** | Does a learned precondition transfer where it applies and stay withheld where it does not?                                              |
+| **Procedural Memory & Applicability** | Does a feedback-derived recipe transfer within its declared scope and stay withheld outside it?                                              |
 | **Prospective & Self Memory** | Does a deferred commitment fire on its trigger, and not before? Does a standing rule about the Agent itself survive a task that asks otherwise? |
-| **Selective Forgetting**      | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
+| **Withdrawal Compliance**    | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
 
 Whether memory made a causal difference is no longer a seventh dimension. It is a set of
-causal diagnostics reported beside the score, one of which — content tracking — gates
+causal diagnostics reported beside the score. Fixed-opportunity joint full/twin success gates
 whether the score counts as a memory score at all (see below).
 
 Future profiles will expand first-class evaluation of:
@@ -172,7 +172,7 @@ Privacy Boundaries
 
 MIB reports capability and causal evidence separately. Relevant-history ablation asks whether withholding the past changes later performance. Content twins ask whether answers follow changed historical content. Policy twins change a latent workflow convention consistently in acquisition feedback and future verification; they test learned behavior under matched rule worlds.
 
-The revised development Profiles require evidence in **every weighted dimension**. The gate retains eligible/total probe counts and independent Instance counts. By default each dimension needs five eligible Instances, 50% probe coverage, and a 95% Wilson lower bound of at least 0.5 on Instance tracking success. Missing evidence remains unassessable.
+The revised development Profiles require evidence in **every weighted dimension**. The gate uses joint success on a fixed set of full/twin probe pairs, retaining incorrect and missing opportunities in the denominator. Repetitions stay inside each independent Instance. Each dimension needs five complete Instances, 100% valid-pair coverage, and an Instance-cluster bootstrap lower bound of at least 0.5. These are provisional development thresholds, not empirical proof of general memory ability; degenerate intervals are explicitly flagged.
 
 Diagnostics include Memory Benefit, Content Tracking, matched-control Memory Harm, Irrelevant Stability, Negative Transfer, Consolidation Benefit, first-attempt behavior, and learning curves. Full-run memory-related error patterns are descriptive; an error label alone does not prove memory caused the error.
 
@@ -475,7 +475,7 @@ Only the memory condition changes:
 B0 — No Memory
 B1 — Full Visible History
 B2 — Simple Retrieval Memory
-B3 — Structured Memory
+B3 — Heuristic Salience Retrieval
 ```
 
 This makes it possible to ask a clean question:
@@ -488,11 +488,24 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB uses scenario format v0.2, measurement revision **0.3.0**, and implementation **0.12.0**.
+MIB uses scenario format v0.2, measurement revision **0.4.0**, and implementation **0.13.0**.
 
-Pack report **0.4.0** adds explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
+Pack report **0.5.0** adds explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
 
-The September design-review corrections are implemented:
+The September 23 corrections are implemented in measurement revision **0.4.0**:
+
+- exact scalar answers reject negation and candidate enumeration;
+- fixed-opportunity joint twins replace correctness-selected admission;
+- missing causal evidence cannot pass calibration admission;
+- backend and Core execution share Program/rung identity and complete-ladder checks;
+- all bounded contexts enforce the final rendered character cap;
+- public dialogue and emission receipts persist through the fixed-model memory policy;
+- Core acquisition and interference are interleaved, so maintenance no longer marks an ignorable suffix;
+- separate feature-composition and commitment-lifecycle challenges test new boundaries;
+- signed harmful-history effects are separated from clipped downside loss;
+- longitudinal reports separate safe behavior, tool economy and native learning claims.
+
+The earlier September corrections remain in place:
 
 - forbidden disclosure fails even inside an abstention or an auxiliary output field;
 - required scoring fields keep a fixed denominator;
@@ -513,7 +526,7 @@ The extended same-model smoke run is an engineering check. **Real fixed-model ca
 
 The hosted external-Agent service accepts Track B. Track A uses the evaluator-owned same-model harness. Linux process isolation and evaluator-private packs remain environmental requirements for their respective tests.
 
-See [the specification](docs/MIB-Specification.md) and [the review resolution ledger](docs/harness/MIB-v0.2-Review-Resolution.md) for exact semantics, verification evidence, and remaining empirical work. Earlier example artifacts retain their original version identity; new and old measurement revisions are not interchangeable.
+See [the specification](docs/MIB-Specification.md) and [the current review resolution ledger](docs/harness/MIB-v0.4-Review-Resolution.md) for exact semantics, verification evidence, and remaining empirical work. Earlier example artifacts retain their original version identity; new and old measurement revisions are not interchangeable.
 
 ---
 
@@ -604,6 +617,24 @@ through `MIB_OFFICIAL_PACK`; calibration tests skip when it is absent.
 ---
 
 ## Quick Start
+
+### Start with a bounded pilot
+
+The standard entry points are `mib run`, `mib compare`, and `mib verify`. Existing commands remain aliases or supported specialized entry points.
+
+```bash
+mib run examples/same-model/same-model-generated.pilot.json --estimate-only
+# Configure an immutable stateless model endpoint before running this:
+mib run examples/same-model/same-model-generated.pilot.json --output /tmp/mib-pilot.json
+# For a Core/backend child report produced by the matching source bundle:
+mib verify /tmp/mib-core-report.json
+mib compare /tmp/mib-agent-a.json /tmp/mib-agent-b.json
+```
+
+The pilot fixes seven mechanisms, one rung, five independent seeds, one repetition, and a common 8,192-character context budget. Business-model observation decisions use the public `environment_event` type; every observation still reaches memory formation. It is not release calibration. The existing `.stub.json` and `.external-http.json` configurations cover smoke and full calibration respectively. Small pilot results determine the next preregistered sample plan; they do not establish general superiority.
+
+The Core fixture examples retained from previous revisions keep their original source/version identity. New validation evidence must name measurement revision 0.4.0; old reports require their matching executable bundle.
+
 
 Install the reference implementation:
 

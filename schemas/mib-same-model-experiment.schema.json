@@ -160,6 +160,17 @@
         },
         "maintenance_decisions": {
           "type": "boolean"
+        },
+        "observe_decision_types": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         }
       }
     },
@@ -277,8 +288,19 @@
             },
             "oracle_reference": {
               "type": "boolean"
+            },
+            "max_memory_chars": {
+              "type": "integer",
+              "minimum": 1
             }
           }
+        },
+        "purpose": {
+          "enum": [
+            "smoke",
+            "pilot",
+            "full"
+          ]
         }
       }
     }

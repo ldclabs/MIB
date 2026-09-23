@@ -1,0 +1,78 @@
+{
+  "implementation": "0.13.0",
+  "measurement_revision": "0.4.0",
+  "runner_source_digest": "sha256:0e90dd693ff87df5d15669573203eba6ff2dc138276e1edcd209ddb64351b328",
+  "empirical": false,
+  "release_eligible": false,
+  "results": [
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "instances": 105,
+      "runs": 864,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Dev",
+      "fixture": "PrefixMemory",
+      "score": 67.348,
+      "coverage": 1.0,
+      "dependence_eligible": false,
+      "instances": 105,
+      "runs": 864,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Dev-PrefixMemory.report.json"
+    },
+    {
+      "profile": "MIB-Core-0.2-Session-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "instances": 210,
+      "runs": 1749,
+      "verified": true,
+      "report_file": "MIB-Core-0.2-Session-Dev-StructuredMemoryAgent.report.json"
+    },
+    {
+      "profile": "MIB-Mechanism-Challenges-0.1-Dev",
+      "fixture": "StructuredMemoryAgent",
+      "score": 100.0,
+      "coverage": 1.0,
+      "dependence_eligible": true,
+      "instances": 10,
+      "runs": 60,
+      "verified": true,
+      "report_file": "MIB-Mechanism-Challenges-0.1-Dev-StructuredMemoryAgent.report.json"
+    }
+  ],
+  "pilot_estimate": {
+    "template_count": 7,
+    "instance_seeds": 5,
+    "repetitions": 1,
+    "minimum_condition_runs": 463,
+    "full_baseline_condition_runs": 140,
+    "additional_causal_ablation_runs": 253,
+    "additional_diagnostic_runs": 70,
+    "minimum_model_turns": 1826,
+    "note": "minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote."
+  },
+  "tests": {
+    "command": "python -m pytest -q",
+    "python": "3.14.7",
+    "passed": 419,
+    "skipped": 8,
+    "skip_scope": "Linux sandbox and evaluator-private packs"
+  },
+  "same_model_smoke": {
+    "mode": "same_model_engineering_stub",
+    "fairness_valid": true,
+    "release_eligible": false,
+    "program_rung_units": 42,
+    "experiment_lock": "sha256:f3ab319041c6e999536168eed1b5aa2a8f53dc545fad061ca0ee7f8621c07c74"
+  }
+}

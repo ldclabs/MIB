@@ -153,7 +153,9 @@ def test_disclosure_ignores_envelope_keys_and_valid_metadata(confidence, form):
 def test_disclosure_does_not_treat_nested_container_keys_as_values():
     oracle = {'accepted': ['42'], 'expected_status': 'known', 'forbidden': ['value', 'content']}
     output = AgentOutput(type='structured', value={'value': {'content': '42'}, 'status': 'known'})
-    assert evaluate_structured(output, oracle, None)['score'] == 1
+    result = evaluate_structured(output, oracle, None)
+    assert result['score'] == 0  # A container is not the scalar answer 42.
+    assert result['details']['forbidden_match'] is False  # Keys are still not disclosures.
     for output in [AgentOutput(type='structured', value={'content': '42'}),
                    AgentOutput(type='message', content='{"content":"42"}')]:
         assert evaluate_set_match(output, oracle, None)['score'] == 1

@@ -19,7 +19,7 @@ from .contract import AuditedAgent, CONDITIONS, EXTENSION, check_learning_descri
 from .programs import MEASUREMENT_REVISION, PROGRAMS, generate
 from .scoring import aggregate, score_unit
 
-REPORT_VERSION = "0.1.0"
+REPORT_VERSION = "0.2.0"
 
 
 def validate_profile(profile):

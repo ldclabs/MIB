@@ -222,7 +222,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
         from .backend_benchmark import verify_backend_report
         return verify_backend_report(report)
     errors: list[str] = []
-    if report.get("report_version") not in {"0.1.0", "0.1.1", "0.2.0", "0.3.0", "0.4.0"}:
+    if report.get("report_version") not in {"0.1.0", "0.1.1", "0.2.0", "0.3.0", "0.4.0", "0.5.0"}:
         errors.append("unsupported report version")
     from .adapter_contract import verify_run_contract
     aggregates = report.get("aggregates", {})
@@ -231,6 +231,12 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     dimension_rows = aggregates.get("dimensions", [])
     runs = (report.get("results") or {}).get("runs") or []
     level = "full" if runs else "aggregates_only"
+    instance_ids = [row['scenario_instance_id'] for row in instance_rows]
+    if len(instance_ids) != len(set(instance_ids)):
+        errors.append('duplicate Instance aggregates cannot count as independent evidence')
+    run_units = [(r['scenario_instance_id'], r['repetition'], r['condition'], r.get('ablation_id')) for r in runs]
+    if len(run_units) != len(set(run_units)):
+        errors.append('duplicate condition/repetition runs cannot count as independent evidence')
 
     def close(a: float, b: float) -> bool:
         return abs(a - b) <= tolerance
@@ -240,7 +246,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     if runs:
         runs_by_iid: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for r in runs:
-            errors.extend(verify_run_contract(r, required=report.get("report_version") in {"0.1.1", "0.4.0"}))
+            errors.extend(verify_run_contract(r, required=report.get("report_version") in {"0.1.1", "0.4.0", "0.5.0"}))
             recomputed = scenario_score_from_probes(r.get("probe_results", []))
             stored = float(r.get("scenario_score", 0.0))
             ok = close(recomputed, stored)
@@ -261,7 +267,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
                     errors.append(f"run {actual.get('run_id')}: causal validity differs from lifecycle/pair evidence")
             runs_by_iid[iid] = rebuilt_runs
         participant = report.get("efficiency", {}).get("participant_reported", {})
-        if report.get("report_version") == "0.4.0":
+        if report.get("report_version") in {"0.4.0", "0.5.0"}:
             expected_costs = [{"run_id": r["run_id"], "last_snapshot": r.get("adapter_contract", {}).get("reported_costs_last")} for r in runs]
             if participant.get("per_run_costs") != expected_costs or participant.get("total_cost") is not None or participant.get("accounting_complete") is not False:
                 errors.append("participant reported cost summary differs from cumulative/unknown evidence")
@@ -354,7 +360,7 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
         errors.append(f"MIB final score: stored={stored_final} recomputed={recomputed_final}")
 
     policy = report.get('evaluation_policy')
-    if report.get('report_version') in {'0.3.0', '0.4.0'} and policy is None:
+    if report.get('report_version') in {'0.3.0', '0.4.0', '0.5.0'} and policy is None:
         errors.append('evaluation_policy: required for this report version')
     if policy is not None:
         from .aggregation import canonical_instances, score_aggregates, tracking_totals
@@ -388,9 +394,8 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
         check('dimensions', strip_ci(dimension_rows), rebuilt['dimensions'])
         check('causal_metrics', strip_ci(report.get('causal_metrics', [])), rebuilt['causal_metrics'])
         check('retention', report.get('retention', []), retention_block(instance_rows, profile.get('canonical_rung')))
-        evidence = aggregate_dependence_evidence(canonical_instances(instance_rows, profile))
-        dependence = memory_dependence(rebuilt['causal_metrics'], profile, evidence if profile.get('programs') else None,
-                                        tracking_totals(canonical_instances(instance_rows, profile)) if profile.get('programs') else None)
+        from .dependence import assess_dependence, joint_evidence
+        dependence = assess_dependence(instance_rows, rebuilt['causal_metrics'], profile)
         check('memory_dependence', report.get('memory_dependence'), dependence)
         coverage = math.fsum(d['weight'] * d['coverage'] for d in rebuilt['dimensions'])
         eligible = coverage + 1e-12 >= float(profile.get('required_coverage', 1))
@@ -417,6 +422,10 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
                 if not valid and any(not n.startswith('runner invalid:') for n in notes):
                     errors.append(f'causal pairing: {notes}')
                 check('dependence_evidence', inst.get('dependence_evidence', []), counterfactual_evidence(rr))
+                if report.get('report_version') == '0.5.0':
+                    check('joint_dependence_evidence', inst.get('joint_dependence_evidence'), joint_evidence(rr))
+                    if any('counterfactual_plan' not in r.get('validity', {}) for r in rr):
+                        errors.append('missing frozen counterfactual plan')
                 check('counterfactual_counts', inst.get('counterfactual_counts', {}), counterfactual_counts(rr))
             boot = report.get('statistics', {}).get('bootstrap')
             if boot and int(boot.get('resamples', 0)):

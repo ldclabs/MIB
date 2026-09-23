@@ -9,8 +9,8 @@ DISPLAY = {
     "temporal_memory": "Temporal Memory",
     "epistemic_memory": "Epistemic Memory",
     "experience_memory": "Experience Memory",
-    "skill_learning_transfer": "Skill Learning & Transfer",
-    "selective_forgetting": "Selective Forgetting",
+    "skill_learning_transfer": "Procedural Memory & Applicability",
+    "selective_forgetting": "Withdrawal Compliance",
     "prospective_self_memory": "Prospective & Self Memory",
     "causal_memory_impact": "Causal Memory Impact",
 }
@@ -53,7 +53,8 @@ def render_capability_card(report: dict[str, Any]) -> str:
     lines += ["", "Causal Diagnostics"]
     for name, label, fmt in [
         ("memory_benefit", "Memory Benefit", "pp"),
-        ("memory_harm", "Memory Harm", "pp"),
+        ("memory_harm_effect", "Signed Harm Effect", "pp"),
+        ("memory_harm", "Downside Loss (clipped)", "pp"),
         ("net_memory_gain", "Net Memory Gain", "pp"),
         ("irrelevant_memory_stability", "Irrelevant Stability", "score"),
         ("harm_resistance", "Harm Resistance", "score"),

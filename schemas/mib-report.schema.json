@@ -254,6 +254,15 @@
           "items": {
             "type": "object"
           }
+        },
+        "joint_twin_success": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "interval_scope": {
+          "type": "string"
         }
       }
     },
@@ -959,7 +968,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Memory failures this Probe's Oracle could elicit (eligibility for §7.9 rates)."
+          "description": "Memory failures this Probe's Oracle could elicit (eligibility for \u00a77.9 rates)."
         }
       },
       "allOf": [
@@ -1109,6 +1118,12 @@
             },
             "instance_spec_digest": {
               "type": "string"
+            },
+            "counterfactual_plan": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
             }
           }
         },
@@ -1162,7 +1177,7 @@
               }
             }
           },
-          "description": "Lived-trial outcomes (§5.3, §7.9): learning-curve samples, never scores."
+          "description": "Lived-trial outcomes (\u00a75.3, \u00a77.9): learning-curve samples, never scores."
         },
         "reference_ablation_id": {
           "type": "string"
@@ -1273,6 +1288,12 @@
           "additionalProperties": {
             "type": "integer",
             "minimum": 0
+          }
+        },
+        "joint_dependence_evidence": {
+          "type": "array",
+          "items": {
+            "type": "object"
           }
         }
       }
@@ -1607,7 +1628,9 @@
             "self_limitation_continuity",
             "content_tracking_rate",
             "consolidation_benefit",
-            "memory_related_error_rate"
+            "memory_related_error_rate",
+            "memory_harm_effect",
+            "negative_transfer_effect"
           ]
         },
         "value": {
@@ -1621,7 +1644,8 @@
             "percentage_points",
             "rate",
             "count",
-            "ratio"
+            "ratio",
+            "normalized_delta"
           ]
         },
         "scope": {
@@ -1887,7 +1911,9 @@
                   "self_limitation_continuity",
                   "content_tracking_rate",
                   "consolidation_benefit",
-                  "memory_related_error_rate"
+                  "memory_related_error_rate",
+                  "memory_harm_effect",
+                  "negative_transfer_effect"
                 ]
               },
               "value": {

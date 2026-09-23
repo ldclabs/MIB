@@ -9,7 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Callable
 
-from . import __version__
+from . import __version__, PACK_REPORT_VERSION, MEASUREMENT_REVISION
 from .materialize import materialize
 from .report import pair_warnings, strip_extensions_for_report
 from .runner import run_scenario
@@ -429,9 +429,8 @@ def build_pack_report(
     profile_eligible = profile_cov + 1e-12 >= required_coverage
     causal = aggregated['causal_metrics']
     retention = retention_block(instance_aggs, int(canonical_rung) if canonical_rung is not None else None)
-    evidence = aggregate_dependence_evidence(canonical_instances(instance_aggs, profile))
-    dependence = memory_dependence(causal, profile, evidence if profile.get('programs') else None,
-                                   tracking_totals(canonical_instances(instance_aggs, profile)) if profile.get('programs') else None)
+    from .dependence import assess_dependence
+    dependence = assess_dependence(instance_aggs, causal, profile)
     dependence_gate = profile.get("memory_dependence") is not None
     dependence_ok = dependence["eligible"] is True if dependence_gate else True
     format_version = "0.2" if str(profile.get("mib", "")) == "0.2" or profile.get("programs") else "0.1"
@@ -501,7 +500,7 @@ def build_pack_report(
     report = {
         "mib": format_version,
         "kind": "MIBReport",
-        "report_version": "0.4.0",
+        "report_version": PACK_REPORT_VERSION,
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",
@@ -511,7 +510,7 @@ def build_pack_report(
             "track": profile.get("track", "integrated_agent"),
             "scale": profile.get("scale", "MIB-S"),
             "scenario_pack": {"id": profile.get("scenario_pack", {}).get("id", "MIB-v0.1-Public-Dev"), "version": profile.get("scenario_pack", {}).get("version", "0.1.0")},
-            "scoring_spec_version": f"{format_version}-spec",
+            "scoring_spec_version": MEASUREMENT_REVISION if profile.get("programs") else f"{format_version}-spec",
             "scenario_schema_version": format_version,
             "agent_adapter_protocol": agent_descriptor.get("protocol", "mib-agent/0.1"),
         },
@@ -758,28 +757,8 @@ def run_materialized_pack(
     if missing_instances:
         raise ValueError(f"profile requires Templates with no materialized Instances: {missing_instances}")
     if profile.get('programs'):
-        from .generate.base import template_id_for
-        from .generate.registry import resolve_program_config
-        configs = [resolve_program_config(e, profile.get('ladder')) for e in profile['programs']]
-        by_template = {template_id_for(c['id']): c for c in configs}
-        units: dict[tuple[str, Any], set[int]] = defaultdict(set)
-        seen = set()
-        for instance in instances:
-            inst = instance['instantiation']
-            config = by_template.get(inst['template_id'])
-            rung = inst['rung']
-            if (config is None or type(rung) is not int or not 0 <= rung < len(config['ladder'])
-                    or inst.get('program') != config['id']
-                    or inst.get('program_version') != config['version']
-                    or inst.get('interference_count') != config['ladder'][rung]):
-                raise ValueError('generated Instance Program/ladder differs from the Profile')
-            key = (inst['template_id'], inst['seed'], inst['rung'])
-            if key in seen:
-                raise ValueError('duplicate generated Instance')
-            seen.add(key)
-            units[(inst['template_id'], inst['seed'])].add(inst['rung'])
-        if any(rungs != set(range(len(by_template[tid]['ladder']))) for (tid, _), rungs in units.items()):
-            raise ValueError('generated hidden pack must contain every rung for every seed')
+        from .episode import validate_generated_instances
+        validate_generated_instances(profile, instances)
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in templates if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []
@@ -875,7 +854,8 @@ def run_generated_pack(
     bootstrap_seed: int | str = 20260819,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Generate and execute a v0.2 pack: every program of the Profile, every seed, every ladder rung."""
-    descriptors, instances = generate_pack(profile, seeds)
+    from .episode import materialize_episode_plan
+    descriptors, instances = materialize_episode_plan(profile, list(seeds if seeds is not None else profile.get("instance_seeds") or [101, 202]))
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in descriptors if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []

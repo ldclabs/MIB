@@ -5,7 +5,7 @@ from ..generate.base import ScenarioBuilder
 from .contract import EXTENSION
 from .workflow import TOOLS, CONTRACT_DIGEST, initial_state
 
-MEASUREMENT_REVISION = "mib-learning-longitudinal/0.1.0"
+MEASUREMENT_REVISION = "mib-learning-longitudinal/0.2.0"
 PROGRAMS = ("wrong_generalization", "unannounced_drift", "question_contamination")
 
 def generate(kind, seed, phases, execution):

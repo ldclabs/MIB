@@ -1,14 +1,14 @@
 {
   "mib": "0.2",
   "kind": "BenchmarkProfile",
-  "id": "MIB-Core-0.2-Dev-M",
+  "id": "MIB-Core-0.2-Pilot-Dev",
   "version": "0.4.0",
-  "description": "Generated MIB-Core development pack at MIB-M distance: the same seven programs with a 0 / 100 / 1000 interference-event ladder, capability read at rung 2, BCa intervals. Development only; never an official score.",
-  "track": "integrated_agent",
-  "scale": "MIB-M",
+  "description": "Seven mechanism pilot at one fixed interference rung; development only, not release admission.",
+  "track": "memory_system",
+  "scale": "MIB-S",
   "official": false,
   "scenario_pack": {
-    "id": "MIB-v0.2-Generated-Dev-M",
+    "id": "MIB-Core-0.2-Pilot-Dev",
     "version": "0.4.0"
   },
   "programs": [
@@ -42,11 +42,9 @@
     505
   ],
   "ladder": [
-    0,
-    100,
-    1000
+    20
   ],
-  "canonical_rung": 2,
+  "canonical_rung": 0,
   "repetitions": 1,
   "dimensions": {
     "retention_retrieval": {
@@ -86,8 +84,7 @@
     "bootstrap_method": "hierarchical_bootstrap_percentile",
     "bootstrap_resamples": 1000,
     "preserve_causal_pairs": true,
-    "min_templates_per_dimension": 5,
-    "interval_method": "bca"
+    "min_templates_per_dimension": 5
   },
   "measurement_regime": {
     "kind": "historical_information_use",

@@ -55,6 +55,25 @@ def observation_text(o: Observation) -> str:
     return " | ".join(parts)
 
 
+def bounded_memory_lines(contents: list[str], limit_chars: int | None) -> tuple[str, bool, list[int]]:
+    """Render whole records within the final context budget, including syntax.
+
+    Oversize records are omitted, never silently allowed to exceed the limit.
+    Selection priority is the caller's order; no partial JSON packet is emitted.
+    """
+    if limit_chars is not None and (type(limit_chars) is not int or limit_chars <= 0):
+        raise ValueError("memory character limit must be a positive integer or null")
+    lines, indices, used = [], [], 0
+    for index, content in enumerate(contents):
+        line = f"[{len(lines) + 1}] {content}"
+        size = len(line) + bool(lines)
+        if limit_chars is not None and used + size > limit_chars:
+            continue
+        lines.append(line); indices.append(index); used += size
+    text = "\n".join(lines) if lines else ("<empty>" if limit_chars is None or limit_chars >= 7 else "")
+    return text, len(indices) != len(contents), indices
+
+
 class InvocationRecorder:
     def __init__(self) -> None:
         self._lock = threading.Lock()
@@ -112,20 +131,20 @@ class MemoryPolicy:
 
     @staticmethod
     def _limit(items: list[Observation], limit_chars: int | None) -> tuple[list[Observation], bool]:
-        if not limit_chars or limit_chars <= 0:
+        if limit_chars is None:
             return items, False
+        if type(limit_chars) is not int or limit_chars <= 0:
+            raise ValueError("memory character limit must be positive")
         selected: list[Observation] = []
         used = 0
         truncated = False
         for o in reversed(items):
             n = len(observation_text(o))
-            if selected and used + n > limit_chars:
+            # Reserve the final ordinal and newline as well as record contents.
+            n += len(str(len(selected) + 1)) + 3 + bool(selected)
+            if used + n > limit_chars:
                 truncated = True
                 continue
-            if not selected and n > limit_chars:
-                # Keep the one observation rather than silently drop all evidence.
-                selected.append(o); used += n; truncated = True
-                break
             selected.append(o); used += n
         return list(reversed(selected)), truncated
 
@@ -255,9 +274,14 @@ class SameModelAgent:
             self.policy = POLICIES[condition]()
         self.max_memory_chars = self.memory_config.get("max_memory_chars")
         if self.max_memory_chars is not None:
-            self.max_memory_chars = int(self.max_memory_chars)
+            if type(self.max_memory_chars) is not int or self.max_memory_chars <= 0:
+                raise ValueError("max_memory_chars must be a positive integer or null")
         self.parse_retries = int(self.memory_config.get("parse_retries", 1))
         self.observe_decisions = bool(self.memory_config.get('observe_decisions', False))
+        self.observe_decision_types = self.memory_config.get('observe_decision_types')
+        if self.observe_decision_types is not None and (not isinstance(self.observe_decision_types, list)
+                or any(not isinstance(t, str) or not t for t in self.observe_decision_types)):
+            raise ValueError('observe_decision_types must be a list of public observation types or null')
         self.maintenance_decisions = bool(self.memory_config.get('maintenance_decisions', False))
         self.run_id = ""
         self.seed: int | str | None = None
@@ -317,6 +341,13 @@ class SameModelAgent:
         self._active_goal = ""; self._active_constraints = []; self._active_tools = []
         self._active_turn = 0
 
+    def _persist_public(self, observation: Observation) -> None:
+        """Only actual participant-visible interaction, never evaluator feedback."""
+        if self.backend is not None:
+            require_accepted("observe", self.backend.observe(observation))
+        elif self.condition != 'B0':
+            self.long_term.append(observation)
+
     def _record_step(self, text: str, virtual_time: str | None = None) -> None:
         self.transient.append(Observation(observation_id=f'action_{self.call_counter}_{len(self.transient)}', type='action', content=text, virtual_time=virtual_time))
 
@@ -344,7 +375,7 @@ class SameModelAgent:
         elif self.condition != "B0":
             self.long_term.append(observation)
         emissions = []
-        if self.observe_decisions:
+        if self.observe_decisions and (self.observe_decision_types is None or observation.type in self.observe_decision_types):
             visible = {k: v for k, v in asdict(observation).items() if k not in {'observation_id', 'tool_call_id'}}
             opportunity = {k: visible.get(k) for k in ['type', 'virtual_time', 'actor', 'tool']}
             obj = self._call(mode='OBSERVE', body={'observation': visible}, memory_query=observation_text(observation),
@@ -352,6 +383,9 @@ class SameModelAgent:
             emissions = obj.get('emissions', [])
             if not isinstance(emissions, list) or any(not isinstance(e, dict) for e in emissions):
                 raise ValueError('observe must return an emissions array of objects')
+        if emissions:
+            self._persist_public(Observation(observation_id=f'emitted_{request_id}', type='assistant_emission',
+                payload={'emissions': emissions}, virtual_time=observation.virtual_time))
         result = {'accepted': True, 'emissions': emissions}
         self.seen_observe.add(key)
         self.observe_cache[key] = result
@@ -384,40 +418,27 @@ class SameModelAgent:
     def _memory_context(self, query: str) -> tuple[str, bool, int]:
         if self.backend is not None:
             limit = self.max_memory_chars if self.max_memory_chars is not None else 32768
-            result = self.backend.retrieve(query=query or "Recall the current memory context.", limit_chars=limit, virtual_time=self.virtual_time)
-            lines, used = [], 0
-            truncated = result['truncated']
-            for i, item in enumerate(result['items'], 1):
-                line = f"[{i}] {item['content']}"
-                size = len(line) + (1 if lines else 0)
-                if used + size > limit:
-                    # Backend items may be complete bounded Recall packets.
-                    # Cutting one can remove native uncertainty or required
-                    # warnings, or corrupt its JSON. Include it whole or omit
-                    # it, accounting for our own prefixes and separators.
-                    truncated = True
-                    continue
-                lines.append(line)
-                used += size
-            text = "\n".join(lines) if lines else ("<empty>" if limit >= len("<empty>") else "")
+            # Reserve the first '[1] ' prefix so a single packet that fills its
+            # advertised content allowance still fits the final context.
+            result = self.backend.retrieve(query=query or "Recall the current memory context.", limit_chars=max(1, limit - 4), virtual_time=self.virtual_time)
+            text, omitted, indices = bounded_memory_lines([item['content'] for item in result['items']], limit)
+            truncated = result['truncated'] or omitted
             self.recorder.record_memory({"condition": self.condition, "available": len(result['items']),
-                "selected": len(lines), "selected_chars": len(text), "truncated": truncated})
-            return text, truncated, len(lines)
+                "selected": len(indices), "selected_chars": len(text), "truncated": truncated})
+            return text, truncated, len(indices)
         recent = self.memory_config.get('recent_window')
         available = self.long_term[-int(recent):] if recent else self.long_term
         selected, truncated = self.policy.select(available, query=query, limit_chars=self.max_memory_chars)
-        lines = []
-        for i, o in enumerate(selected, 1):
-            lines.append(f"[{i}] {observation_text(o)}")
-        text = "\n".join(lines) if lines else "<empty>"
+        text, omitted, indices = bounded_memory_lines([observation_text(o) for o in selected], self.max_memory_chars)
+        truncated |= omitted
         self.recorder.record_memory({
             "condition": self.condition,
             "available": len(self.long_term),
-            "selected": len(selected),
+            "selected": len(indices),
             "selected_chars": len(text),
             "truncated": truncated,
         })
-        return text, truncated, len(selected)
+        return text, truncated, len(indices)
 
     def _transient_context(self) -> str:
         if not self.transient:
@@ -517,6 +538,10 @@ class SameModelAgent:
         if typ not in {"message", "structured", "abstention"}:
             raise ValueError(f"invalid response type: {typ!r}")
         out = AgentOutput(type=typ, content=obj.get("content"), value=obj.get("value"))
+        # Store the public exchange only after completion. The current query
+        # remains in REQUEST, never injected twice as newly formed memory.
+        self._persist_public(Observation(observation_id=f'exchange_{interaction_id}', type='dialogue',
+            payload={'request': input_data, 'response': asdict(out)}, virtual_time=virtual_time))
         self.response_cache[key] = out
         return out
 

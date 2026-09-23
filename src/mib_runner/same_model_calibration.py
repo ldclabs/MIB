@@ -138,7 +138,7 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
             "B1": {"memory_policy": "full_visible_history"},
             "B2": {"memory_policy": "lexical_top_k", "top_k": int(cfg["agent"].get("retrieval_top_k", 4))},
             "B3": {
-                "memory_policy": "structured_deterministic",
+                "memory_policy": "lexical_salience_heuristic",
                 "top_k": int(cfg["agent"].get("structured_top_k", 10)),
                 "salient_k": int(cfg["agent"].get("structured_salient_k", 6)),
             },
@@ -147,10 +147,12 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
             "memory_char_limits": copy.deepcopy(cfg["agent"].get("memory_char_limits") or {}),
             "parse_retries": int(cfg["agent"].get("parse_retries", 1)),
             "observe_decisions": bool(cfg['agent'].get('observe_decisions', generated)),
+            "observe_decision_types": copy.deepcopy(cfg['agent'].get('observe_decision_types')),
             "maintenance_decisions": bool(cfg['agent'].get('maintenance_decisions', generated)),
             "additional_baselines": copy.deepcopy(cfg.get('calibration', {}).get('additional_baselines', {})),
         },
         "allowed_condition_differences": ["memory_policy", "memory_selection", "memory_context_content"],
+        "calibration_plan": copy.deepcopy(cfg.get('calibration', {})),
     }
     transfer = _transfer_lock_section(cfg, paths)
     if transfer:
@@ -199,11 +201,16 @@ def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) ->
     observe = bool(cfg['agent'].get('observe_decisions', any(t.get('template', {}).get('program') for t in templates)))
     maintain = bool(cfg['agent'].get('maintenance_decisions', observe))
     def minimum_calls(instance, ablation=None):
+        from .runner import _EVENT_TYPE_MAP
         removed = set((ablation or {}).get('targets', {}).get('event_ids', [])) if (ablation or {}).get('method') == 'replay_excluding_events' else set()
         events = [e for e in instance['timeline'] if e['id'] not in removed]
-        visible = sum(e.get('visibility') in {'agent', 'both'} and e['type'] not in {'task', 'checkpoint', 'world_update'} for e in events)
+        decision_types = cfg['agent'].get('observe_decision_types')
+        def active(typ): return decision_types is None or typ in decision_types
+        visible = sum(e.get('visibility') in {'agent', 'both'} and e['type'] not in {'task', 'checkpoint', 'world_update'}
+                      and active(_EVENT_TYPE_MAP.get(e['type'], e['type'])) for e in events)
         return (sum(e['type'] == 'task' for e in events) + sum(p['delivery'] in {'respond', 'act'} for p in instance['probes'])
-                + int(observe) * (visible + len((ablation or {}).get('injections', [])) + sum(p['delivery'] == 'observe_only' for p in instance['probes']))
+                + int(observe) * (visible + sum(active(_EVENT_TYPE_MAP.get(e['type'], e['type'])) for e in (ablation or {}).get('injections', []))
+                    + sum(p['delivery'] == 'observe_only' and active(p['input']['observation'].get('type', 'environment_event')) for p in instance['probes']))
                 + int(maintain) * sum(e['type'] == 'maintenance_window' for e in events))
     for template in templates:
         for seed in seeds:
@@ -384,7 +391,10 @@ def _run_causal_from_paired_b3(
                         agent_seed=f"same-model:{seed}:{rep}",
                     ))
                 validate_causal_pairs(runs)
-                causal[tid].append(build_instance_aggregate(instance, runs))
+                aggregate = build_instance_aggregate(instance, runs)
+                aggregate['calibration_causal_complete'] = all(r.get('validity', {}).get('runner_valid') is True
+                    and (r['condition'] == 'full' or r.get('validity', {}).get('causal_pair_valid') is True) for r in runs)
+                causal[tid].append(aggregate)
     return causal
 
 
@@ -455,6 +465,18 @@ def _aggregate_calibration(
             "harm_resistance": _metric(caggs, "harm_resistance"),
             "net_memory_gain": _metric(caggs, "net_memory_gain"),
         }
+        required_metrics = {'causal_sensitivity': 'memory_benefit', 'irrelevant_stability': 'irrelevant_memory_stability'}
+        expected_n = len(configuration.get('causal_instance_seeds') or configuration.get('instance_seeds') or [])
+        min_n = int(thresholds.get('causal_min_instances', 5))
+        causal_checks = {}
+        for gate_name, metric_name in required_metrics.items():
+            measured = [row for row in caggs if any(m['name'] == metric_name and m.get('eligible_n', 0) > 0
+                                                   for m in row.get('causal_metrics', []))]
+            n = len({str(row.get('instance_seed')) for row in measured})
+            complete = bool(expected_n and n >= max(expected_n, min_n) and len(measured) == len(caggs)
+                            and all(row.get('calibration_causal_complete') is True for row in caggs))
+            threshold = thresholds['causal_memory_benefit_min' if gate_name == 'causal_sensitivity' else 'irrelevant_stability_min']
+            causal_checks[gate_name] = None if cdiag[metric_name] is None or not complete else cdiag[metric_name] >= threshold
         card = {
             "template_id": tid,
             "title": t.get("title"),
@@ -479,16 +501,18 @@ def _aggregate_calibration(
                 "no_memory": b0 <= thresholds["no_memory_max"],
                 "mdi": mdi >= thresholds["mdi_min"],
                 "baseline_span": (max(baseline_means) - min(baseline_means)) >= thresholds["baseline_span_min"],
-                "irrelevant_stability": cdiag["irrelevant_memory_stability"] is None or cdiag["irrelevant_memory_stability"] >= thresholds["irrelevant_stability_min"],
-                "causal_sensitivity": cdiag["memory_benefit"] is None or cdiag["memory_benefit"] >= thresholds["causal_memory_benefit_min"],
+                **causal_checks,
             },
         }
+        card['gate_status'] = {name: 'unassessable' if value is None else 'pass' if value else 'fail'
+                               for name, value in card['gates'].items()}
         rec, reasons = _recommend(card, thresholds)
         risks = []
         if cdiag["memory_benefit"] is not None and cdiag["memory_benefit"] < thresholds["causal_memory_benefit_min"]:
             risks.append("relevant_ablation_low_effect")
         if cdiag["irrelevant_memory_stability"] is not None and cdiag["irrelevant_memory_stability"] < thresholds["irrelevant_stability_min"]:
             risks.append("irrelevant_ablation_unstable")
+        risks.extend(name + '_missing_or_incomplete' for name, passed in causal_checks.items() if passed is None)
         card["recommendation"] = rec
         card["reasons"] = reasons
         card["causal_risks"] = risks
@@ -584,6 +608,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "structured_salient_k": int(cfg["agent"].get("structured_salient_k", 6)),
         "parse_retries": int(cfg["agent"].get("parse_retries", 1)),
         "observe_decisions": bool(cfg['agent'].get('observe_decisions', bool(profile.get('programs')))),
+        "observe_decision_types": copy.deepcopy(cfg['agent'].get('observe_decision_types')),
         "maintenance_decisions": bool(cfg['agent'].get('maintenance_decisions', bool(profile.get('programs')))),
     }
     memory_limits = dict(cfg["agent"].get("memory_char_limits") or {})
@@ -682,7 +707,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             if (label == 'bounded_recent_context' and not additional_spec.get('recent_window')) or (label == 'oracle_supported_reference' and not additional_spec.get('oracle_reference')):
                 continue
             recorder = InvocationRecorder()
-            memory = {**common_memory, **({'recent_window': int(additional_spec['recent_window'])} if label == 'bounded_recent_context' else {})}
+            memory = {**common_memory, **({'recent_window': int(additional_spec['recent_window']),
+                'max_memory_chars': int(additional_spec.get('max_memory_chars', 8192))} if label == 'bounded_recent_context' else {})}
             def extra_factory():
                 return SameModelAgent(condition='B1', model_client=model_client, system_prompt=system_prompt, reasoning_policy=reasoning_policy,
                     model_parameters=copy.deepcopy(model_cfg.get('parameters') or {}), recorder=recorder, memory_config=memory,
@@ -762,6 +788,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "paired_agent_seed_and_future_probe": bool(pairing_audit["valid"]),
         "b1_full_context_not_truncated": b1_truncations == 0,
         "no_model_transport_or_parse_errors": model_errors == 0,
+        "full_lifecycle_execution_clean": bool(full_runs) and all(r.get('validity', {}).get('runner_valid') is True
+                                                                   for r in full_runs.values()),
     }
     fairness_evidence = {
         "observed_model_calls": observed_calls,
@@ -779,7 +807,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     n = int(base_report["summary"]["template_count"])
     empirical_gate_count = int(base_report["summary"]["provisional_full_gate_including_causal"])
     all_templates_pass = empirical_gate_count == n
-    release_eligible = bool(empirical_client and fairness_valid and all_templates_pass)
+    release_eligible = bool(empirical_client and fairness_valid and all_templates_pass and cal_cfg.get('purpose', 'full') == 'full')
     base_report["calibration_mode"] = "same_model_empirical" if empirical_client else "same_model_engineering_stub"
     base_report["release_calibration_eligible"] = release_eligible
     base_report["release_note"] = (

@@ -238,9 +238,10 @@ def test_unassessable_tracking_retains_zero_eligible_count():
         def respond(self, **kw):
             return AgentOutput(type='structured', value={'value': 'UNSUPPORTED-VALUE-XYZZY', 'status': 'known'})
     report, _ = run_generated_pack(profile=PROFILE, agent_factory=NoCorrectAnswers, seeds=[101])
-    assert report['memory_dependence']['eligible_n'] == 0
+    # Joint evidence keeps valid wrong answers in the fixed denominator.
+    assert report['memory_dependence']['eligible_n'] > 0
     assert report['memory_dependence']['total_n'] > 0
-    assert report['memory_dependence']['eligible'] is None
+    assert report['memory_dependence']['eligible'] is False
     assert report['memory_dependence']['content_tracking_rate'] is None
 
 

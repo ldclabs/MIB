@@ -53,6 +53,7 @@
     "additional_baselines": {
       "recent_window": 12,
       "oracle_reference": true
-    }
+    },
+    "purpose": "smoke"
   }
 }

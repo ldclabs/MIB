@@ -230,6 +230,9 @@ def validate_causal_pairs(runs: list[dict[str, Any]]) -> tuple[bool, list[str], 
             if full.get('validity', {}).get('instance_spec_digest') != r.get('validity', {}).get('instance_spec_digest'):
                 pair_ok = False
                 notes.append('pair mismatch instance specification digest')
+            if full.get('validity', {}).get('counterfactual_plan') != r.get('validity', {}).get('counterfactual_plan'):
+                pair_ok = False
+                notes.append('pair mismatch frozen counterfactual plan')
             full_probe_ids = {p["probe_id"] for p in full.get("probe_results", [])}
             variant_probe_ids = {p["probe_id"] for p in r.get("probe_results", [])}
             if not variant_probe_ids.issubset(full_probe_ids):
@@ -271,6 +274,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
     hmb: list[float] = []
     ims: list[float] = []
     harms: list[float] = []
+    harm_effects: list[float] = []
     harm_references: set[str] = set()
     hrs: list[float] = []
     tracking: list[float] = []
@@ -278,6 +282,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
     stale: list[float] = []
     consolidation: list[float] = []
     nt: list[float] = []
+    nt_effects: list[float] = []
     ntr: list[float] = []
     nt_rate: list[float] = []
 
@@ -327,6 +332,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         elif cond in {"harmful_memory", "stale_memory"}:
             harm_references.add(full['condition'])
             harm = max(0.0, f - v)
+            harm_effects.append(f - v)
             harms.append(harm)
             hrs.append(tolerant_harm_resistance(harm, tau))
         elif cond == "counterfactual_content":
@@ -350,6 +356,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
             # MIB-Specification §7.8: the non-matching task without the skill memory (v)
             # versus with it (f).  Memory that hurts the non-matching task is negative transfer.
             harm = max(0.0, v - f)
+            nt_effects.append(v - f)
             nt.append(harm)
             ntr.append(tolerant_harm_resistance(harm, tau))
             rows = [p for p in full.get("probe_results", [])
@@ -363,6 +370,15 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
             pass
 
     out: list[dict[str, Any]] = []
+    for name, effects, reference, comparison in [
+        ('memory_harm_effect', harm_effects, 'custom', 'harmful_memory'),
+        ('negative_transfer_effect', nt_effects, 'full', 'negative_transfer_control'),
+    ]:
+        if effects:
+            out.append({'name': name, 'value': mean(effects), 'unit': 'normalized_delta', 'scope': 'scenario_instance',
+                'reference_condition': reference, 'comparison_condition': comparison,
+                'eligible_n': len(effects), 'total_n': len(effects), 'coverage': 1.0,
+                'notes': 'Signed paired effect; positive means harm. Clipped downside loss is a separate diagnostic.'})
     if tracking:
         out.append({
             "name": "content_tracking_rate", "value": mean(tracking) if tracking else 0.0, "unit": "normalized",
@@ -376,13 +392,13 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         })
     if consolidation:
         out.append({
-            "name": "consolidation_benefit", "value": mean(consolidation), "unit": "percentage_points",
+            "name": "consolidation_benefit", "value": mean(consolidation), "unit": "normalized_delta",
             "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "no_maintenance",
             "eligible_n": len(consolidation), "total_n": len(consolidation), "coverage": 1.0,
         })
     if nt:
         out.append({
-            "name": "negative_transfer", "value": mean(nt), "unit": "percentage_points",
+            "name": "negative_transfer", "value": mean(nt), "unit": "normalized_delta",
             "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "negative_transfer_control",
             "eligible_n": len(nt), "total_n": len(nt), "coverage": 1.0,
         })
@@ -402,7 +418,7 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
         refs = {c for _, c in benefits}
         comparison = next(iter(refs)) if len(refs) == 1 else "custom"
         out.append({
-            "name": "memory_benefit", "value": mean(vals), "unit": "percentage_points",
+            "name": "memory_benefit", "value": mean(vals), "unit": "normalized_delta",
             "scope": "scenario_instance", "reference_condition": "full", "comparison_condition": comparison,
             "eligible_n": len(vals), "total_n": len(vals), "coverage": 1.0,
         })
@@ -421,13 +437,13 @@ def paired_causal_metrics(runs: list[dict[str, Any]], tolerances: dict[str, floa
     if harms:
         reference = next(iter(harm_references)) if len(harm_references) == 1 else 'custom'
         out.extend([
-            {"name": "memory_harm", "value": mean(harms), "unit": "percentage_points", "scope": "scenario_instance", "reference_condition": reference, "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
+            {"name": "memory_harm", "value": mean(harms), "unit": "normalized_delta", "scope": "scenario_instance", "reference_condition": reference, "comparison_condition": "harmful_memory", "eligible_n": len(harms), "total_n": len(harms), "coverage": 1.0},
             {"name": HRS, "value": mean(hrs), "unit": "normalized", "scope": "scenario_instance", "reference_condition": reference, "comparison_condition": "harmful_memory", "eligible_n": len(hrs), "total_n": len(hrs), "coverage": 1.0},
         ])
     mb = next((m["value"] for m in out if m["name"] == "memory_benefit"), None)
     mh = next((m["value"] for m in out if m["name"] == "memory_harm"), None)
     if mb is not None and mh is not None:
-        out.append({"name": "net_memory_gain", "value": mb - mh, "unit": "percentage_points", "scope": "scenario_instance"})
+        out.append({"name": "net_memory_gain", "value": mb - mh, "unit": "normalized_delta", "scope": "scenario_instance"})
     return out
 
 
@@ -559,7 +575,7 @@ def learning_metrics(full_runs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     base = {"scope": "scenario_instance", "reference_condition": "full", "comparison_condition": "full",
             "eligible_n": len(gains), "total_n": len(full_runs), "coverage": len(gains) / len(full_runs)}
     return [
-        {"name": "learning_gain", "value": mean(gains), "unit": "percentage_points", **base},
+        {"name": "learning_gain", "value": mean(gains), "unit": "normalized_delta", **base},
         {"name": "area_under_learning_curve", "value": mean(areas), "unit": "normalized", **base},
     ]
 
@@ -583,6 +599,7 @@ def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]
     dimensions = instance_dimension_scores(list(scenario.get("dimensions", [])), full_runs, metrics)
     seed = full_runs[0].get("instance_seed")
     inst = scenario.get("instantiation") or {}
+    from .dependence import joint_evidence
     return {
         "scenario_instance_id": full_runs[0]["scenario_instance_id"],
         "template_id": full_runs[0]["template_id"],
@@ -598,6 +615,7 @@ def build_instance_aggregate(scenario: dict[str, Any], runs: list[dict[str, Any]
         "causal_pair_ids": pair_ids,
         "causal_metrics": metrics,
         "dependence_evidence": counterfactual_evidence(runs),
+        "joint_dependence_evidence": joint_evidence(runs),
         "counterfactual_counts": counterfactual_counts(runs),
     }
 

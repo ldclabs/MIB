@@ -1,6 +1,6 @@
 # MIB v0.1 Same-Model Empirical Baseline Harness
 
-> The v0.1 examples below remain legacy material. Implementation 0.10.0 also executes generated v0.2 Programs at every rung. Use `same-model-generated.stub.json` for engineering validation or `same-model-generated.external-http.json` for real fixed-model calibration. The revised adapter persists completed task transcripts for B1–B3, discards them for B0, and supports observe-time decisions, maintenance, and explicit session boundaries. Optional recent-window and privileged oracle-supported references are separate diagnostics and never enter a release gate. See `MIB-v0.2-Review-Resolution.md` for the current procedure and remaining empirical requirements.
+> The v0.1 examples below remain legacy material. Implementation 0.13.0 also executes generated v0.2 Programs at every rung. Use `same-model-generated.stub.json` for engineering validation or `same-model-generated.external-http.json` for real fixed-model calibration. The revised adapter persists completed task transcripts for B1–B3, discards them for B0, and supports observe-time decisions, maintenance, and explicit session boundaries. Optional recent-window and privileged oracle-supported references are separate diagnostics and never enter a release gate. See `MIB-v0.4-Review-Resolution.md` for the current procedure and remaining empirical requirements.
 
 
 **Version:** 0.1-draft  
@@ -19,7 +19,7 @@ The four calibration conditions are:
 B0  No Memory
 B1  Full Visible History
 B2  Simple Lexical Retrieval
-B3  Structured Deterministic Memory
+B3  Heuristic Salience Retrieval
 ```
 
 The Harness is intended to provide the empirical evidence needed before freezing the MIB v0.1 leaderboard pack.
@@ -78,7 +78,7 @@ Past observations are stored verbatim. At Probe time, a deterministic token-over
 
 B2 intentionally has no temporal revision model, source graph, episodic structure, or learned procedural representation.
 
-### B3 — Structured Deterministic Memory
+### B3 — Heuristic Salience Retrieval
 
 Past observations remain verbatim, but retrieval combines:
 
@@ -92,7 +92,7 @@ small recency term
 salience supplement
 ```
 
-B3 is deterministic and uses the same base model as B0–B2. The memory policy, not a second LLM, supplies the structural advantage.
+B3 is deterministic and uses the same base model as B0–B2. The memory policy, not a second LLM, supplies the retrieval difference.
 
 ## 5. Experiment Lock
 

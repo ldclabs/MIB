@@ -15,7 +15,8 @@ from pathlib import Path
 from . import __version__
 from .adapter_contract import CONTRACT_VERSION, digest
 from .benchmark import build_pack_report
-from .materialize import materialize
+from .episode import materialize_episode_plan
+from .scoring import instance_key
 from .memory_backend import HttpMemoryBackend, NullMemoryBackend, check_backend_descriptor, validate_retrieval
 from .model_clients import DeterministicStubModelClient, build_model_client
 from .report import verify_score
@@ -25,7 +26,7 @@ from .same_model_calibration import (build_experiment_lock, load_experiment, loa
                                      _preflight_statelessness)
 from .validation import load_json, validate_scenario
 
-REPORT_VERSION = "0.1.0"
+REPORT_VERSION = "0.2.0"
 CONDITIONS = ("B0", "candidate")
 
 
@@ -34,6 +35,12 @@ def backend_factory(spec):
     if set(spec) - allowed:
         raise ValueError(f"unknown memory_backend fields: {sorted(set(spec) - allowed)}")
     return lambda: HttpMemoryBackend(**spec)
+
+
+def backend_episode_plan(cfg, paths):
+    profile = load_json(paths["profile"])
+    return materialize_episode_plan(profile, list((cfg.get("execution") or {}).get("instance_seeds", [101])),
+        static_templates=load_experiment_templates(paths) if not profile.get("programs") else None)
 
 
 def build_backend_lock(cfg, paths, descriptor):
@@ -47,7 +54,9 @@ def build_backend_lock(cfg, paths, descriptor):
                           "candidate": {"memory_backend": "HTTP", "descriptor_digest": digest(descriptor)}}
     lock["memory_runtime"] = copy.deepcopy(cfg["agent"])
     lock["execution"] = copy.deepcopy(cfg.get("execution", {}))
-    lock["templates_digest"] = digest(load_experiment_templates(paths))
+    templates, instances = backend_episode_plan(cfg, paths)
+    lock["templates_digest"] = digest(templates)
+    lock["episode_plan"] = [instance_key(s) for s in instances]
     lock["backend_transport"] = copy.deepcopy(cfg["memory_backend"])
     # Backend transport has only an environment-variable name, never a token.
     lock["allowed_condition_differences"] = ["memory_backend", "memory_context", "backend_internal_work_and_cost"]
@@ -87,7 +96,7 @@ def fairness_from_evidence(lock, calls, reports, preflight):
 
 def verify_backend_report(report):
     errors = []
-    if report.get("kind") != "MIBMemoryBackendReport" or report.get("report_version") != REPORT_VERSION:
+    if report.get("kind") != "MIBMemoryBackendReport" or report.get("report_version") not in {"0.1.0", REPORT_VERSION}:
         return {"valid": False, "errors": ["unsupported memory backend report version"]}
     lock = report.get("experiment_lock", {})
     if lock.get("digest") != digest({k: v for k, v in lock.items() if k != "digest"}):
@@ -108,9 +117,19 @@ def verify_backend_report(report):
     if report.get("fairness_audit") != expected:
         errors.append("fairness audit disagrees with runtime evidence")
     schedule = report.get("schedule", [])
-    units = [(s.get("template_id"), str(s.get("seed")), s.get("repetition")) for s in schedule]
-    expected_units = {(r["template_id"], str(r.get("instance_seed")), r["repetition"])
-        for r in reports.get("B0", {}).get("results", {}).get("runs", []) if r.get("condition") == "full"}
+    modern = report.get("report_version") == REPORT_VERSION
+    if modern:
+        units = [(s.get("scenario_instance_id"), s.get("repetition")) for s in schedule]
+        expected_units = {(iid, rep) for iid in lock.get("episode_plan", [])
+                          for rep in range(int(lock.get("execution", {}).get("repetitions", 1)))}
+        for arm, child in reports.items():
+            actual = [(r["scenario_instance_id"], r["repetition"]) for r in child.get("results", {}).get("runs", []) if r["condition"] == "full"]
+            if set(actual) != expected_units or len(actual) != len(expected_units):
+                errors.append(f"{arm}: incomplete frozen episode plan")
+    else:
+        units = [(s.get("template_id"), str(s.get("seed")), s.get("repetition")) for s in schedule]
+        expected_units = {(r["template_id"], str(r.get("instance_seed")), r["repetition"])
+            for r in reports.get("B0", {}).get("results", {}).get("runs", []) if r.get("condition") == "full"}
     if len(units) != len(set(units)) or set(units) != expected_units or any(
         s.get("order") != list(CONDITIONS if i % 2 == 0 else tuple(reversed(CONDITIONS))) for i, s in enumerate(schedule)):
         errors.append("condition schedule differs from paired alternating execution policy")
@@ -152,8 +171,10 @@ def verify_backend_report(report):
                     if operation == "retrieve" and arm == "candidate":
                         retrieval = op.get("retrieval", {})
                         try:
-                            validate_retrieval(retrieval, int(lock["memory_runtime"].get("max_memory_chars", 32768)))
-                            if retrieval.get("limit_chars") != int(lock["memory_runtime"].get("max_memory_chars", 32768)):
+                            limit = int(lock["memory_runtime"].get("max_memory_chars", 32768))
+                            requested_limit = max(1, limit - 4) if modern else limit
+                            validate_retrieval(retrieval, requested_limit)
+                            if retrieval.get("limit_chars") != requested_limit:
                                 raise ValueError("memory budget mismatch")
                         except Exception:
                             errors.append(f"{arm}: invalid retrieval/budget evidence")
@@ -173,7 +194,7 @@ def verify_backend_report(report):
 def run_backend_benchmark(experiment_path, *, model_client=None, candidate_factory=None):
     cfg, paths = load_experiment(experiment_path)
     agent_cfg = cfg["agent"]
-    unsupported = set(agent_cfg) - {"system_prompt", "reasoning_policy", "max_memory_chars", "parse_retries", "observe_decisions", "maintenance_decisions"}
+    unsupported = set(agent_cfg) - {"system_prompt", "reasoning_policy", "max_memory_chars", "parse_retries", "observe_decisions", "observe_decision_types", "maintenance_decisions"}
     if unsupported:
         raise ValueError(f"backend comparison requires a common budget, unsupported agent fields: {sorted(unsupported)}")
     if int(agent_cfg.get("max_memory_chars", 32768)) <= 0:
@@ -185,7 +206,7 @@ def run_backend_benchmark(experiment_path, *, model_client=None, candidate_facto
     profile = load_json(paths["profile"])
     # This is a development experiment until fixed-model empirical admission is complete.
     profile = {**profile, "track": "memory_system", "official": False}
-    templates = load_experiment_templates(paths)
+    templates, planned_instances = backend_episode_plan(cfg, paths)
     system = load_prompt(paths["system_prompt"])
     policy = load_prompt(paths["reasoning_policy"])
     owned = model_client is None
@@ -227,44 +248,44 @@ def run_backend_benchmark(experiment_path, *, model_client=None, candidate_facto
         raise ValueError("at least one instance seed and repetition is required")
     try:
         index = 0
-        for template in templates:
-            for seed in seeds:
-                scenario = materialize(template, seed)
-                validation = validate_scenario(scenario, schema)
-                if not validation.valid:
-                    raise ValueError(f"invalid scenario: {validation.errors}")
-                instances.append(scenario)
-                for rep in range(repetitions):
-                    order = CONDITIONS if index % 2 == 0 else tuple(reversed(CONDITIONS))
-                    schedule.append({"template_id": template["id"], "seed": seed, "repetition": rep, "order": list(order)})
-                    index += 1
-                    for arm in order:
-                        made = []
-                        def make_agent():
-                            backend = NullMemoryBackend() if arm == "B0" else factory()
-                            # Pin identity on every fresh backend, not only the preflight descriptor.
-                            if arm == "candidate":
-                                backend.expected_descriptor_digest = digest(descriptor)
-                            a = SameModelAgent(condition=arm if arm == "B0" else "MIB_BACKEND_CANDIDATE", model_client=model, system_prompt=system, reasoning_policy=policy,
-                                model_parameters=copy.deepcopy(cfg["model"].get("parameters", {})), recorder=recorders[arm],
-                                memory_backend=backend, memory_config={k: v for k, v in agent_cfg.items() if k not in {"system_prompt", "reasoning_policy"}},
-                                seed_policy=cfg["model"].get("seed_policy", "paired_per_call"), seed_base=cfg["model"].get("seed_base", "mib-backend-0.1"),
-                                empirical_eligible=not isinstance(model, DeterministicStubModelClient))
-                            descriptors.setdefault(arm, {"protocol": "mib-agent/0.1",
-                                "implementation": {"name": f"MIB Same-Model Agent {arm}", "version": __version__, "vendor": "MIB"},
-                                "track_support": ["memory_system"],
-                                "extensions": {"mib.backend": descriptor if arm == "candidate" else NullMemoryBackend().describe()}})
-                            made.append(a)
-                            return a
-                        runs = run_scenario(scenario=scenario, agent_factory=make_agent,
-                            include_ablations=settings.get("include_ablations", True), repetition=rep, agent_seed=f"backend:{seed}:{rep}")
-                        all_runs[arm].extend(runs)
-                        for a, run in zip(made, runs):
-                            operations = copy.deepcopy(a.backend.operations)
-                            snapshots = [op["costs"] for op in operations
-                                         if "costs" in op and op.get("cost_scope") == "cumulative_run"]
-                            backends[arm].append({"agent_run_id": run["run_id"], "backend_run_id": a.backend.run_id,
-                                "operations": operations, "cost_scope": "cumulative_run", "costs": snapshots[-1] if snapshots else None})
+        for scenario in planned_instances:
+            inst = scenario.get('instantiation') or {}
+            seed = inst.get('seed', seeds[0])
+            validation = validate_scenario(scenario, schema)
+            if not validation.valid:
+                raise ValueError(f"invalid scenario: {validation.errors}")
+            instances.append(scenario)
+            for rep in range(repetitions):
+                order = CONDITIONS if index % 2 == 0 else tuple(reversed(CONDITIONS))
+                schedule.append({"scenario_instance_id": instance_key(scenario), "template_id": inst.get('template_id', scenario['id']), "seed": seed, "repetition": rep, "order": list(order)})
+                index += 1
+                for arm in order:
+                    made = []
+                    def make_agent():
+                        backend = NullMemoryBackend() if arm == "B0" else factory()
+                        # Pin identity on every fresh backend, not only the preflight descriptor.
+                        if arm == "candidate":
+                            backend.expected_descriptor_digest = digest(descriptor)
+                        a = SameModelAgent(condition=arm if arm == "B0" else "MIB_BACKEND_CANDIDATE", model_client=model, system_prompt=system, reasoning_policy=policy,
+                            model_parameters=copy.deepcopy(cfg["model"].get("parameters", {})), recorder=recorders[arm],
+                            memory_backend=backend, memory_config={k: v for k, v in agent_cfg.items() if k not in {"system_prompt", "reasoning_policy"}},
+                            seed_policy=cfg["model"].get("seed_policy", "paired_per_call"), seed_base=cfg["model"].get("seed_base", "mib-backend-0.1"),
+                            empirical_eligible=not isinstance(model, DeterministicStubModelClient))
+                        descriptors.setdefault(arm, {"protocol": "mib-agent/0.1",
+                            "implementation": {"name": f"MIB Same-Model Agent {arm}", "version": __version__, "vendor": "MIB"},
+                            "track_support": ["memory_system"],
+                            "extensions": {"mib.backend": descriptor if arm == "candidate" else NullMemoryBackend().describe()}})
+                        made.append(a)
+                        return a
+                    runs = run_scenario(scenario=scenario, agent_factory=make_agent,
+                        include_ablations=settings.get("include_ablations", True), repetition=rep, agent_seed=f"backend:{seed}:{rep}")
+                    all_runs[arm].extend(runs)
+                    for a, run in zip(made, runs):
+                        operations = copy.deepcopy(a.backend.operations)
+                        snapshots = [op["costs"] for op in operations
+                                     if "costs" in op and op.get("cost_scope") == "cumulative_run"]
+                        backends[arm].append({"agent_run_id": run["run_id"], "backend_run_id": a.backend.run_id,
+                            "operations": operations, "cost_scope": "cumulative_run", "costs": snapshots[-1] if snapshots else None})
     finally:
         if owned:
             model.close()

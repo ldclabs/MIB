@@ -1,7 +1,7 @@
 {
   "kind": "MIBLearningLongitudinalProfile",
   "id": "MIB-Learning-Longitudinal-0.1-Dev",
-  "measurement_revision": "mib-learning-longitudinal/0.1.0",
+  "measurement_revision": "mib-learning-longitudinal/0.2.0",
   "conditions": [
     "normal",
     "no_memory",

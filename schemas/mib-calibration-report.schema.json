@@ -269,7 +269,10 @@
         "gates": {
           "type": "object",
           "additionalProperties": {
-            "type": "boolean"
+            "type": [
+              "boolean",
+              "null"
+            ]
           }
         },
         "recommendation": {
@@ -285,6 +288,16 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "gate_status": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "pass",
+              "fail",
+              "unassessable"
+            ]
           }
         }
       }

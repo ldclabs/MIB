@@ -1,10 +1,10 @@
 # MIB Specification
 
-## Memory Intelligence Benchmark — format v0.2, measurement revision 0.3.0
+## Memory Intelligence Benchmark — format v0.2, measurement revision 0.4.0
 
-**Implementation:** 0.10.0. **Status:** normative executable development specification.
+**Implementation:** 0.13.0. **Status:** normative executable development specification.
 
-This revision addresses the September 2026 design review, including its follow-up corrections. Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Programs and development Profiles are version 0.3.0, and new core reports use `report_version: "0.3.0"`. Static v0.1 scenarios remain executable.
+This revision addresses the September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and development Profiles are version 0.4.0, and new pack reports use `report_version: "0.5.0"`. Static v0.1 scenarios remain executable.
 
 The implementation, schemas, and this specification define the executable contract. Proposals and archived documents are rationale, not competing specifications. Chinese mirrors have not been updated in this revision.
 
@@ -47,7 +47,7 @@ Tracks, Profile identities/versions, pack identities/versions, source bundles, a
 
 ## 2.2 Dimensions
 
-The seven core dimensions are retention/retrieval, temporal memory, epistemic memory, experience memory, skill learning/transfer, prospective/self memory, and selective forgetting. The last name covers an operational withdrawal lane; it does not imply comprehensive deletion or budget-aware forgetting.
+The seven core dimension IDs remain stable. Their measured scope is retention/retrieval, temporal memory, epistemic memory, feedback-derived experience memory, procedural memory/applicability, prospective/self memory, and withdrawal compliance. The legacy `skill_learning_transfer` and `selective_forgetting` IDs do not imply broad skill learning or physical deletion. The last name covers an operational withdrawal lane; it does not imply comprehensive deletion or budget-aware forgetting.
 
 Causal quantities are diagnostics. They do not enter a v0.2 capability dimension. The deprecated v0.1 `causal_memory_impact` dimension remains available for legacy Profiles.
 
@@ -127,7 +127,7 @@ Events include interactions, documents, tool results, observations, lived tasks,
 
 Noise uses the full public value pool independently of target-answer exclusions. An answer value may appear for another subject or inside a question. Correct interpretation must depend on its relation and provenance. This prevents the pool-complement shortcut.
 
-A seed's rung changes interference count while retaining its task and virtual span. The ordinary interference block spans 24 virtual hours even at rung zero. Interleaved recall distributes useful observations through its stream, including after maintenance, and spreads its noise across a fixed span. Its similar-subject noise excludes every primary actor, so another noise block cannot overwrite an earlier or future tested fact.
+A seed's rung changes interference count while retaining its task and virtual span. Core Programs interleave noise with acquisition and place maintenance inside acquisition independently of relevance. Information-event timestamps and the future checkpoint are fixed across rungs. The original schedule reserves a 24-hour extension even at rung zero; noise is distributed through the available acquisition interval. Programs with an explicit streaming schedule retain that schedule. Interleaved recall distributes useful observations through its stream, including after maintenance, and spreads its noise across a fixed span. Its similar-subject noise excludes every primary actor, so another noise block cannot overwrite an earlier or future tested fact.
 
 `interference_tokens` is a **legacy field name for whitespace-separated words**, not tokenizer tokens. Reports must not infer a model context overflow from it. Runner input/output byte counts cover serialized arguments and results; model-provided token usage, where available, is reported separately. Different semantic/load Profiles are distinct experiments.
 
@@ -145,7 +145,7 @@ Late sampling chooses input variants only at delivery; the same variant is used 
 
 ## 4.7 Evaluation
 
-Values are compared deterministically after normalization. A forbidden value in the answer or auxiliary content fails, including inside an abstention, explanation, or attribution. Disclosure checks inspect actual leaf values, excluding JSON field names, null placeholders, and valid root-level status/confidence metadata in a recognized answer envelope. JSON and field-line answers use the same value semantics. Invalid metadata and nested auxiliary values remain subject to disclosure checks.
+Structured scalar values use deterministic exact equality after normalization, with explicit oracle aliases. Containers and, in generated scalar tasks, non-string values are rejected; a wrong value cannot earn status-only credit. Negating an accepted value or enumerating candidates does not count as answering. Explicit legacy text `contains` evaluators remain available. A forbidden value in the answer or auxiliary content fails, including inside an abstention, explanation, or attribution. Disclosure checks inspect actual leaf values, excluding JSON field names, null placeholders, and valid root-level status/confidence metadata in a recognized answer envelope. JSON and field-line answers use the same value semantics. Invalid metadata and nested auxiliary values remain subject to disclosure checks.
 
 Structured evaluation uses a fixed rubric, normally value 0.8 and status 0.2. Missing required fields receive zero for their fixed weight; they do not disappear from the denominator. Unknown status with a definite value is inconsistent and fails. A proper abstention can be represented as null/unknown or the abstention envelope.
 
@@ -189,7 +189,7 @@ Conditions use fresh Agent instances/reset contexts with paired seeds and future
 
 The Agent executes training tasks and receives actual tool feedback. Task outcomes are learning diagnostics, not capability points.
 
-The same-model adapter records the active goal, attempted operations, feedback, and completion. B1–B3 persist the task transcript at completion or before the next task; B0 discards it. Session boundaries clear the transient conversation while preserving the selected persistent-memory condition. Observe-time decisions and maintenance are explicit model operations when enabled by the experiment.
+The same-model adapter records the active goal, attempted operations, feedback, and completion. B1–B3 persist the task transcript at completion or before the next task, completed public question/answer exchanges, and emitted-message receipts; B0 discards them. Outputs are not oracle feedback: their provenance remains dialogue/emission, and no hidden evaluator data enters formation. Session boundaries clear the transient conversation while preserving the selected persistent-memory condition. Observe-time decisions and maintenance are explicit model operations when enabled by the experiment.
 
 ## 5.4 Failure classification
 
@@ -247,7 +247,7 @@ Content and policy twins cover all seven base dimensions, including changed comm
 
 ## 7.4 Harm
 
-`MH = max(0, C-H)`. The generated questioning lane uses its matched placebo as C. `HRS = clamp(1 - max(0, C-H-tolerance)/(1-tolerance), 0, 1)`. These are contrasts under the declared construction; they do not establish all real-world forms of memory poisoning.
+`memory_harm_effect = C-H` is the signed paired effect. `MH = max(0, C-H)` is retained as a separate clipped downside-loss diagnostic, not an unbiased estimate of an average harmful effect. The generated questioning lane uses its matched placebo as C. `HRS = clamp(1 - max(0, C-H-tolerance)/(1-tolerance), 0, 1)`. These are contrasts under the declared construction; they do not establish all real-world forms of memory poisoning.
 
 ## 7.5 Net gain
 
@@ -263,7 +263,7 @@ Do not substitute the number of Programs for the number of eligible probe pairs.
 
 ## 7.8 Negative transfer
 
-Compare the same nonmatching task with and without the other family's acquisition: `NT = max(0, without_skill - with_skill)`. Report the accompanying behavioral failure rate and resistance. Nonmatching probes precede matching probes so the control cannot first re-teach the withheld procedure.
+Compare the same nonmatching task with and without the other family's acquisition: `negative_transfer_effect = without_skill - with_skill` is signed; `NT = max(0, without_skill - with_skill)` is clipped downside loss. Report the accompanying behavioral failure rate and resistance. Nonmatching probes precede matching probes so the control cannot first re-teach the withheld procedure.
 
 ## 7.9 Behavioral diagnostics
 
@@ -273,9 +273,11 @@ The new `memory_related_error_rate` is a descriptive error-pattern rate. It does
 
 ## 7.10 Dependence eligibility
 
-The revised Profiles require evidence in every weighted dimension. Each dimension reports conditional probe tracking, eligible/total opportunities, coverage, eligible independent Instances, and Instances whose eligible twins all tracked.
+Revision 0.4 Profiles use `joint_twin_success`. The Runner freezes all declared changed-probe opportunities on every run. Each opportunity succeeds only if full and twin both score 1. Missing, invalid, or wrong pairs remain in this denominator; original correctness never selects eligibility. Repetitions are averaged inside an Instance. The gate averages Instance rates within each fixed Program stratum, then averages strata within the dimension.
 
-By default, each dimension requires at least five eligible Instances, at least 0.5 probe coverage, and a 95% Wilson lower bound of at least 0.5 on the Instance tracking success rate. A dimension with no eligible Instance is not assessable. The global gate cannot pass while a required dimension is missing or fails. These are development policy choices to be calibrated, not established psychometric thresholds.
+Each weighted dimension requires five complete independent Instances, 100% valid planned-pair coverage, and an Instance-cluster percentile-bootstrap lower bound of at least 0.5 (95%, 2,000 draws by default). Resampling keeps Program strata fixed. Duplicate repetitions cannot increase independent sample count. A missing contrast is unassessable; valid incorrect answers are measured failures. Conditional content tracking is still reported separately. Legacy Profiles retain their explicitly declared conditional/Wilson policy.
+
+These are development policy choices, not calibrated psychometric thresholds. A degenerate empirical bootstrap interval is explicitly flagged and does not establish population certainty; five uniformly successful Instances are not proof of broad generality. Formal sample size and useful-effect thresholds still require a preregistered pilot.
 
 # 8. Statistics
 
@@ -317,17 +319,17 @@ Arithmetic consistency, source identity, service attestation, trusted Profile ad
 
 Runner telemetry records calls, input/output UTF-8 bytes, and wall-clock milliseconds for observe, respond, act, maintenance, and reset. Tool calls and probe latency remain available. Same-model telemetry additionally records provider-supplied token usage and memory truncation.
 
-The bundle does not independently measure every external system's storage, write amplification, or backend compute. Use budget-controlled experiments and report quality/cost pairs; do not interpret whitespace words or probe latency alone as memory efficiency.
+The bundle does not independently measure every external system's storage, write amplification, or backend compute. Bounded built-in and external contexts share a hard final rendered-character limit, including prefixes and separators. Oversize records are omitted whole and reported; null limits explicitly mean unbounded references. Characters are not tokenizer tokens. Core signed and clipped score differences use JSON unit `normalized_delta`; displays multiply by 100 to show percentage points. Use budget-controlled experiments and report quality/cost pairs; do not interpret whitespace words or probe latency alone as memory efficiency.
 
 # 10. Calibration
 
-Generated calibration materializes every Program/rung/seed and counterbalances B0 no memory, B1 full visible history, B2 retrieval, and B3 structured selection with a fixed model/prompt/tool/decoding setup. It includes content and policy twins and matched harmful/placebo controls.
+Generated calibration materializes every Program/rung/seed and counterbalances B0 no memory, B1 full visible history, B2 lexical retrieval, and B3 heuristic salience selection with a fixed model/prompt/tool/decoding setup. It includes content and policy twins and matched harmful/placebo controls.
 
 Optional additional groups measure bounded recent context and a privileged oracle-supported reference. They are diagnostic only, do not enter core scores, and are not guaranteed mathematical upper bounds.
 
 `same-model-generated.stub.json` is an engineering smoke configuration. `same-model-generated.external-http.json` is a ready-to-configure real-model experiment. A model endpoint, immutable model identity, and credentials are external inputs. Stub execution cannot establish difficulty, discriminativeness, or release readiness. The statelessness preflight can detect some violations; it is not a proof that a remote service retains no state.
 
-Choose real sample counts, repetitions, and admission thresholds from pilot variance and a preregistered minimum useful effect. Run multiple fixed models before making architecture-general claims. An official freeze remains contingent on those empirical results.
+Choose real sample counts, repetitions, and admission thresholds from pilot variance and a preregistered minimum useful effect. Run multiple fixed models before making architecture-general claims. An official freeze remains contingent on those empirical results. Missing or incomplete necessary causal metrics are `unassessable`, not passes. Invalid full/causal lifecycles block admission. Smoke and pilot configurations never grant release admission. Calibration seed/repetition/threshold/purpose settings are bound in the experiment lock.
 
 # 11. Governance and hidden evaluation
 
@@ -353,3 +355,11 @@ Public reports redact raw runs, seeds, private Template IDs, transfer support de
 12. Fixture ordering is plumbing evidence, not real-model calibration.
 
 Further empirical validation, real-system storage/cost instrumentation, broader independent domains, and an official freeze are not implied by implementing these constructs. Transfer Intelligence remains supplemental; its early/late artifact contrast measures availability across formation, survival, and retrieval unless stronger routing assumptions are justified. MIB-R remains an independent prototype result family whose external-task utility needs its own calibration.
+
+# 13. Development challenges and entry points
+
+`MIB-Mechanism-Challenges-0.1-Dev` adds feature-based recipe composition for unseen families and multiple commitment/cancellation/renewal/repeated-trigger behavior. It is a separate Profile, not an expansion of the Core score. The feature task supplies the composition convention, but operations must come from actual feedback; it tests bounded composition, not open-ended rule discovery.
+
+Use `mib run` with a Scenario, generated Profile, same-model configuration, memory-backend configuration, or longitudinal configuration. `mib compare` compares compatible verified pack reports; `mib verify` aliases `verify-score`. Existing commands remain supported. Scenario/Profile runs require `--schema`; configured experiments resolve their own schemas and prompts. `same-model-generated.pilot.json` is a bounded seven-mechanism, one-rung pilot; the existing stub/full configurations remain separate.
+
+The optional `observe_decision_types` routes business-model observation decisions by public observation type. All observations still reach memory formation. The same declared router applies to every memory arm and never reads probe, relevance, oracle, or trigger labels.

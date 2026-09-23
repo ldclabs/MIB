@@ -33,7 +33,7 @@ def test_public_benchmark_submission_uses_real_http_adapter(tmp_path, monkeypatc
             '--submission',str(spec),'--seeds','101','--repetitions','1','--bootstrap-resamples','0',
             '--output-report',str(output)]) == 0
         report=json.loads(output.read_text())
-        assert report['report_version']=='0.4.0'
+        assert report['report_version']=='0.5.0'
         assert verify_score(report)['valid']
         assert report['execution']['execution_failure_rate']==0
         assert report['efficiency']['participant_reported']['total_cost'] is None

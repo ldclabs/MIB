@@ -2,14 +2,14 @@
   "mib": "0.2",
   "kind": "BenchmarkProfile",
   "id": "MIB-Core-0.2-Load-Dev",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Expanded development pack with 64 independently useful facts in the interleaved recall Program. Varies information load separately from interference.",
   "track": "integrated_agent",
   "scale": "MIB-S",
   "official": false,
   "scenario_pack": {
     "id": "MIB-v0.2-Load-Dev",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "programs": [
     {
@@ -97,12 +97,13 @@
   },
   "required_coverage": 1.0,
   "memory_dependence": {
-    "metric": "content_tracking_rate",
+    "metric": "joint_twin_success",
     "floor": 0.5,
     "require_per_dimension": true,
     "min_instances": 5,
-    "min_coverage": 0.5,
-    "confidence_level": 0.95
+    "min_coverage": 1.0,
+    "confidence_level": 0.95,
+    "bootstrap_resamples": 2000
   },
   "statistics": {
     "confidence_level": 0.95,
@@ -114,7 +115,7 @@
   "measurement_regime": {
     "kind": "historical_information_use",
     "context_boundary_enforced": false,
-    "interference_time_policy": "fixed_24_hours",
+    "interference_time_policy": "fixed_future_time_across_rungs",
     "distance_token_unit": "whitespace_words",
     "scope": "Conditional on the declared Program set; no claim of general memory intelligence or context overflow."
   }
