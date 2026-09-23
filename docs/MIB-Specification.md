@@ -2,7 +2,7 @@
 
 ## Memory Intelligence Benchmark — format v0.2, measurement revision 0.5.0
 
-**Implementation:** 0.14.0. **Status:** normative executable development specification.
+**Implementation:** 0.14.1. **Status:** normative executable development specification.
 
 This revision addresses the second September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.5-Review-Resolution.md); the preceding revision's ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and Core development Profiles are version 0.5.0 (the Mechanism Challenges Profile is 0.2.0), and new pack reports use `report_version: "0.6.0"`. Static v0.1 scenarios remain executable.
 
@@ -347,6 +347,8 @@ A comparison of memory arms under a budget is informative only when the budget b
 `same-model-generated.stub.json` is an engineering smoke configuration. `same-model-generated.external-http.json` is a ready-to-configure real-model experiment with unbounded references. `same-model-generated.pilot.json` runs at 100 interference events with a 3,500-character budget per memory arm (median history/budget ratio about 4.2, required at least 4), selection sizes that can fill that budget (B2 top-30, B3 24+8 records of about 140 rendered characters), and the unbounded reference arm. A model endpoint, immutable model identity, and credentials are external inputs. Stub execution cannot establish difficulty, discriminativeness, or release readiness. The statelessness preflight can detect some violations; it is not a proof that a remote service retains no state.
 
 Choose real sample counts, repetitions, and admission thresholds from pilot variance and a preregistered minimum useful effect. Run multiple fixed models before making architecture-general claims. An official freeze remains contingent on those empirical results. Missing or incomplete necessary causal metrics are `unassessable`, not passes. Invalid full/causal lifecycles block admission. Smoke and pilot configurations never grant release admission. Calibration seed/repetition/threshold/purpose settings are bound in the experiment lock.
+
+When bounded B1 uses the unbounded reference for admission, that reference's invocations and runs also enter model/prompt/decoding identity checks, transport/parse error counts, lifecycle checks, and the paired seed/future-Probe audit. Fairness invocation totals include it; its telemetry remains in `additional_baselines.unbounded_reference`. The condition-order audit remains the B0–B3 counterbalance. An extra reference that is unused for admission remains diagnostic.
 
 # 11. Governance and hidden evaluation
 

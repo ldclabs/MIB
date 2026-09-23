@@ -492,7 +492,9 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB uses scenario format v0.2, measurement revision **0.5.0**, and implementation **0.14.0**.
+MIB uses scenario format v0.2, measurement revision **0.5.0**, and implementation **0.14.1**.
+
+Implementation 0.14.1 keeps failed Instances in the dependence denominator, completes `restore` dispatch in the stdio/HTTP host, invalidates malformed persisted-state replies, and audits the unbounded reference whenever it supplies same-model admission evidence. These are corrections to the existing measurement contract; see [the review ledger](docs/harness/MIB-v0.5-Review-Resolution.md).
 
 Pack report **0.6.0** adds content-following evidence, conditional-credit records and the scheduled-intervention policy; report 0.5.0 added explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
 

@@ -83,6 +83,11 @@ class AgentHost:
                 if not callable(hook):
                     return error_response(request, 'unsupported_operation', 'session boundary not supported')
                 return ok_response(request, hook(run_id=run_id, request_id=rid, virtual_time=vt))
+            if op == 'restore':
+                hook = getattr(agent, 'restore', None)
+                if not callable(hook):
+                    return error_response(request, 'unsupported_operation', 'restore not supported')
+                return ok_response(request, hook(run_id=run_id, request_id=rid, state=body['state'], virtual_time=vt))
             if op == "act":
                 step = agent.act(
                     run_id=run_id,

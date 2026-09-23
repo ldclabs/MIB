@@ -764,6 +764,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             }
 
         additional_baselines = {}
+        reference_runs: dict[tuple[Any, ...], dict[str, Any]] = {}
+        reference_required = memory_limits.get('B1') is not None
         additional_spec = cal_cfg.get('additional_baselines') or {}
         wanted = {'bounded_recent_context': bool(additional_spec.get('recent_window')),
                   'oracle_supported_reference': bool(additional_spec.get('oracle_reference')),
@@ -793,10 +795,12 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
                     for rep in range(reps):
                         run = run_condition(scenario=instance, agent=extra_factory(), condition='full', repetition=rep,
                                             agent_seed=f'same-model:{seed}:{rep}', pre_probe_injections=support)
+                        if label == 'unbounded_reference' and reference_required:
+                            reference_runs[(template['id'], str(seed), rep, label)] = run
                         scores.append(run['scenario_score'])
                 rows.append({'template_id': template['id'], 'score': sum(scores)/len(scores), 'n': len(scores)})
             additional_baselines[label] = {'templates': rows, 'telemetry': recorder.summary(),
-                'enters_release_gate': label == 'unbounded_reference',
+                'enters_release_gate': label == 'unbounded_reference' and reference_required,
                 'interpretation': {'oracle_supported_reference': 'A diagnostic reference, not a deployable participant or guaranteed mathematical upper bound.',
                                    'bounded_recent_context': 'The fixed model sees only the configured recent observation window.',
                                    'unbounded_reference': 'Complete visible history without a budget: the full-context reference for the release gate and the memory-gap denominator when B1 is bounded.'}[label]}
@@ -827,9 +831,16 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             pass
 
     schedule_audit = _schedule_audit(schedule)
-    pairing_audit = _probe_pairing_audit(full_runs)
+    # When B1 is bounded, its unbounded reference supplies admission evidence.
+    # Audit those runs and invocations alongside B0-B3; the other additional
+    # baselines remain diagnostics. The candidate order audit still covers B0-B3.
+    audit_runs = {**full_runs, **reference_runs}
+    pairing_audit = _probe_pairing_audit(audit_runs)
     telemetry = {bid: recorders[bid].summary() for bid in CONDITIONS}
-    model_errors = sum(int(x.get("model_errors", 0)) for x in telemetry.values())
+    audit_telemetry = list(telemetry.values())
+    if reference_required and 'unbounded_reference' in additional_baselines:
+        audit_telemetry.append(additional_baselines['unbounded_reference']['telemetry'])
+    model_errors = sum(int(x.get("model_errors", 0)) for x in audit_telemetry)
     b1_truncations = int(telemetry["B1"].get("memory_truncations", 0))
     params = dict(model_cfg.get("parameters") or {})
     seed_policy = str(model_cfg.get("seed_policy", "paired_per_call"))
@@ -841,7 +852,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     # to differ.
     def _union(field: str) -> set[str]:
         out: set[str] = set()
-        for t in telemetry.values():
+        for t in audit_telemetry:
             out.update(t.get(field) or [])
         return out
 
@@ -850,8 +861,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     reasoning_policy_shas = _union("reasoning_policy_shas")
     decoding_fingerprints = _union("decoding_fingerprints")
     memory_policy_ids = _union("memory_policy_ids")
-    condition_label_leaks = sum(int(t.get("condition_label_visible_calls", 0)) for t in telemetry.values())
-    observed_calls = sum(int(t.get("model_calls", 0)) for t in telemetry.values())
+    condition_label_leaks = sum(int(t.get("condition_label_visible_calls", 0)) for t in audit_telemetry)
+    observed_calls = sum(int(t.get("model_calls", 0)) for t in audit_telemetry)
     # With no calls there is no evidence, so nothing may be reported as verified.
     have_evidence = observed_calls > 0
 
@@ -878,8 +889,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "full_context_reference_not_truncated": (reference_truncations == 0 if memory_limits.get("B1") is not None and reference_scores
                                                   else b1_truncations == 0 if memory_limits.get("B1") is None else False),
         "no_model_transport_or_parse_errors": model_errors == 0,
-        "full_lifecycle_execution_clean": bool(full_runs) and all(r.get('validity', {}).get('runner_valid') is True
-                                                                   for r in full_runs.values()),
+        "full_lifecycle_execution_clean": bool(audit_runs) and all(r.get('validity', {}).get('runner_valid') is True
+                                                                    for r in audit_runs.values()),
     }
     fairness_evidence = {
         "observed_model_calls": observed_calls,
@@ -889,8 +900,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "distinct_decoding_fingerprints": len(decoding_fingerprints),
         "memory_policy_ids": sorted(memory_policy_ids),
         "condition_label_visible_calls": condition_label_leaks,
-        "transport_errors": sum(int(t.get("transport_errors", 0)) for t in telemetry.values()),
-        "parse_errors": sum(int(t.get("parse_errors", 0)) for t in telemetry.values()),
+        "transport_errors": sum(int(t.get("transport_errors", 0)) for t in audit_telemetry),
+        "parse_errors": sum(int(t.get("parse_errors", 0)) for t in audit_telemetry),
         "verification": "computed from recorded model invocations",
     }
     fairness_valid = all(fairness_checks.values())
@@ -930,13 +941,13 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
             "template_full_gate": {"passed": empirical_gate_count, "total": n, "all_pass": all_templates_pass},
             "fairness_valid": fairness_valid,
             "requirements": [
-                "same model identity across B0-B3",
-                "same system/reasoning/tool/decoding policy across B0-B3",
+                "same model identity across B0-B3 and any admission reference",
+                "same system/reasoning/tool/decoding policy across B0-B3 and any admission reference",
                 "only memory context/policy varies",
                 "counterbalanced condition order",
                 "paired Agent seed and future Probe",
                 "statelessness preflight passes",
-                "B1 full history is not truncated",
+                "complete-history reference is not truncated",
                 "zero model transport/parse failures",
                 "all official Templates pass FC/NM/MDI and causal sensitivity/stability gates",
             ],

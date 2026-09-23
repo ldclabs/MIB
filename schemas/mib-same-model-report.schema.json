@@ -102,7 +102,7 @@
         "evidence": {
           "type": "object",
           "additionalProperties": true,
-          "description": "What the audit was computed from: recorded model invocations, not asserted configuration."
+          "description": "Recorded invocations from B0-B3 and, when used for admission, additional_baselines.unbounded_reference; diagnostic-only baselines are excluded."
         }
       },
       "additionalProperties": false

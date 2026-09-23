@@ -305,6 +305,10 @@ def run_condition(
                     time.sleep(min(2.0, 0.2 * attempt))
             if operation in ACKNOWLEDGED:
                 require_accepted(operation, result)
+                if operation == 'session_boundary' and session_isolation == 'persisted_state':
+                    state = result.get('persisted_state')
+                    if state is not None and not isinstance(state, str):
+                        raise AdapterLifecycleError('session_boundary: persisted_state must be a string')
                 record_receipt(operation, "success", request_id=kwargs.get("request_id"),
                                accepted=True, response_digest=digest(result))
             row["output_bytes"] += len(json.dumps(result, default=lambda x: asdict(x), ensure_ascii=False).encode())
@@ -759,8 +763,6 @@ def run_condition(
                 if agent_factory is None:
                     raise RunnerError("persisted_state session isolation requires an Agent factory")
                 state = result.get("persisted_state")
-                if state is not None and not isinstance(state, str):
-                    raise AdapterLifecycleError("session_boundary: persisted_state must be a string")
                 session_state["persisted_bytes"] += len(state.encode("utf-8")) if state is not None else 0
                 close_agent()
                 agent = agent_factory()

@@ -3,7 +3,7 @@
 **Experiment:** `MIB-v0.2-generated-engineering-smoke`  
 **Mode:** `same_model_engineering_stub`  
 **Model:** `mib-deterministic-stub/0.1`  
-**Experiment lock:** `sha256:f7d3195401244fb52c47a539cc72bbbabce3816396c8e39ae68fc0a142f9ee61`  
+**Experiment lock:** `sha256:091fba4d9493b5d93ac5e4571f28494d96eff11641894f223f3c800058f41da0`\
 **Fairness audit:** `PASS`  
 **Leaderboard release eligible:** `false`
 

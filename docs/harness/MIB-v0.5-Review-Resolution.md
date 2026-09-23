@@ -1,6 +1,6 @@
 # Second September 23 design-review implementation
 
-Implementation **0.14.0**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
+Implementation **0.14.1**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
 
 This ledger resolves [the second review](../reviews/MIB-Design-Review-2026-09-23b.md). It separates implementation from empirical validation. Reports and examples from measurement 0.4.0 keep their source/version identity (`examples/validation/measurement-0.4.0.json` is historical) and must not be compared with 0.5.0 results. The preceding ledger is [MIB-v0.4-Review-Resolution.md](MIB-v0.4-Review-Resolution.md).
 
@@ -42,6 +42,19 @@ A third review of the revision above, before release, found one more zero-memory
 | Surface-bank readability | The canary only showed that a bank defeats the public parser; an unreadable bank would too. `validate_bank` rejects templates that drop the value or the attribute, prompts that drop the exact answer words (`unknown`; `resolved`/`contested`), unknown kinds and unsupported slots; `generate_instance` validates every bank. | Readability tests; the existing private bank passes. |
 | Prompt-value leakage | No regression covered it. Every scored respond prompt of every Program is scanned for attribute-pool and accepted values, excluding the enumerated answer words. | No hits. |
 
+## Follow-up to commit 7291876 (implementation 0.14.1)
+
+The implementation patch corrects four failures of the existing measurement-0.5.0 contract. Measurement, Program, Profile and report versions are unchanged; reports and experiment locks still bind the executable source digest, so earlier evidence requires its original bundle.
+
+| Finding | Correction | Regression evidence |
+|---|---|---|
+| Failed full conditions disappeared from CFE coverage | A missing per-Instance metric contributes zero effect and zero valid pairs while retaining every frozen opportunity in the denominator. | Six recall Instances with one failed Instance yield 10/12 valid pairs and fail coverage; repetitions preserve six independent Instances. Report verification rejects altered counts. Entirely missing CFE evidence remains unassessable. |
+| Protocol host did not dispatch `restore` | `AgentHost` forwards state, run/request IDs and virtual time to the restored Agent. A missing hook is explicitly unsupported. | HTTP session reconstruction retains recalled facts; the JSONL server forwards the exact state and request context. |
+| Malformed `persisted_state` could produce a successful empty run | Validate the state inside the acknowledged lifecycle invocation, before recording success. | An object-valued state records a failed boundary and invalidates every scheduled Probe, including already scored Probes; the resulting report verifies. |
+| Admission reference was excluded from fairness checks | When bounded B1 uses `unbounded_reference`, include its invocations in identity/error checks and its runs in lifecycle and paired-seed/Probe checks. Unused references stay diagnostic. | Clean reference passes; transport, parse, identity, lifecycle and seed faults fail their corresponding audit checks. |
+
+The compact validation record and same-model stub artifacts are regenerated for 0.14.1. These remain engineering fixtures, not real-model evidence. Chinese mirrors remain unchanged.
+
 ## Reproduction
 
 ```bash
@@ -52,7 +65,7 @@ python -m mib_runner.same_model_cli examples/same-model/same-model-generated.stu
   --output-json /tmp/mib-smoke-0.5.json --report-schema schemas/mib-same-model-report.schema.json
 ```
 
-Final local validation: **507 passed, 8 skipped** on Python 3.14/macOS; the skips require Linux sandboxing or evaluator-private packs. The validation script runs the grammar-only and recover-only fixtures on Core, Expanded and (recover-only) Mechanism Challenges and fails if either earns more than 10 in any dimension or passes the dependence gate. Its compact record is `examples/validation/measurement-0.5.0.json`: complete fixture 100 with CFE 1 on Core, Expanded and Session, and 100 on Mechanism Challenges; prefix-only fixture 63.72 and not dependence-eligible; grammar-only and recover-only fixtures 0 and not eligible. The 42-unit stub run has `fairness_valid: true` and `release_eligible: false` and is an unbounded-reference regime. None of this is real-model evidence.
+Final local validation (0.14.1): **522 passed, 8 skipped** on Python 3.14.7/macOS; the skips require Linux sandboxing or evaluator-private packs. The validation script runs the grammar-only and recover-only fixtures on Core, Expanded and (recover-only) Mechanism Challenges and fails if either earns more than 10 in any dimension or passes the dependence gate. Its compact record is `examples/validation/measurement-0.5.0.json`: complete fixture 100 with CFE 1 on Core, Expanded and Session, and 100 on Mechanism Challenges; prefix-only fixture 63.72 and not dependence-eligible; grammar-only and recover-only fixtures 0 and not eligible. The 42-unit stub run has `fairness_valid: true` and `release_eligible: false` and is an unbounded-reference regime. None of this is real-model evidence.
 
 The pilot now estimates **482 condition runs** and **at least 1,927 business-model calls**, under the same exclusions as before; the unbounded reference arm is included.
 

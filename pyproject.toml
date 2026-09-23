@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mib-reference-runner"
-version = "0.14.0"
+version = "0.14.1"
 description = "MIB reference Runner, generated memory experiments, calibration and evaluation service"
 requires-python = ">=3.10"
 license = "GPL-3.0-or-later"

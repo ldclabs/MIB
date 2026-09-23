@@ -79,11 +79,16 @@ def joint_dependence(instances, profile, field='joint_score', metric=METRIC):
         complete_instances = 0
         for inst in instances:
             row = next((r for r in inst.get('joint_dependence_evidence', []) if r['dimension'] == d), None)
-            if row is None or not row['total_n'] or field not in row:
+            if row is None or not row['total_n']:
                 continue
-            strata[inst['template_id']].append(float(row[field]))
-            total += row['total_n']; valid += row['valid_n']
-            complete_instances += int(row['valid_n'] == row['total_n'])
+            # A failed full run has no cross-oracle output, but its frozen
+            # opportunities still count. Missing metric evidence contributes
+            # zero effect and no valid pairs, never a smaller denominator.
+            strata[inst['template_id']].append(float(row.get(field, 0.0)))
+            total += row['total_n']
+            if field in row:
+                valid += row['valid_n']
+                complete_instances += int(row['valid_n'] == row['total_n'])
         n = sum(map(len, strata.values()))
         value = mean([mean(scores) for scores in strata.values()]) if n else None
         ci = None
