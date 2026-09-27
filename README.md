@@ -142,19 +142,20 @@ It is the **Agent + Memory system as a cross-temporal cognitive system**.
 
 ## What MIB Measures
 
-MIB-Core evaluates seven capability dimensions in v0.2:
+MIB-Core evaluates six capability dimensions in measurement revision 0.5 (scenario format v0.2):
 
 | Dimension                     | What it asks                                                                                                                            |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | **Retention & Retrieval**     | Can relevant past information be recovered under indirect cues and generated interference, directly and across a hop?                  |
 | **Temporal Memory**           | Can the system distinguish the current, previous, and original values of a changing state?                                              |
 | **Epistemic Memory**          | Can it remember who said what, tell correction from contradiction, respect authority, and keep unknown distinct from false?              |
-| **Experience Memory**         | Does a failure the Agent itself lived through change what it does next time?                                                            |
-| **Procedural Memory & Applicability** | Does a feedback-derived recipe transfer within its declared scope and stay withheld outside it?                                              |
+| **Procedural Memory**         | Does a failure the Agent itself lived through change what it does when the same task family returns? Does a feedback-derived recipe transfer to a new family of its series, and stay withheld outside its declared scope? |
 | **Prospective & Self Memory** | Does a deferred commitment fire on its trigger, and not before? Does a standing rule about the Agent itself survive a task that asks otherwise? |
-| **Withdrawal Compliance**    | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
+| **Withdrawal Compliance**     | Does a withdrawn fact stop being used, while the facts around it stay available?                                                       |
 
-Whether memory made a causal difference is no longer a seventh dimension. It is a set of
+Procedural Memory merges the revision-0.4 Experience Memory and Procedural Memory & Applicability dimensions (legacy IDs `experience_memory` and `skill_learning_transfer`): both are recipe recall scored by the same conjunctive world outcome.
+
+Whether memory made a causal difference is not a capability dimension either. It is a set of
 causal diagnostics reported beside the score. A fixed-opportunity content-following effect gates
 whether the score counts as a memory score at all (see below).
 
@@ -542,7 +543,7 @@ The earlier September corrections remain in place:
 - participant IDs are opaque; prospective scoring checks the complete declared lifecycle;
 - noise no longer reveals an answer through exclusion from a public value pool;
 - workflow recipes are instance-specific, learned through actual feedback, and scored conjunctively on the first attempt and eventual completion;
-- content/policy twins cover all seven dimensions, with counts and eligibility reported per dimension;
+- content/policy twins cover all dimensions, with counts and eligibility reported per dimension;
 - scoring, paired comparison, and policy verification share the same aggregation;
 - task experience persists across task completion in the fixed-model memory conditions;
 - external adapters forward maintenance and session boundaries;
