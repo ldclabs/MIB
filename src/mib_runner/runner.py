@@ -215,8 +215,8 @@ def run_condition(
         ablation_method = ablation.get("method")
         if ablation_method not in {"replay_excluding_events", "replay_with_injections", "swap_parameter", "replay_policy_twin"}:
             raise NotImplementedError(
-                "reference Runner implements replay_excluding_events, replay_with_injections "
-                f"and swap_parameter only, got {ablation_method!r}"
+                "reference Runner implements replay_excluding_events, replay_with_injections, "
+                f"swap_parameter and replay_policy_twin only, got {ablation_method!r}"
             )
         scored_probe_ids = set(ablation.get("probes", []))
         scenario_injections = copy.deepcopy(ablation.get("injections") or [])
@@ -228,7 +228,7 @@ def run_condition(
             policy_updates = copy.deepcopy(cf.get('world_updates') or {}) if ablation_method == 'replay_policy_twin' else {}
             for eid in (ablation.get("targets") or {}).get("event_ids", []):
                 if str(eid) not in (policy_updates if ablation_method == 'replay_policy_twin' else replacements):
-                    raise RunnerError(f"swap_parameter Ablation {ablation_id} has no replacement for {eid}")
+                    raise RunnerError(f"{ablation_method} Ablation {ablation_id} has no replacement for {eid}")
         else:
             removed_ids |= set((ablation.get("targets") or {}).get("event_ids", []))
 
@@ -654,12 +654,14 @@ def run_condition(
             met = all((q := by_id.get(pid)) is not None and q.get("outcome") == "scored"
                       and oracle_match(float(q.get("score", 0.0)), q.get("evaluator_results") or []) for pid in required)
             row["conditional_on"] = {"probes": required, "met": met}
-            if not met and float(row.get("score", 0.0)) > 0:
-                row["unconditional_score"] = row["score"]
-                row["score"] = 0.0
+            if not met:
+                if float(row.get("score", 0.0)) > 0:
+                    row["unconditional_score"] = row["score"]
+                    row["score"] = 0.0
                 row["failure_codes"] = sorted(set(row.get("failure_codes") or []) | {"prerequisite_failed"})
                 if isinstance(row.get("counterfactual"), dict):
                     row["counterfactual"]["tracks"] = False
+                    row["counterfactual"]["follows"] = False
 
     def maintain(event: dict[str, Any]) -> None:
         declared = contract["capabilities"].get("maintenance")

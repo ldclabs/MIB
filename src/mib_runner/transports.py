@@ -90,6 +90,7 @@ class StdioAgentAdapter:
         self.proc = self.sandbox.process
         self.persistent = bool(persistent)
         self._reset_request_ids: dict[str, str] = {}
+        self.cost_snapshots: list[dict[str, Any]] = []
         # Continuously drain stderr into a bounded tail.  Without this a chatty
         # submission fills the pipe buffer and blocks while the Runner blocks on
         # stdout, deadlocking the whole evaluation.
@@ -148,7 +149,18 @@ class StdioAgentAdapter:
             raise AgentTransportError(
                 f"stdio Agent response exceeded {MAX_RESPONSE_CHARS} characters"
             )
-        return json.loads(response_line)
+        envelope = json.loads(response_line)
+        if isinstance(envelope, dict) and all(envelope.get(k) == request.get(k) for k in IDENTITY_FIELDS):
+            source = envelope.get("body") or envelope.get("extensions") or {}
+            if isinstance(source, dict) and "costs" in source:
+                self.cost_snapshots.append({
+                    "operation": request.get("operation"),
+                    "run_id": request.get("run_id"),
+                    "request_id": request.get("request_id"),
+                    "cost_scope": source.get("cost_scope"),
+                    "costs": source["costs"],
+                })
+        return envelope
 
     def describe(self) -> dict[str, Any]:
         req = {"mib": "0.1", "protocol": "mib-agent/0.1", "request_id": "describe", "run_id": "descriptor", "operation": "describe", "body": {}}

@@ -191,10 +191,11 @@ class WorldModel:
         return [a for a in rows if a.event_id not in retracted and a.kind not in RETRACTING_KINDS]
 
     def _rows(self, exclude: Iterable[str]) -> tuple[list[Assertion], set[str]]:
-        key = (len(self.assertions), frozenset(exclude))
+        excluded = frozenset(exclude)
+        key = (tuple((a.event_id, a.seq, a.kind, a.supersedes) for a in self.assertions), excluded)
         hit = self._live_cache.get(key)
         if hit is None:
-            rows = sorted((a for a in self.assertions if a.event_id not in key[1]), key=lambda a: a.seq)
+            rows = sorted((a for a in self.assertions if a.event_id not in excluded), key=lambda a: a.seq)
             hit = (rows, self._withdrawn(rows))
             self._live_cache[key] = hit
         return hit
@@ -218,18 +219,30 @@ class WorldModel:
         live = self._live(exclude)
         live_ids = {a.event_id for a in live}
         by_id = {a.event_id: a for a in live}
+        all_by_id = {a.event_id: a for a in self.assertions}
+
+        def live_target(a: Assertion) -> str | None:
+            target: str | None = None
+            cur = all_by_id.get(a.supersedes) if a.supersedes else None
+            seen: set[str] = set()
+            while cur is not None and cur.event_id not in seen:
+                seen.add(cur.event_id)
+                if cur.event_id in live_ids:
+                    target = cur.event_id
+                cur = all_by_id.get(cur.supersedes) if cur.kind == "correction" and cur.supersedes else None
+            return target
+
         corrected: dict[str, Any] = {}
         for a in live:
-            if a.kind == "correction" and a.supersedes in live_ids:
-                parent = by_id[a.supersedes]
-                while parent.kind == "correction" and parent.supersedes in live_ids:
-                    parent = by_id[parent.supersedes]
-                corrected[parent.event_id] = a.value
+            if a.kind == "correction":
+                target_id = live_target(a)
+                if target_id is not None:
+                    corrected[target_id] = a.value
         rows: list[tuple[int, Any, str]] = []
         for a in live:
             if (a.subject, a.attribute) != (subject, attribute) or not a.truth_bearing:
                 continue
-            if a.kind == "correction" and a.supersedes in live_ids:
+            if a.kind == "correction" and live_target(a) is not None:
                 continue
             rows.append((a.valid_from if a.valid_from is not None else a.seq, corrected.get(a.event_id, a.value), a.event_id))
         return sorted(rows, key=lambda r: (r[0], by_id[r[2]].seq))

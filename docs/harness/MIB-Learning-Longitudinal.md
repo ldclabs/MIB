@@ -1,11 +1,11 @@
 # Longitudinal learning experiment / 长期学习实验
 
-Implementation **0.13.0** adds a development harness with measurement revision
+Implementation **0.14.1** includes a development harness with measurement revision
 `mib-learning-longitudinal/0.2.0`. Run verification checks the pipeline, private
 world replay and host-reported procedure inventory. It does **not** turn an
 engineering fixture into a learning PASS or create KIP standing.
 
-实现 **0.12.0** 新增独立开发测量 `mib-learning-longitudinal/0.2.0`。报告可复核
+实现 **0.14.1** 包含独立开发测量 `mib-learning-longitudinal/0.2.0`。报告可复核
 管线、隐藏世界和宿主只读程序清单；工程测试通过不等于学习通过，也不产生 KIP standing。
 
 ## Execution / 执行

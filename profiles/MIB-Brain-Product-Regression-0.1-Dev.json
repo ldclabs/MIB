@@ -7,5 +7,5 @@
   "instance_seeds":[101,202],"ladder":[0,20],"canonical_rung":1,"repetitions":1,
   "dimensions":{"retention_retrieval":{"weight":1}},"required_coverage":1.0,
   "statistics":{"bootstrap_resamples":0},
-  "measurement_regime":{"kind":"historical_information_use","session_boundary":true,"context_boundary_enforced":true,"interference_time_policy":"fixed_24_hours","distance_token_unit":"whitespace_words","scope":"Applied structured product facts; no claim of organic prose quality, neural memory improvement or native online learning."}
+  "measurement_regime":{"kind":"historical_information_use","session_boundary":true,"session_isolation":"persisted_state","context_boundary_enforced":true,"interference_time_policy":"fixed_24_hours","distance_token_unit":"whitespace_words","scope":"Applied structured product facts; no claim of organic prose quality, neural memory improvement or native online learning."}
 }

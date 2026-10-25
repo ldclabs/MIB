@@ -305,6 +305,10 @@
             "pilot",
             "full"
           ]
+        },
+        "min_memory_pressure": {
+          "type": "number",
+          "minimum": 0
         }
       }
     }

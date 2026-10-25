@@ -1,0 +1,732 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.2:schema:profile",
+  "title": "MIB Benchmark Profile",
+  "description": "Schema for MIB Benchmark Profiles and Longitudinal Profiles in profiles/.",
+  "type": "object",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/BenchmarkProfile"
+    },
+    {
+      "$ref": "#/$defs/MIBLearningLongitudinalProfile"
+    },
+    {
+      "$ref": "#/$defs/MIBRealityProfile"
+    },
+    {
+      "$ref": "#/$defs/MIBCalibrationSuite"
+    }
+  ],
+  "$defs": {
+    "BenchmarkProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "track",
+        "scale",
+        "scenario_pack",
+        "dimensions"
+      ],
+      "properties": {
+        "mib": {
+          "enum": [
+            "0.1",
+            "0.2"
+          ]
+        },
+        "kind": {
+          "const": "BenchmarkProfile"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "result_family": {
+          "type": "string"
+        },
+        "track": {
+          "enum": [
+            "memory_system",
+            "integrated_agent",
+            "diagnostics"
+          ]
+        },
+        "scale": {
+          "enum": [
+            "MIB-S",
+            "MIB-M",
+            "MIB-L",
+            "custom"
+          ]
+        },
+        "official": {
+          "type": "boolean"
+        },
+        "scenario_pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "programs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "ladder": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "params": {
+                    "type": "object"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "required_templates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "instance_seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "hidden_instances_per_template": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ladder": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "canonical_rung": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "dimensions": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "enum": [
+              "retention_retrieval",
+              "temporal_memory",
+              "epistemic_memory",
+              "experience_memory",
+              "skill_learning_transfer",
+              "procedural_memory",
+              "prospective_self_memory",
+              "selective_forgetting",
+              "causal_memory_impact"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "weight"
+            ],
+            "properties": {
+              "weight": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "required_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_execution_failure_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "require_transfer_annotations": {
+          "type": "boolean"
+        },
+        "transfer_coverage": {
+          "type": "object"
+        },
+        "memory_dependence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "metric",
+            "floor"
+          ],
+          "properties": {
+            "metric": {
+              "type": "string"
+            },
+            "floor": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "require_per_dimension": {
+              "type": "boolean"
+            },
+            "min_instances": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "min_coverage": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "confidence_level": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "bootstrap_resamples": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bootstrap_seed": {
+              "type": [
+                "integer",
+                "string"
+              ]
+            }
+          }
+        },
+        "statistics": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "confidence_level": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "bootstrap_method": {
+              "type": "string"
+            },
+            "interval_method": {
+              "type": "string"
+            },
+            "bootstrap_resamples": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "preserve_causal_pairs": {
+              "type": "boolean"
+            },
+            "min_templates_per_dimension": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "measurement_regime": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string"
+            },
+            "context_boundary_enforced": {
+              "type": "boolean"
+            },
+            "interference_time_policy": {
+              "type": "string"
+            },
+            "distance_token_unit": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            },
+            "session_boundary": {
+              "type": "boolean"
+            },
+            "session_isolation": {
+              "enum": [
+                "acknowledged",
+                "persisted_state"
+              ]
+            },
+            "intervention_rungs": {
+              "type": [
+                "string",
+                "array"
+              ]
+            },
+            "maintenance_control": {
+              "type": "string"
+            },
+            "diagnostics": {
+              "enum": [
+                "on",
+                "off"
+              ]
+            }
+          }
+        },
+        "surface_bank": {
+          "type": "object"
+        }
+      }
+    },
+    "MIBLearningLongitudinalProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "measurement_revision",
+        "conditions",
+        "programs",
+        "seeds",
+        "repetitions",
+        "phases",
+        "execution",
+        "stopping",
+        "metrics",
+        "statistics"
+      ],
+      "properties": {
+        "kind": {
+          "const": "MIBLearningLongitudinalProfile"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "measurement_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "normal",
+              "no_memory",
+              "ungated"
+            ]
+          }
+        },
+        "programs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "seeds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "phases": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "early",
+            "late",
+            "retrial"
+          ],
+          "properties": {
+            "early": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 32
+            },
+            "late": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 32
+            },
+            "retrial": {
+              "type": "integer",
+              "minimum": 3,
+              "maximum": 32
+            }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "max_agent_turns",
+            "max_tool_calls",
+            "maintenance_budget",
+            "attempt_budget"
+          ],
+          "properties": {
+            "max_agent_turns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "max_tool_calls": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "maintenance_budget": {
+              "type": "string"
+            },
+            "attempt_budget": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "tool_calls",
+                "elapsed_ms",
+                "input_tokens",
+                "output_tokens"
+              ],
+              "properties": {
+                "tool_calls": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 64
+                },
+                "elapsed_ms": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3600000
+                },
+                "input_tokens": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                },
+                "output_tokens": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                }
+              }
+            }
+          }
+        },
+        "stopping": {
+          "type": "string"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "statistics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "confidence",
+            "bootstrap_seed",
+            "bootstrap_repetitions"
+          ],
+          "properties": {
+            "confidence": {
+              "type": "number"
+            },
+            "bootstrap_seed": {
+              "type": "integer"
+            },
+            "bootstrap_repetitions": {
+              "type": "integer",
+              "minimum": 200,
+              "maximum": 10000
+            }
+          }
+        }
+      }
+    },
+    "MIBRealityProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "result_family",
+        "official",
+        "track",
+        "reality_pack",
+        "conditions",
+        "paired_on",
+        "required_relations",
+        "minimum_task_counts",
+        "calibration",
+        "reporting",
+        "task_seeds",
+        "repetitions",
+        "statistics"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
+        "result_family": {
+          "const": "reality"
+        },
+        "official": {
+          "const": false
+        },
+        "track": {
+          "enum": [
+            "integrated_agent"
+          ]
+        },
+        "reality_pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "version"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "paired_on": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_relations": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "minimum_task_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "calibration": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "reporting": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "task_seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "statistics": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "MIBCalibrationSuite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mib",
+        "kind",
+        "id",
+        "version",
+        "profile",
+        "baselines",
+        "default_instance_seeds",
+        "default_repetitions",
+        "causal_baseline",
+        "causal_instance_seeds",
+        "causal_repetitions",
+        "statistics",
+        "admission_targets",
+        "release_calibration"
+      ],
+      "properties": {
+        "mib": {
+          "enum": [
+            "0.1",
+            "0.2"
+          ]
+        },
+        "kind": {
+          "const": "MIBCalibrationSuite"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baselines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "default_instance_seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "default_repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "causal_baseline": {
+          "type": "string",
+          "minLength": 1
+        },
+        "causal_instance_seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          }
+        },
+        "causal_repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "statistics": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "admission_targets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "release_calibration": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}

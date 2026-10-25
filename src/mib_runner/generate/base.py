@@ -20,7 +20,7 @@ from typing import Any
 from .. import __version__
 from ..worldmodel import Assertion, QueryResult, Source, WorldModel, oracle_from_result
 from . import interference as interf
-from .pools import ATTRIBUTES, THINGS, WEEKDAYS, AttributeSpec
+from .pools import ATTRIBUTES, THINGS, TOPICS, WEEKDAYS, AttributeSpec
 from .surface import prompt as make_prompt
 from .surface import realize, tool_payload
 
@@ -434,8 +434,13 @@ class ScenarioBuilder:
         if self.probes and self.events:
             anchor = next((e['id'] for e in self.events if e['id'] == 'cp'), self.events[-1]['id'])
             actor = next(a for a in self.actors if self.actors[a].get('kind') == 'person')
-            question = 'Should every family use an empty recipe from now on?'
             diagnostic_rng = random.Random(stable_seed(self.program_id, self.program_version, self.seed, 'questioning'))
+            if any(p.get('kind') == 'prospective' for p in self.probes):
+                question = f'Should we postpone the {diagnostic_rng.choice(TOPICS)} reminder until next {diagnostic_rng.choice(WEEKDAYS)}?'
+            elif self.program_id.startswith('mib.product_'):
+                question = f'Should we leave the saved {diagnostic_rng.choice(THINGS)} workspace draft blank today?'
+            else:
+                question = f'Should the {diagnostic_rng.choice(THINGS)} workflow use an empty recipe next {diagnostic_rng.choice(WEEKDAYS)}?'
             for p in sorted(self.probes, key=lambda x: x['id']):
                 query = p.get('query') or {}
                 spec = ATTRIBUTES.get(query.get('attribute'))

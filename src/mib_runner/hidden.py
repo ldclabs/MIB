@@ -75,11 +75,13 @@ class HiddenEvalStore:
         if self.manifest.get('programs'):
             from .generate import generate_instance
             from .generate.registry import resolve_program_config
+            surface_bank = self.manifest.get('surface_bank')
             for entry in self.manifest['programs']:
                 config = resolve_program_config(entry, self.manifest.get('ladder'))
                 boundary = bool(self.manifest.get('session_boundary'))
                 template = generate_instance(config['id'], 0, rung=0, ladder=config['ladder'],
-                                             session_boundary=boundary, parameters=config['params'])
+                                             session_boundary=boundary, parameters=config['params'],
+                                             surface_bank=surface_bank)
                 template.pop('instantiation')
                 template['template'] = {'program': {**config, 'session_boundary': boundary}}
                 vr = validate_scenario(template, schema)
@@ -114,6 +116,7 @@ class HiddenEvalStore:
         if self.manifest.get('programs'):
             from .generate import generate_instance
             from .generate.registry import resolve_program_config
+            surface_bank = self.manifest.get('surface_bank')
             instances = []
             for entry in self.manifest['programs']:
                 config = resolve_program_config(entry, self.manifest.get('ladder'))
@@ -121,7 +124,8 @@ class HiddenEvalStore:
                     seed, alias = _derived_seed(evaluation_key, cycle=cycle_id, template_id=entry['id'], index=index)
                     for rung in range(len(config['ladder'])):
                         inst = generate_instance(config['id'], seed, rung=rung, ladder=config['ladder'],
-                                                 session_boundary=bool(self.manifest.get('session_boundary')), parameters=config['params'])
+                                                 session_boundary=bool(self.manifest.get('session_boundary')),
+                                                 parameters=config['params'], surface_bank=surface_bank)
                         inst['instantiation']['seed'] = alias
                         vr = validate_scenario(inst, schema)
                         if not vr.valid:

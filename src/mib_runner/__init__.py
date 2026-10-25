@@ -1,6 +1,6 @@
 """MIB — Memory Intelligence Benchmark reference implementation.
 
-Runner, evaluators, calibration harness, and evaluation service for MIB v0.1.
+Runner, evaluators, calibration harness, and evaluation service for MIB.
 ``__version__`` tracks the package version in ``pyproject.toml`` and is the
 single source for every version string emitted into reports and artifacts.
 """

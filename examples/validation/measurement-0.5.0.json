@@ -1,7 +1,7 @@
 {
   "implementation": "0.14.1",
   "measurement_revision": "0.5.0",
-  "runner_source_digest": "sha256:d9f65a5ebeb7dcb3e184c09b9661241334ccc2dbe5bc5f9a9f0b6d1a97dee048",
+  "runner_source_digest": "sha256:f72118ea0904a14f5023789a730c06cc955b3eed75fb2a1427fac630d0f159eb",
   "empirical": false,
   "release_eligible": false,
   "results": [
@@ -33,7 +33,7 @@
       "coverage": 1.0,
       "dependence_eligible": false,
       "dependence_metric": "content_following_effect",
-      "dependence_value": 0.611111111111111,
+      "dependence_value": 0.5444444444444444,
       "dimensions": {
         "retention_retrieval": 60.0,
         "temporal_memory": 33.333,

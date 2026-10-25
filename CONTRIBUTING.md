@@ -42,8 +42,9 @@ validates every Scenario against the Scenario schema.
 Anything that launches a participant-supplied stdio submission — `mib
 agent-smoke-test` on a stdio spec, `mib evaluate-hidden`, `mib-service
 register-submission` / `worker-once` — is Linux-only for the same reason. The rest of
-the CLI (`validate`, `run`, `run-pack`, `benchmark`, `capability-card`,
-`verify-score`, `public-eval-manifest`) is cross-platform.
+the CLI (`validate`, `generate`, `run`, `run-pack`, `benchmark`, `compare`,
+`capability-card`, `verify`, `verify-score`, `public-eval-manifest`,
+`learning-benchmark`, `reality-benchmark`) is cross-platform.
 
 ---
 
@@ -109,7 +110,8 @@ A Scenario that cannot answer the third clause is not yet a MIB Scenario. Concre
 a proposal should state:
 
 1. **Which Dimension** it targets — retention/retrieval, temporal, epistemic,
-   experience, skill learning and transfer, or causal memory impact — and why an
+   procedural, prospective/self, or selective forgetting (or legacy v0.1
+   experience / skill learning and transfer / causal memory impact) — and why an
    existing family does not already cover it.
 2. **The memory dependency.** What in the past must be carried forward, and what
    makes the future Probe unanswerable without it.

@@ -98,5 +98,5 @@ def test_brain_ci_entry_point_is_no_model_and_all_emitted_reports_replay(tmp_pat
     checks=load_json(tmp_path/'checks.json')
     assert checks['passed'] and checks['no_model']
     assert checks['product_behavior_evaluated_on_Brain'] is False and checks['learning']=='not_evaluated'
-    assert checks['full_runs']==32 and checks['runs']==160
+    assert checks['full_runs']==32 and checks['runs']==192
     for path in tmp_path.glob('*.report.json'):assert verify_score(load_json(path))['valid']

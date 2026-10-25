@@ -406,6 +406,39 @@ class StructuredMemoryAgent(_ActPolicies):
                            if o.type == "tool_result" and isinstance(o.payload, dict) and o.payload.get("success") is False
                            and o.observation_id not in self.task_results.get(task_id, set())} if self.learns else set()
             step = self._canvas(task_id, state, learned_context="context_required" in past_errors, recover=self.recovers)
+        elif any(n.startswith("workspace.") for n in names):
+            if not continuation:
+                task = json.loads(goal or "{}")
+                current = None
+                for observation in self._memory():
+                    data = observation.payload
+                    if not isinstance(data, dict) or data.get("format") != "mib.product-fact/1":
+                        continue
+                    if data.get("actor_id") != (observation.actor or {}).get("id"):
+                        continue
+                    if data.get("actor_id") != task.get("actor_id") or data.get("subject") != task.get("subject"):
+                        continue
+                    vt = virtual_time or ""
+                    val = data.get("after_expiry") if data.get("valid_until") and vt >= data["valid_until"] else data.get("value")
+                    val = json.loads(json.dumps(val))
+                    if data.get("merge") and isinstance(current, dict) and isinstance(val, dict):
+                        current.update(val)
+                    else:
+                        current = val
+                state["workspace"] = task.get("workspace")
+                state["value"] = current
+                state["step"] = 0
+            actions = [
+                ("workspace.select_workspace", {"workspace": state.get("workspace")}),
+                ("workspace.edit_record", {"value": state.get("value")}),
+                ("workspace.save", {}),
+            ]
+            if state["step"] >= len(actions):
+                step = ActStep(type="final", content="Local draft saved.")
+            else:
+                name, args = actions[state["step"]]
+                state["step"] += 1
+                step = self._call(name, args)
         else:
             step = ActStep(type="abstention", content="No policy for these tools.")
         self.act_responses[key] = step

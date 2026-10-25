@@ -54,7 +54,13 @@ class AgentHost:
                 result = agent.reset(run_id=run_id, seed=body.get("seed"), virtual_time=body.get("virtual_time") or vt)
                 return ok_response(request, result)
             if op == "close":
-                self.agents.pop(run_id, None)
+                agent = self.agents.pop(run_id, None)
+                hook = getattr(agent, "close", None)
+                if callable(hook):
+                    try:
+                        hook(run_id=run_id)
+                    except TypeError:
+                        hook()
                 return ok_response(request, {"closed": True})
             if run_id not in self.agents:
                 return error_response(request, "invalid_state", "run_id has not been reset")
@@ -78,6 +84,11 @@ class AgentHost:
                 if not callable(hook):
                     return ok_response(request, {"accepted": False, "reason": "maintenance not supported"})
                 return ok_response(request, hook(run_id=run_id, request_id=rid, budget=body.get("budget"), virtual_time=vt))
+            if op == "learning_audit":
+                hook = getattr(agent, "learning_audit", None)
+                if not callable(hook):
+                    return error_response(request, "unsupported_operation", "learning audit not supported")
+                return ok_response(request, hook(run_id=run_id, request_id=rid))
             if op == 'session_boundary':
                 hook = getattr(agent, 'session_boundary', None)
                 if not callable(hook):

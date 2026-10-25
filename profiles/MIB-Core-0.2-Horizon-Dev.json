@@ -5,7 +5,7 @@
   "version": "0.5.0",
   "description": "Generated MIB-Core long-horizon development pack for integrated Agents: seven programs on a 100 / 2,000 / 10,000 interference ladder. The capability rung (2,000) shows roughly 90,000 visible characters and the retention rung (10,000) roughly 450,000, beyond a raw-context reading of the transcript for most deployments. Headline only (diagnostics off). Development only; never an official score.",
   "track": "integrated_agent",
-  "scale": "MIB-S",
+  "scale": "MIB-L",
   "official": false,
   "scenario_pack": {
     "id": "MIB-v0.2-Generated-Dev",

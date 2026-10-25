@@ -8,7 +8,7 @@ The reference `maintain` operation accepts a virtual duration string such as `PT
 ## Transport-Neutral Interface Between the MIB Runner and Memory-Enabled Agents
 
 **Version:** 0.1-draft  
-**Status:** Adapter Protocol Proposal / Companion to `MIB-Specification.md` and `MIB-Specification.md`
+**Status:** Adapter Protocol Specification / Companion to `MIB-Specification.md`
 
 ---
 
@@ -145,7 +145,10 @@ Optional operations:
 
 ```text
 maintain
+session_boundary
+restore
 close
+learning_audit
 health
 ```
 
@@ -257,7 +260,10 @@ The following are OPTIONAL:
 
 ```text
 maintain()
+session_boundary()
+restore()
 close()
+learning_audit()
 health()
 ```
 
@@ -293,9 +299,21 @@ interface MIBAgentAdapter {
     request: MaintainRequest
   ): Promise<MaintainResult>;
 
+  session_boundary?(
+    request: SessionBoundaryRequest
+  ): Promise<SessionBoundaryResult>;
+
+  restore?(
+    request: RestoreRequest
+  ): Promise<RestoreResult>;
+
   close?(
     request: CloseRequest
   ): Promise<CloseResult>;
+
+  learning_audit?(
+    request: LearningAuditRequest
+  ): Promise<LearningAuditResult>;
 
   health?(): Promise<HealthResult>;
 }
@@ -1120,7 +1138,7 @@ Optional structured output:
   "output": {
     "type": "structured",
     "value": {
-      "answer": "UTC+8",
+      "value": "UTC+8",
       "status": "historical"
     }
   }
@@ -1599,8 +1617,13 @@ Expected Agent behavior may be an `observe()` emission:
 
 ```json
 {
-  "type": "message",
-  "content": "Remember to ask Sarah about the contract."
+  "type": "reminder",
+  "content": "Reminder: ask Sarah about the contract.",
+  "payload": {
+    "recipient": "Sarah",
+    "topic": "contract",
+    "commitment_ref": "obs_1"
+  }
 }
 ```
 
@@ -2407,7 +2430,10 @@ POST /mib-agent/v0.1/observe
 POST /mib-agent/v0.1/respond
 POST /mib-agent/v0.1/act
 POST /mib-agent/v0.1/maintain
+POST /mib-agent/v0.1/session_boundary
+POST /mib-agent/v0.1/restore
 POST /mib-agent/v0.1/close
+POST /mib-agent/v0.1/learning_audit
 GET  /mib-agent/v0.1/health
 ```
 
@@ -3517,7 +3543,10 @@ interface AdapterRequest<T> {
     | "respond"
     | "act"
     | "maintain"
-    | "close";
+    | "session_boundary"
+    | "restore"
+    | "close"
+    | "learning_audit";
   virtual_time?: string;
   body: T;
 }
@@ -3752,8 +3781,13 @@ A successful prospective-memory Agent might return:
     "emissions": [
       {
         "emission_id": "emit_1",
-        "type": "message",
-        "content": "Remember to ask Sarah about the contract."
+        "type": "reminder",
+        "content": "Reminder: ask Sarah about the contract.",
+        "payload": {
+          "recipient": "Sarah",
+          "topic": "contract",
+          "commitment_ref": "obs_1"
+        }
       }
     ]
   }
@@ -3851,23 +3885,20 @@ The observable tool/action trajectory becomes available to the MIB trajectory ev
 
 ```text
 MIB/
-├── MIB-Specification.md
-├── MIB-Specification.md
-├── MIB-Agent-Adapter.md
+├── docs/
+│   ├── MIB-Specification.md
+│   └── MIB-Agent-Adapter.md
 │
 ├── schemas/
 │   ├── mib-scenario.schema.json
-│   ├── mib-agent-request.schema.json        # future
-│   ├── mib-agent-response.schema.json       # future
-│   └── mib-agent-descriptor.schema.json     # future
+│   ├── mib-report.schema.json
+│   ├── mib-profile.schema.json
+│   └── mib-submission.schema.json
 │
-├── adapters/
-│   └── implementations/
-│
-├── runner/
-├── evaluators/
+├── src/mib_runner/
+├── profiles/
 ├── scenarios/
-└── leaderboard/
+└── tests/
 ```
 
 ---

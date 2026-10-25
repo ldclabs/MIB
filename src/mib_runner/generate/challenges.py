@@ -48,10 +48,10 @@ class FeaturePolicyProgram(Program):
                 'input': {'goal': goal, 'available_tools': ['workflow.submit'], 'constraints': []},
                 'oracle': workflow_oracle(recipe), 'evaluators': ['eval-world-strict'], 'dimensions': self.DIMENSIONS, 'weight': 1})
         b.ablation({'id': 'a-feature-acquisition', 'kind': 'relevant_memory', 'method': 'replay_excluding_events',
-            'targets': {'event_ids': ['acquire-0', 'acquire-1']}, 'probes': ['p-3'], 'expected_effect': 'degrade'})
+            'targets': {'event_ids': ['acquire-0', 'acquire-1']}, 'probes': ['p-2', 'p-3'], 'expected_effect': 'degrade'})
         b.ablation({'id': 'a-feature-policy', 'kind': 'counterfactual_policy', 'method': 'replay_policy_twin',
-            'targets': {'event_ids': ['world-0', 'world-1', 'world-2', 'world-3']}, 'probes': ['p-3'], 'expected_effect': 'track',
-            'counterfactual': {'events': {}, 'oracle': {'p-3': workflow_oracle(alternate)},
+            'targets': {'event_ids': ['world-0', 'world-1', 'world-2', 'world-3']}, 'probes': ['p-2', 'p-3'], 'expected_effect': 'track',
+            'counterfactual': {'events': {}, 'oracle': {'p-2': workflow_oracle(alternate[1:]), 'p-3': workflow_oracle(alternate)},
                 'world_updates': {f'world-{i}': [{'op': 'set', 'path': '/workflow', 'value': workflow_state(families[i], recipe)}]
                     for i, recipe in [(0, alternate[:1]), (1, alternate[1:]), (2, alternate[1:]), (3, alternate)]}}})
 

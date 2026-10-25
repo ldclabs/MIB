@@ -70,28 +70,29 @@ def build_basic_report(
         }
         for d, score01 in dim_scores01.items()
     ]
+    mib_format = str(scenario.get("mib") or "0.1")
     warnings = [{
         "code": "development.single_scenario_partial_score",
         "severity": "info",
-        "message": "This is a single-Scenario development report, not an official MIB-Core-0.1 score.",
+        "message": f"This is a single-Scenario development report, not an official MIB-Core-{mib_format} score.",
         "scope": "report",
     }] + pair_warnings(iid, notes)
 
     return {
-        "mib": "0.1",
+        "mib": mib_format,
         "kind": "MIBReport",
         "report_version": "0.1.1",
         "report_id": f"report_{uuid.uuid4().hex[:16]}",
         "generated_at": utc_now(),
         "scope": "internal",
         "benchmark": {
-            "mib_version": "0.1",
-            "profile": {"id": "MIB-Core-0.1-Dev-Single", "version": "0.1.0"},
+            "mib_version": mib_format,
+            "profile": {"id": f"MIB-Core-{mib_format}-Dev-Single", "version": "0.1.0"},
             "track": "integrated_agent",
             "scale": "MIB-S",
             "scenario_pack": {"id": "single-scenario-dev", "version": "0.1.0"},
-            "scoring_spec_version": "0.1-draft",
-            "scenario_schema_version": "0.1",
+            "scoring_spec_version": "0.2" if mib_format != "0.1" else "0.1-draft",
+            "scenario_schema_version": mib_format,
             "agent_adapter_protocol": "mib-agent/0.1",
         },
         "system": {
@@ -221,6 +222,9 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     if report.get("kind") == "MIBMemoryBackendReport":
         from .backend_benchmark import verify_backend_report
         return verify_backend_report(report)
+    if report.get("kind") == "MIBSameModelCalibrationReport":
+        from .same_model_calibration import verify_same_model_report
+        return verify_same_model_report(report)
     errors: list[str] = []
     if report.get("report_version") not in {"0.1.0", "0.1.1", "0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"}:
         errors.append("unsupported report version")

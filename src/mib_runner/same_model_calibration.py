@@ -88,15 +88,16 @@ def load_experiment_templates(paths: dict[str, Path]) -> list[dict[str, Any]]:
     from .generate.registry import resolve_program_config
     templates = []
     boundary = bool(profile.get('measurement_regime', {}).get('session_boundary'))
+    canonical_rung = int(profile.get('canonical_rung', 0))
     for entry in profile['programs']:
         config = resolve_program_config(entry, profile.get('ladder'))
         pid, ladder, params = config['id'], config['ladder'], config['params']
         for rung in range(len(ladder)):
-            template = generate_instance(pid, 0, rung=rung, ladder=ladder, session_boundary=boundary, parameters=params)
+            template = generate_instance(pid, 0, rung=rung, ladder=ladder, session_boundary=boundary, parameters=params, surface_bank=profile.get('surface_bank'))
             template['id'] += f'-R{rung}'
             version = template.pop('instantiation')['program_version']
             template['template'] = {'program': {'id': pid, 'version': version, 'ladder': ladder, 'rung': rung, 'session_boundary': boundary, 'params': params}}
-            template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung)
+            template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung, canonical_rung=min(canonical_rung, len(ladder) - 1))
             templates.append(template)
     return templates
 
@@ -109,6 +110,7 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
     # exposing credentials.
     headers = dict(model_public.pop("headers", {}) or {})
     header_fingerprints = {k: sha256_bytes(str(v).encode("utf-8")) for k, v in sorted(headers.items())}
+    pack_templates = paths["pack"] / "templates"
     lock = {
         "kind": "MIBSameModelExperimentLock",
         "version": "0.1.0",
@@ -130,7 +132,7 @@ def build_experiment_lock(cfg: dict[str, Any], paths: dict[str, Path]) -> dict[s
         "reasoning_policy_sha256": sha256_file(paths["reasoning_policy"]),
         "scenario_schema_sha256": sha256_file(paths["scenario_schema"]),
         "profile_sha256": sha256_file(paths["profile"]),
-        "scenario_pack_sha256": directory_digest(paths["pack"] / "templates"),
+        "scenario_pack_sha256": directory_digest(pack_templates if pack_templates.is_dir() else paths["pack"]),
         "runner_source_sha256": directory_digest(Path(__file__).parent, '*.py'),
         "condition_order_policy": "counterbalanced_latin_rotation_v1",
         "conditions": {
@@ -206,7 +208,11 @@ def memory_pressure(cfg: dict[str, Any], templates: list[dict[str, Any]]) -> dic
     seeds = list(cal.get("instance_seeds") or [101, 202, 303, 404])
     sizes = []
     records_chars: list[int] = []
-    for template in templates:
+    pressure_templates = [
+        t for t in templates
+        if t.get("metadata", {}).get("rung") == t.get("metadata", {}).get("canonical_rung")
+    ] or templates
+    for template in pressure_templates:
         for seed in seeds:
             instance = materialize(template, seed)
             actors = _actor_map(instance)
@@ -984,7 +990,7 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
         "- **B0** — No Memory",
         "- **B1** — Full Visible History",
         "- **B2** — Simple Lexical Retrieval",
-        "- **B3** — Structured Deterministic Memory",
+        "- **B3** — Heuristic Salience Retrieval",
         "",
         "## Release Gate",
         "",
@@ -1022,3 +1028,43 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
         "A result is release-eligible only when a real fixed model—not the engineering stub—runs all four memory conditions under the same experiment lock, the condition schedule is balanced, paired seeds/Probes are intact, B1 is complete rather than truncated, statelessness checks pass, transport/parsing is clean, and every official Template passes the empirical admission gates.",
     ]
     return "\n".join(lines) + "\n"
+
+
+def verify_same_model_report(report: dict[str, Any]) -> dict[str, Any]:
+    """Verify structural and audit invariants of a MIBSameModelCalibrationReport."""
+    errors: list[str] = []
+    if report.get("kind") != "MIBSameModelCalibrationReport":
+        errors.append("unexpected report kind")
+    if report.get("report_version") not in {"0.1.0", "0.2.0"}:
+        errors.append("unsupported same-model report version")
+    lock = (report.get("experiment") or {}).get("experiment_lock") or {}
+    expected_digest = "sha256:" + canonical_digest({k: v for k, v in lock.items() if k != "digest"})
+    if lock.get("digest") != expected_digest:
+        errors.append("experiment lock digest mismatch")
+    fa = report.get("fairness_audit") or {}
+    checks = fa.get("checks") or {}
+    if not checks or fa.get("valid") != all(checks.values()):
+        errors.append("fairness_audit.valid disagrees with fairness_audit.checks")
+    cal = report.get("calibration") or {}
+    summary = cal.get("summary") or {}
+    gate = report.get("empirical_release_gate") or {}
+    full_gate = gate.get("template_full_gate") or {}
+    expected_total = int(summary.get("template_count", 0))
+    expected_passed = int(summary.get("provisional_full_gate_including_causal", 0))
+    if full_gate.get("total") != expected_total or full_gate.get("passed") != expected_passed:
+        errors.append("empirical_release_gate.template_full_gate disagrees with calibration.summary")
+    if full_gate.get("all_pass") != (expected_passed == expected_total):
+        errors.append("empirical_release_gate.template_full_gate.all_pass inconsistent")
+    if gate.get("fairness_valid") != fa.get("valid"):
+        errors.append("empirical_release_gate.fairness_valid disagrees with fairness_audit.valid")
+    purpose = (lock.get("calibration_plan") or {}).get("purpose", "full")
+    expected_eligible = bool(
+        gate.get("non_stub_model") and fa.get("valid") and (expected_passed == expected_total) and purpose == "full"
+    )
+    if gate.get("eligible") != expected_eligible or cal.get("release_calibration_eligible") != expected_eligible:
+        errors.append("release eligibility disagrees with non-stub/fairness/gate/purpose requirements")
+    return {
+        "valid": not errors,
+        "verification_level": "same_model_calibration",
+        "errors": errors,
+    }

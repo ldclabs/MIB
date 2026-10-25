@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.2:schema:memory-backend-report",
+  "title": "MIB Memory Backend Report",
+  "description": "Track A Memory Backend comparison report produced by mib_runner.backend_benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "report_version",
+    "runner_version",
+    "experiment_lock",
+    "reports",
+    "schedule",
+    "business_calls",
+    "business_telemetry",
+    "backend_runs",
+    "preflight",
+    "fairness_audit",
+    "accounting_complete",
+    "total_cost",
+    "empirical_admission",
+    "limitations",
+    "evidence_digest"
+  ],
+  "properties": {
+    "kind": {
+      "const": "MIBMemoryBackendReport"
+    },
+    "report_version": {
+      "enum": [
+        "0.1.0",
+        "0.2.0"
+      ]
+    },
+    "runner_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "experiment_lock": {
+      "type": "object",
+      "required": [
+        "kind",
+        "digest",
+        "conditions"
+      ],
+      "properties": {
+        "kind": {
+          "const": "MIBMemoryBackendExperimentLock"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "conditions": {
+          "type": "object"
+        }
+      }
+    },
+    "reports": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "B0",
+        "candidate"
+      ],
+      "properties": {
+        "B0": {
+          "type": "object"
+        },
+        "candidate": {
+          "type": "object"
+        }
+      }
+    },
+    "schedule": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "repetition",
+          "order"
+        ],
+        "properties": {
+          "scenario_instance_id": {
+            "type": "string"
+          },
+          "template_id": {
+            "type": "string"
+          },
+          "seed": {
+            "type": [
+              "integer",
+              "string"
+            ]
+          },
+          "repetition": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "order": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "B0",
+                "candidate"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "business_calls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "B0",
+        "candidate"
+      ],
+      "properties": {
+        "B0": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "candidate": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "business_telemetry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "B0",
+        "candidate"
+      ],
+      "properties": {
+        "B0": {
+          "type": "object"
+        },
+        "candidate": {
+          "type": "object"
+        }
+      }
+    },
+    "backend_runs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "B0",
+        "candidate"
+      ],
+      "properties": {
+        "B0": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "candidate": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "required": [
+        "passed"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "fairness_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "checks"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "checks": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "scope": {
+          "type": "string"
+        }
+      }
+    },
+    "accounting_complete": {
+      "const": false
+    },
+    "total_cost": {
+      "type": "null"
+    },
+    "empirical_admission": {
+      "type": "boolean"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

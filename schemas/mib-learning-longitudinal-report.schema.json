@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:mib:0.2:schema:learning-longitudinal-report",
+  "title": "MIB Learning Longitudinal Report",
+  "description": "Three-arm longitudinal learning evaluation report produced by mib_runner.learning.benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "report_version",
+    "measurement_revision",
+    "experiment_lock",
+    "units",
+    "fairness_audit",
+    "aggregates",
+    "accounting_complete",
+    "total_cost",
+    "evidence_digest"
+  ],
+  "properties": {
+    "kind": {
+      "const": "MIBLearningLongitudinalReport"
+    },
+    "report_version": {
+      "const": "0.2.0"
+    },
+    "measurement_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "experiment_lock": {
+      "type": "object",
+      "required": [
+        "kind",
+        "report_version",
+        "measurement_revision",
+        "implementation_version",
+        "profile",
+        "conditions",
+        "programs",
+        "statistics",
+        "schedule",
+        "descriptors",
+        "evidence_kind",
+        "task_contract",
+        "digest"
+      ],
+      "properties": {
+        "kind": {
+          "const": "MIBLearningLongitudinalLock"
+        },
+        "report_version": {
+          "const": "0.2.0"
+        },
+        "measurement_revision": {
+          "type": "string"
+        },
+        "implementation_version": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "object"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "normal",
+              "no_memory",
+              "ungated"
+            ]
+          }
+        },
+        "programs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "statistics": {
+          "type": "object"
+        },
+        "schedule": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "descriptors": {
+          "type": "object"
+        },
+        "evidence_kind": {
+          "enum": [
+            "engineering_fixture",
+            "external_adapter"
+          ]
+        },
+        "task_contract": {
+          "type": "object"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "pair_id",
+          "program",
+          "seed",
+          "repetition",
+          "condition",
+          "run",
+          "evidence",
+          "metrics"
+        ],
+        "properties": {
+          "pair_id": {
+            "type": "string"
+          },
+          "program": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          },
+          "repetition": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "condition": {
+            "enum": [
+              "normal",
+              "no_memory",
+              "ungated"
+            ]
+          },
+          "run": {
+            "type": "object"
+          },
+          "evidence": {
+            "type": "object"
+          },
+          "metrics": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "fairness_audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "valid",
+        "reasons",
+        "claim"
+      ],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "claim": {
+          "type": "string"
+        }
+      }
+    },
+    "aggregates": {
+      "type": "object",
+      "required": [
+        "conditions",
+        "learning_evaluation"
+      ]
+    },
+    "accounting_complete": {
+      "const": false
+    },
+    "total_cost": {
+      "type": "null"
+    },
+    "evidence_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

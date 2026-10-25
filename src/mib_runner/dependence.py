@@ -31,7 +31,10 @@ def joint_evidence(runs):
     rows = defaultdict(list)
     # Runs from measurement 0.5.0 carry cross-oracle matches; older reports
     # keep exactly their original evidence rows.
-    with_cross = any('counterfactual_cross' in p for r in runs if r['condition'] == 'full' for p in r.get('probe_results', []))
+    with_cross = any(
+        'counterfactual_cross' in p or 'follows' in (p.get('counterfactual') or {})
+        for r in runs for p in r.get('probe_results', [])
+    )
     for full in (r for r in runs if r['condition'] == 'full'):
         plan = full.get('validity', {}).get('counterfactual_plan', [])
         base = {p['probe_id']: p for p in full.get('probe_results', [])}
@@ -63,7 +66,13 @@ def joint_evidence(runs):
 
 
 def joint_dependence(instances, profile, field='joint_score', metric=METRIC):
-    """Stratified Instance-cluster gate for one per-Instance evidence field."""
+    """Stratified Instance-cluster gate for one per-Instance evidence field.
+
+    ``total_n`` and ``eligible_n`` count run-level changed-probe pairs across
+    repetitions, whereas ``independent_instances`` and ``eligible_instances``
+    count independent Instances (with repetitions averaged inside each Instance
+    before the stratified bootstrap).
+    """
     policy = profile['memory_dependence']
     floor = float(policy.get('floor', .5))
     level = float(policy.get('confidence_level', .95))

@@ -306,6 +306,8 @@ A pack is `Programs × seeds × rungs`. Rungs preserve future requests and the v
 | `MIB-Core-0.2-Session-Dev` | 14 | Explicit session-boundary protocol |
 | `MIB-Core-0.2-Load-Dev` | 14 | 64 useful facts in the interleaved recall Program |
 | `MIB-Core-0.2-Calibration-Dev` | 14 | Fixed-model calibration at every rung |
+| `MIB-Core-0.2-Pilot-Dev` | 7 | Single-rung (100 events) budgeted fixed-model pilot |
+| `MIB-Core-0.2-Horizon-Dev` | 7 | Long visible history (100 / 2,000 / 10,000 events), headline only |
 
 `interference_tokens` is retained as a legacy field name for **whitespace words**, not tokenizer tokens. No context-overflow claim follows from it. Runner telemetry measures serialized bytes and time; model telemetry records supplied token usage separately.
 

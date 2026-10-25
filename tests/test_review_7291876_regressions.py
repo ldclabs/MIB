@@ -272,3 +272,137 @@ def test_unused_reference_failures_remain_diagnostic(tmp_path, monkeypatch):
     assert report['additional_baselines']['unbounded_reference']['enters_release_gate'] is False
     assert report['fairness_audit']['valid'] is True
     assert report['fairness_audit']['evidence']['observed_model_calls'] == sum(t['model_calls'] for t in report['telemetry'].values())
+
+
+def test_worldmodel_chained_correction_exclusion_and_inplace_cache():
+    from mib_runner.worldmodel import Assertion, Source, WorldModel
+    model = WorldModel()
+    model.add_source(Source(id='s', authority=0.9))
+    model.add(Assertion(event_id='s0', seq=1, source='s', subject='x', attribute='code', value='OLD', kind='state'))
+    model.add(Assertion(event_id='c1', seq=2, source='s', subject='x', attribute='code', value='MID', kind='correction', supersedes='s0'))
+    model.add(Assertion(event_id='c2', seq=3, source='s', subject='x', attribute='code', value='NEW', kind='correction', supersedes='c1'))
+    series = model.truth_series('x', 'code', exclude={'c1'})
+    assert series == [(1, 'NEW', 's0')]
+    # In-place mutation of assertions list without invalidate() must not hit stale cache.
+    model.assertions.pop()
+    assert model.truth_series('x', 'code') == [(1, 'MID', 's0')]
+
+
+def test_conditional_probe_clears_counterfactual_follows_when_prerequisite_fails():
+    from mib_runner.runner import run_condition
+
+    class FailKeptFollowForgottenAgent(StructuredMemoryAgent):
+        def respond(self, *, run_id, request_id, probe):
+            if 'retained' in (probe.content or '').lower() or probe.probe_id.endswith('kept'):
+                return {'output': {'type': 'structured', 'content': 'wrong', 'value': 'wrong', 'confidence': 0.9, 'status': 'known'}}
+            return super().respond(run_id=run_id, request_id=request_id, probe=probe)
+
+    scenario = generate_instance('mib.forgetting.v1', 101, rung=0)
+    twin_ablation = next(a for a in scenario['ablations'] if a.get('kind') == 'counterfactual_content')
+    # Make p-kept always fail so the prerequisite for p-forgotten is unmet.
+    kept_probe = next(p for p in scenario['probes'] if p['id'] == 'p-kept')
+    kept_probe['oracle']['accepted'] = ['__impossible_prerequisite_value__']
+    run = run_condition(
+        scenario=scenario,
+        agent=StructuredMemoryAgent(),
+        condition='counterfactual_content',
+        ablation=twin_ablation,
+        repetition=0,
+        agent_seed=0,
+    )
+    by_id = {r['probe_id']: r for r in run['probe_results']}
+    assert by_id['p-kept']['score'] == 0.0
+    assert by_id['p-forgotten']['score'] == 0.0
+    assert 'prerequisite_failed' in by_id['p-forgotten']['failure_codes']
+    assert by_id['p-forgotten']['counterfactual']['tracks'] is False
+    assert by_id['p-forgotten']['counterfactual']['follows'] is False
+
+
+def test_relearning_and_feature_policy_program_structure():
+    relearn = generate_instance('mib.relearning.v1', 101, rung=1)
+    ids = [e['id'] for e in relearn['timeline']]
+    assert ids.index('relearn') < ids.index('mw-1') < ids.index('cp')
+    assert relearn['instantiation']['distance_hours'] >= 24.0
+    fp = generate_instance('mib.feature_policy.v1', 101, rung=0)
+    by_id = {a['id']: a for a in fp['ablations']}
+    assert by_id['a-feature-acquisition']['probes'] == ['p-2', 'p-3']
+    assert by_id['a-feature-policy']['probes'] == ['p-2', 'p-3']
+    assert set(by_id['a-feature-policy']['counterfactual']['oracle']) == {'p-2', 'p-3'}
+
+
+def test_agent_host_dispatches_close_and_learning_audit():
+    closed = []
+
+    class AuditedHostAgent(StructuredMemoryAgent):
+        def close(self, run_id=None):
+            closed.append(run_id)
+
+        def learning_audit(self, *, run_id, request_id):
+            return {'run_id': run_id, 'request_id': request_id, 'counts': {'skills': 0}}
+
+    host = AgentHost(AuditedHostAgent)
+    host.dispatch(request('reset', {'seed': 101}))
+    audit = host.dispatch(request('learning_audit'))
+    assert audit['status'] == 'ok' and audit['body']['run_id'] == 'r'
+    close_resp = host.dispatch(request('close'))
+    assert close_resp['status'] == 'ok' and closed == ['r']
+
+
+def test_condition_label_visibility_ignores_ordinary_content_and_catches_prompt_leaks():
+    from mib_runner.same_model_agent import InvocationRecorder
+    from test_same_model import RecordingModel
+    model = RecordingModel()
+    agent = SameModelAgent(
+        condition='B1', model_client=model, system_prompt='fixed system',
+        reasoning_policy='fixed policy', model_parameters={'temperature': 0},
+        recorder=InvocationRecorder(), memory_config={},
+    )
+    clean_msgs = [
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'user', 'content': 'The meeting is in room B1 with badge ID-B1.'},
+    ]
+    assert agent._audit_fields(clean_msgs)['condition_label_visible'] is False
+    leak_system = [
+        {'role': 'system', 'content': 'You are running under B1 memory policy.'},
+        {'role': 'user', 'content': 'Hello.'},
+    ]
+    assert agent._audit_fields(leak_system)['condition_label_visible'] is True
+    leak_header = [
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'user', 'content': 'MEMORY CONDITION: B1\nHello.'},
+    ]
+    assert agent._audit_fields(leak_header)['condition_label_visible'] is True
+
+
+def test_verify_same_model_report_and_profile_schemas(tmp_path):
+    report = calibration.run_same_model_calibration(bounded_experiment(tmp_path))
+    res = verify_score(report)
+    assert res['valid'] is True and res['verification_level'] == 'same_model_calibration'
+    tampered = copy.deepcopy(report)
+    tampered['empirical_release_gate']['eligible'] = True
+    assert verify_score(tampered)['valid'] is False
+
+    profile_schema = json.loads((SCHEMAS / 'mib-profile.schema.json').read_text())
+    validator = jsonschema.Draft202012Validator(profile_schema)
+    for p in sorted(PROFILES.glob('*.json')):
+        validator.validate(json.loads(p.read_text()))
+
+    backend_schema = json.loads((SCHEMAS / 'mib-memory-backend-report.schema.json').read_text())
+    longitudinal_schema = json.loads((SCHEMAS / 'mib-learning-longitudinal-report.schema.json').read_text())
+    jsonschema.Draft202012Validator.check_schema(backend_schema)
+    jsonschema.Draft202012Validator.check_schema(longitudinal_schema)
+    from mib_runner.backend_benchmark import run_backend_benchmark
+    from mib_runner.memory_backend import NullMemoryBackend
+    from test_memory_backend import Model as BackendModel, config as backend_config
+    from test_learning_longitudinal import factories as learning_factories, profile as learning_profile
+    from mib_runner.learning.benchmark import run_experiment as run_learning_experiment
+    backend_dir = tmp_path / 'backend'
+    backend_dir.mkdir()
+    backend_report = run_backend_benchmark(
+        backend_config(backend_dir, 'http://127.0.0.1:9'),
+        model_client=BackendModel(),
+        candidate_factory=lambda: NullMemoryBackend(),
+    )
+    jsonschema.Draft202012Validator(backend_schema).validate(backend_report)
+    long_report = run_learning_experiment(learning_profile(), learning_factories(), engineering_fixture=True)
+    jsonschema.Draft202012Validator(longitudinal_schema).validate(long_report)

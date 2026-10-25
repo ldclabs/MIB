@@ -252,7 +252,93 @@
         "dimensions": {
           "type": "array",
           "items": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dimension",
+              "eligible"
+            ],
+            "properties": {
+              "dimension": {
+                "type": "string"
+              },
+              "eligible": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "eligible_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "independent_instances": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "eligible_instances": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tracking_instances": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "coverage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "joint_twin_success": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "content_following_effect": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "content_tracking_rate": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "headroom_normalized_memory_benefit": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "instance_tracking_lower_bound": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "confidence_level": {
+                "type": "number"
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "ci": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "joint_twin_success": {
@@ -1163,7 +1249,27 @@
             "counterfactual_plan": {
               "type": "array",
               "items": {
-                "type": "object"
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "ablation_id",
+                  "probe_id",
+                  "dimensions"
+                ],
+                "properties": {
+                  "ablation_id": {
+                    "type": "string"
+                  },
+                  "probe_id": {
+                    "type": "string"
+                  },
+                  "dimensions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           }
@@ -1225,6 +1331,89 @@
         },
         "adapter_contract": {
           "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "required_capabilities",
+            "protocol",
+            "capabilities",
+            "operations",
+            "valid",
+            "scheduled_probes",
+            "digest"
+          ],
+          "properties": {
+            "version": {
+              "type": "string"
+            },
+            "required_capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "protocol": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "capabilities": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "operations": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "valid": {
+              "type": "boolean"
+            },
+            "scheduled_probes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "probe_id",
+                  "weight"
+                ],
+                "properties": {
+                  "probe_id": {
+                    "type": "string"
+                  },
+                  "weight": {
+                    "type": "number"
+                  }
+                }
+              }
+            },
+            "pre_invalidation_probe_results": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "reported_cost_snapshots": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "reported_costs_last": {
+              "type": [
+                "object",
+                "null"
+              ]
+            },
+            "digest": {
+              "type": "string"
+            }
+          },
           "description": "Versioned evaluator lifecycle receipts; verify-score enforces semantic consistency."
         },
         "session_isolation": {
@@ -1343,7 +1532,46 @@
         "dependence_evidence": {
           "type": "array",
           "items": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dimension",
+              "total_n",
+              "eligible_n",
+              "successes",
+              "instance_count",
+              "eligible_instances",
+              "tracking_instances"
+            ],
+            "properties": {
+              "dimension": {
+                "type": "string"
+              },
+              "total_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "eligible_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "successes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "instance_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "eligible_instances": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tracking_instances": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
           }
         },
         "counterfactual_counts": {
@@ -1361,7 +1589,52 @@
         "joint_dependence_evidence": {
           "type": "array",
           "items": {
-            "type": "object"
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dimension",
+              "total_n",
+              "valid_n",
+              "successes",
+              "joint_score"
+            ],
+            "properties": {
+              "dimension": {
+                "type": "string"
+              },
+              "total_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "valid_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "successes": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "joint_score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "twin_follow_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "full_follow_n": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "content_following_effect": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
           }
         },
         "visible_history_chars": {

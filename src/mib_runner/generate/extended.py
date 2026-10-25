@@ -1,7 +1,7 @@
 """Independent semantic mechanisms for the expanded development profile."""
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from ..worldmodel import Assertion
 from .base import ScenarioBuilder
@@ -124,14 +124,23 @@ class RelearningProgram(ForgettingProgram):
         super().build(b)
         original = b.model.assertion('e-forget')
         value = b.rng.choice([v for v in ATTRIBUTES[original.attribute].values if v != original.value])
-        b.events.pop()  # Move the checkpoint after new, explicitly authorized information.
-        b.event('renew', stage='past', etype='document', actor=original.source,
+        mw_idx = next(i for i, e in enumerate(b.events) if e['id'] == 'mw-1')
+        remind_time = b.events[mw_idx - 1]['at']['time']
+        saved_clock = b._clock
+        b._clock = datetime.fromisoformat(remind_time.replace('Z', '+00:00'))
+        b.event('renew', stage='past', etype='document', actor=original.source, minutes=(1, 1),
                 content=f'I authorize you to remember a new {ATTRIBUTES[original.attribute].label}. The withdrawn value remains unavailable.')
-        b.say('relearn', source=original.source, subject=original.subject, attribute=original.attribute, value=value)
-        b.checkpoint()
+        b.say('relearn', source=original.source, subject=original.subject, attribute=original.attribute, value=value, minutes=(1, 1))
+        b._clock = saved_clock
+        relearn_events = [b.events.pop(-2), b.events.pop(-1)]
+        b.events[mw_idx:mw_idx] = relearn_events
+        for seq, ev in enumerate(b.events, 1):
+            ev['at']['sequence'] = seq
         b.ablations = [a for a in b.ablations if a['id'] != 'a-swap-withdrawal']
         for p in b.probes:
             if p['id'] in {'p-forgotten', 'p-forgotten-history'}:
+                # ``e-forget`` was withdrawn, so ``first_stated`` over the live
+                # record resolves to ``relearn`` while ``e-forget`` stays in ``oracle.withdrawn``.
                 p['kind'] = 'historical' if p['id'].endswith('history') else 'factual'
                 b._probe_meta[p['id']]['swap'] = True
                 b._probe_meta[p['id']]['historical'] = p['kind'] == 'historical'

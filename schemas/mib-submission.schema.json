@@ -9,6 +9,19 @@
     "transport"
   ],
   "properties": {
+    "mib": {
+      "enum": [
+        "0.1",
+        "0.2"
+      ]
+    },
+    "kind": {
+      "const": "MIBSubmission"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
     "id": {
       "type": "string",
       "minLength": 1

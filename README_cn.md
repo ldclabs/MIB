@@ -439,8 +439,8 @@ MIB Runner 执行器
 ```text
 B0 —— 无记忆基线（No Memory）
 B1 —— 全可见历史基线（Full Visible History）
-B2 —— 朴素检索记忆基线（Simple Retrieval Memory）
-B3 —— 结构化记忆基线（Structured Memory）
+B2 —— 简单词法检索基线（Simple Lexical Retrieval）
+B3 —— 启发式显著性检索基线（Heuristic Salience Retrieval）
 ```
 
 这确保了我们能回答一个极度严谨的问题：
@@ -795,12 +795,11 @@ Memory Accuracy: 84%
 Retention & Retrieval:          88.2 / 100
 Temporal Memory:                84.5 / 100
 Epistemic Memory:               79.1 / 100
-Experience Memory:              73.4 / 100
-Skill Learning & Transfer:      68.2 / 100
+Procedural Memory:              70.8 / 100
 Prospective & Self Memory:      77.0 / 100
 Selective Forgetting:           82.6 / 100
 
-Memory Dependence Gate:         PASS (CTR: 0.86 ≥ 0.50)
+Memory Dependence Gate:         PASS (CFE: 0.91 ≥ 0.20)
 Retention Curve:                [r0: 92.4, r1: 85.1, r2: 78.0] (Half-Distance: 180 events)
 Memory Benefit:                 +14.2 pp
 Headroom-Normalized Benefit:    0.48

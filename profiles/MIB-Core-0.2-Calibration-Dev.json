@@ -3,7 +3,7 @@
   "kind": "BenchmarkProfile",
   "id": "MIB-Core-0.2-Calibration-Dev",
   "version": "0.5.0",
-  "description": "Fourteen independent semantic Programs, including interleaved load, bitemporal records, scoped authority, revised and composed workflows, cancelled commitments, and authorized relearning. Development only.",
+  "description": "Fourteen-Program Track A calibration and memory-backend development benchmark across six dimensions. Development only.",
   "track": "memory_system",
   "scale": "MIB-S",
   "official": false,

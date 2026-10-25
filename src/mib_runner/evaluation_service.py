@@ -145,6 +145,13 @@ class EvaluationService:
         store_path=Path(store_path).resolve(); profile_path=Path(profile_path).resolve(); store=HiddenEvalStore(store_path); profile=load_json(profile_path)
         if profile.get('programs'):
             from .generate.registry import resolve_program_config
+            from .generate.surface import validate_bank
+            for bank in (profile.get('surface_bank'), store.manifest.get('surface_bank')):
+                if bank is not None:
+                    try:
+                        validate_bank(bank)
+                    except ValueError as exc:
+                        raise ServiceConfigError(f'invalid surface_bank: {exc}') from exc
             required = {c['id']: c for e in profile['programs']
                         for c in [resolve_program_config(e, profile.get('ladder'))]}
             actual = {c['id']: c for e in store.manifest.get('programs', [])

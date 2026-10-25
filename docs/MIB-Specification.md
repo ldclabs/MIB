@@ -6,7 +6,7 @@
 
 This revision addresses the second September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.5-Review-Resolution.md); the preceding revision's ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and Core development Profiles are version 0.5.0 (the Mechanism Challenges Profile is 0.2.0), and new pack reports use `report_version: "0.6.0"`. Static v0.1 scenarios remain executable.
 
-The implementation, schemas, and this specification define the executable contract. Proposals and archived documents are rationale, not competing specifications. Chinese mirrors have not been updated in this revision.
+The implementation, schemas, and this specification define the executable contract. Proposals and archived documents are rationale, not competing specifications. Chinese mirrors (`docs/cn/`, `README_cn.md`) are synchronized with this revision.
 
 # 0. Scope and interpretation
 
@@ -250,7 +250,7 @@ Pairs share Instance, repetition, Agent seed, and future-input digests. Alternat
 
 Content tracking is conditional on a correct full-condition probe and requires full correctness under the changed oracle. Zero eligible probes is undefined, never evidence of zero tracking. Raw eligible/total counts and success counts are retained separately.
 
-Content and policy twins cover all seven base dimensions, including changed commitments, self rules, and withdrawal instructions. The intervention type remains visible in evaluator-side evidence.
+Content and policy twins cover all six base dimensions, including changed commitments, self rules, and withdrawal instructions. The intervention type remains visible in evaluator-side evidence.
 
 ## 7.3 Irrelevant stability
 
@@ -286,7 +286,7 @@ The new `memory_related_error_rate` is a descriptive error-pattern rate. It does
 
 Revision 0.5 Profiles use `content_following_effect` (CFE). The Runner freezes all declared changed-probe opportunities on every run. In the full condition it also evaluates each output against every twin oracle of that Probe (`counterfactual_cross`); in the twin run it records whether the output carries the twin oracle's value (`counterfactual.follows`). For each opportunity, `CFE = follows_twin − follows_full`, using the value component of structured answers and the complete score of action/emission evaluators. Missing and invalid pairs contribute zero and stay in the denominator; correctness never selects eligibility. A system with no memory, a constant answer, or a guess from the public value pool has an expected CFE of zero whatever its accuracy; a system whose answers follow the history has CFE near one even when it is not perfectly accurate.
 
-Repetitions are averaged inside an Instance. The gate averages Instance values within each fixed Program stratum, then averages strata within the dimension. Each weighted dimension requires five complete independent Instances, 100% valid planned-pair coverage, and an Instance-cluster percentile-bootstrap lower bound of at least 0.2 (95%, 2,000 draws by default). Resampling keeps Program strata fixed. Duplicate repetitions cannot increase independent sample count. A missing contrast is unassessable. The floor is chosen for power under the declared sample: with one opportunity per Instance, a system that follows 90% of changes passes all seven dimensions in at least 80% of simulated five-seed packs, while pool guessing passes in at most 5% (regression-tested; about 97% and 0% in a 200-pack simulation). A system that follows 70% of changes passes about a third of the time: five seeds still cannot certify weak dependence.
+Repetitions are averaged inside an Instance (`total_n` and `eligible_n` count run-level changed-probe pairs across repetitions, while `independent_instances` and `eligible_instances` count independent Instances). The gate averages Instance values within each fixed Program stratum, then averages strata within the dimension. Each weighted dimension requires five complete independent Instances, 100% valid planned-pair coverage, and an Instance-cluster percentile-bootstrap lower bound of at least 0.2 (95%, 2,000 draws by default). Resampling keeps Program strata fixed. Duplicate repetitions cannot increase independent sample count. A missing contrast is unassessable. The floor is chosen for power under the declared sample: with one opportunity per Instance, a system that follows 90% of changes passes all six dimensions in at least 80% of simulated five-seed packs, while pool guessing passes in at most 5% (regression-tested; about 97% and 0% in a 200-pack simulation). A system that follows 70% of changes passes about a third of the time: five seeds still cannot certify weak dependence.
 
 `joint_twin_success` (full and twin both fully correct) is reported per dimension as a diagnostic. It approximates accuracy squared, so as a gate it was a capability threshold: at five seeds, a system with 90% joint success passed the revision-0.4 gate in about 15% of packs. Conditional content tracking is still reported separately. Revision 0.4 Profiles retain `joint_twin_success`, and legacy Profiles retain their explicitly declared conditional/Wilson policy.
 

@@ -12,7 +12,7 @@ def generate(kind, seed, phases, execution):
     if kind not in PROGRAMS: raise ValueError("unknown longitudinal program")
     b = ScenarioBuilder(program_id="mib.learning." + kind, program_version="0.1.0", seed=seed,
         rung=0, interference_count=0, title=kind.replace("_", " "), suite="skill",
-        dimensions=["skill_learning_transfer"], dimension_weights={"skill_learning_transfer": 1},
+        dimensions=["procedural_memory"], dimension_weights={"procedural_memory": 1},
         capabilities=["observe", "respond", "act", "tools", "maintenance", "virtual_time"], session_boundary=True)
     actor = b.actor("operator", "Workflow operator")
     family = "F-" + format(b.rng.getrandbits(64), "016x")
@@ -32,7 +32,7 @@ def generate(kind, seed, phases, execution):
                 "available_tools": ["workflow.inspect", "workflow.prepare", "workflow.commit"], "constraints": []},
             "oracle": {"world_assertions": [
                 {"path": "/precondition_measurement/behavior_success", "operator": "eq", "value": True}]},
-            "evaluators": ["eval-world"], "dimensions": ["skill_learning_transfer"], "weight": 1})
+            "evaluators": ["eval-world"], "dimensions": ["procedural_memory"], "weight": 1})
         metadata.append({"probe_id": pid, "phase": phase, "kind": "action", "category": current_family,
             "requirement": requirement, "virtual_time": b.events[-1]["at"]["time"]})
         b.maintenance_window("maintenance-" + pid, budget=execution["maintenance_budget"], minutes=(1, 1))
@@ -44,7 +44,7 @@ def generate(kind, seed, phases, execution):
             b.raw_probe({"id": pid, "kind": "epistemic", "delivery": "respond", "trigger": {"after_event": trigger},
                 "input": {"content": question, "answer_schema": {"value": True, "status": True}},
                 "oracle": {"accepted": ["unknown", "not established", "no"], "forbidden": ["yes", "true"], "expected_status": "unknown"},
-                "evaluators": ["eval-structured"], "dimensions": ["skill_learning_transfer"], "weight": 1})
+                "evaluators": ["eval-structured"], "dimensions": ["procedural_memory"], "weight": 1})
             metadata.append({"probe_id": pid, "phase": "question", "kind": "question"})
             b.maintenance_window("question-maintenance-" + str(index), budget=execution["maintenance_budget"], minutes=(60, 60))
         action("post_question", 0, family, "forbidden")

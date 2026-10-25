@@ -3,7 +3,7 @@
   "kind": "BenchmarkProfile",
   "id": "MIB-Core-0.2-Session-Dev",
   "version": "0.5.0",
-  "description": "Fourteen independent semantic Programs, including interleaved load, bitemporal records, scoped authority, revised and composed workflows, cancelled commitments, and authorized relearning. Development only.",
+  "description": "Fourteen-Program session-boundary development benchmark with persisted-state isolation across sessions. Development only.",
   "track": "integrated_agent",
   "scale": "MIB-S",
   "official": false,
@@ -108,7 +108,7 @@
   },
   "measurement_regime": {
     "kind": "persistent_across_sessions",
-    "context_boundary_enforced": false,
+    "context_boundary_enforced": true,
     "interference_time_policy": "fixed_future_time_across_rungs",
     "distance_token_unit": "whitespace_words",
     "scope": "The boundary protocol is enforced for in-process and stdio Agents: at each boundary the Runner discards the Agent instance and restores a fresh one from the state it handed back; the persisted size is reported. Remote HTTP Agents receive the same reset/restore protocol but their process state is a declared contract.",

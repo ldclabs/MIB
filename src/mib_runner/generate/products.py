@@ -41,9 +41,13 @@ class ProductProgram(Program):
             return b.event(eid,stage='past',etype='interaction',actor=actor,content=text,
                 payload={'format':FACT_FORMAT,'actor_id':actor,'subject':subject,'value':value,**extra})
         expected={}
+        twin_spec: dict[str, object] = {}
         if self.CASE=='style':
             expected[alice]={'draft_policy':{'verbosity':'concise','tone':'direct','promotional':False}}
             fact('style',alice,expected[alice],'Please make my technical drafts concise and direct. Avoid promotional hype.')
+            alt_val={'draft_policy':{'verbosity':'detailed','tone':'formal','promotional':False}}
+            twin_spec={'pivot':'style','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':'Please make my technical drafts detailed and formal. Avoid promotional hype.'}
         elif self.CASE=='budget':
             amount=b.rng.choice([175000,200000,225000])
             expected[alice]={'project':'home renovation','location':'Orange County, CA',
@@ -51,24 +55,42 @@ class ProductProgram(Program):
             fact('budget',alice,expected[alice],f'My Orange County home renovation has a rough budget around USD {amount}. Do not present it as an exact commitment.')
             fact('other-budget',bob,{'project':'home renovation','location':'Los Angeles, CA',
                 'budget':{'amount':900000,'currency':'USD','certainty':'exact'}},'My separate project has an exact budget; this does not describe Alice.')
+            alt_amount=next(x for x in (175000,200000,225000) if x!=amount)
+            alt_val={'project':'home renovation','location':'Orange County, CA',
+                'budget':{'amount':alt_amount,'currency':'USD','certainty':'approximate'}}
+            twin_spec={'pivot':'budget','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':f'My Orange County home renovation has a rough budget around USD {alt_amount}. Do not present it as an exact commitment.'}
         elif self.CASE=='correction':
             fact('old-city',alice,{'shipping_city':'Tokyo'},'Use Tokyo for my shipping city.')
             expected[alice]={'shipping_city':'Berlin'}
             fact('new-city',alice,expected[alice],'Correction: use Berlin for my shipping city now; Tokyo was the older instruction.')
+            alt_val={'shipping_city':'Lisbon'}
+            twin_spec={'pivot':'new-city','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':'Correction: use Lisbon for my shipping city now; Tokyo was the older instruction.'}
         elif self.CASE=='reversal':
             fact('old-diet',alice,{'restaurant_policy':'meat-heavy','diet':'omnivore'},'I used to enjoy barbecue restaurants.')
             expected[alice]={'restaurant_policy':'vegetarian','diet':'vegetarian'}
             fact('new-diet',alice,expected[alice],'I am vegetarian now. Plan dinner with vegetarian options instead of the previous meat-heavy preference.')
+            alt_val={'restaurant_policy':'pescatarian','diet':'pescatarian'}
+            twin_spec={'pivot':'new-diet','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':'I am pescatarian now. Plan dinner with pescatarian options instead of the previous meat-heavy preference.'}
         elif self.CASE=='boundary':
             expected={alice:{'units':'metric','verbosity':'concise'},bob:{'units':'imperial','verbosity':'detailed'}}
             fact('alice-profile',alice,expected[alice],'For my measurement reports use metric units and concise presentation.')
             fact('bob-profile',bob,expected[bob],'For my own reports use imperial units and detailed presentation.')
+            alt_val={'units':'metric','verbosity':'summary'}
+            twin_spec={'pivot':'alice-profile','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':'For my measurement reports use metric units and summary presentation.','probes':['p-0']}
         elif self.CASE=='travel':
             airport=b.rng.choice(['SFO','SEA','JFK'])
             expected[alice]={'origin_airport':airport,'seat':'aisle','destination':None}
             fact('origin',alice,{'origin_airport':airport},f'My home airport for work travel is {airport}.')
             fact('seat',alice,{'seat':'aisle','destination':None},'I prefer aisle seats. I have not supplied the destination for the next trip.',merge=True)
             fact('other-travel',bob,{'origin_airport':'LAX','seat':'window','destination':'Tokyo'},'These are Bob\'s plans, not Alice\'s.')
+            alt_airport=next(x for x in ('SFO','SEA','JFK') if x!=airport)
+            twin_spec={'pivot':'origin','actor':alice,'value':{'origin_airport':alt_airport},
+                'oracle_value':{'origin_airport':alt_airport,'seat':'aisle','destination':None},
+                'text':f'My home airport for work travel is {alt_airport}.'}
         elif self.CASE=='discount':
             live={'discount_code':'SPRING20','pricing_basis':'current'}
             expected[alice]={'discount_code':None,'pricing_basis':'current'}
@@ -76,9 +98,16 @@ class ProductProgram(Program):
             fact('discount',alice,live,'SPRING20 applies only before the stated expiry. Afterwards use current pricing without this code.',
                  valid_until=expiry,after_expiry=expected[alice])
             b._clock+=timedelta(days=60)
+            alt_after={'discount_code':'RENEW10','pricing_basis':'fallback'}
+            twin_spec={'pivot':'discount','actor':alice,'value':live,'oracle_value':alt_after,
+                'text':'SPRING20 applies only before the stated expiry. Afterwards use fallback pricing with RENEW10.',
+                'extra':{'valid_until':expiry,'after_expiry':alt_after}}
         elif self.CASE=='usage':
             expected[alice]={'drink':'oolong tea','preparation':'strong'}
             fact('drink',alice,expected[alice],'My morning drink is strong oolong tea.')
+            alt_val={'drink':'sencha tea','preparation':'light'}
+            twin_spec={'pivot':'drink','actor':alice,'value':alt_val,'oracle_value':alt_val,
+                'text':'My morning drink is light sencha tea.'}
         else: raise ValueError('unknown product regression')
         b.maintenance_window('maintain')
         b.interfere(subject_id=alice,attribute='city',exclude_values=set(),other_actors=other_actors(b.rng,{'Alice','Bob'}))
@@ -104,6 +133,16 @@ class ProductProgram(Program):
             probe(alice,1)
         b.ablation({'id':'a-required-product-history','kind':'relevant_memory','method':'replay_excluding_events',
             'probes':[p['id'] for p in b.probes],'targets':{'event_ids':source_ids},'expected_effect':'degrade'})
+        twin_probes=list(twin_spec.get('probes') or [p['id'] for p in b.probes])
+        pivot=str(twin_spec['pivot'])
+        twin_payload={'format':FACT_FORMAT,'actor_id':twin_spec['actor'],'subject':subject,'value':twin_spec['value'],
+            **dict(twin_spec.get('extra') or {})}
+        twin_oracle={pid:{'world_assertions':[{'path':'/workspace','operator':'eq','value':{'workspace_required':True,
+            'selected_workspace':subject,'edited':True,'saved':True,'last_error':None,'value':twin_spec['oracle_value']}}]}
+            for pid in twin_probes}
+        b.ablation({'id':'a-swap-product','kind':'counterfactual_content','method':'swap_parameter',
+            'probes':twin_probes,'targets':{'event_ids':[pivot]},'expected_effect':'track',
+            'counterfactual':{'events':{pivot:{'content':twin_spec['text'],'payload':twin_payload}},'oracle':twin_oracle}})
         # These are product instances, not eight independent cognitive abilities.
         b.parameters['legacy_goal']=self.CASE
 

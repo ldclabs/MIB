@@ -513,7 +513,13 @@ class SameModelAgent:
 
     def _audit_fields(self, messages: list[dict[str, str]]) -> dict[str, Any]:
         """Evidence for the fairness audit, captured from the call as sent."""
+        system_text = "\n".join(m.get("content", "") for m in messages if m.get("role") == "system")
         rendered = "\n".join(m.get("content", "") for m in messages)
+        label_pat = rf"(?<![A-Za-z0-9_-]){re.escape(self.condition)}(?![A-Za-z0-9_-])"
+        header_pat = rf"(?i)(?:memory[ _]condition|condition)\s*[:=]\s*{re.escape(self.condition)}(?![A-Za-z0-9_-])"
+        condition_label_visible = bool(
+            self.condition and (re.search(label_pat, system_text) or re.search(header_pat, rendered))
+        )
         return {
             "system_prompt_sha": self.system_prompt_sha,
             "reasoning_policy_sha": self.reasoning_policy_sha,
@@ -521,7 +527,7 @@ class SameModelAgent:
             "memory_policy_id": ("backend:" + self.condition) if self.backend is not None else getattr(self.policy, "id", self.condition),
             "seed_policy": self.seed_policy,
             # The model must not be able to tell which memory condition it is in.
-            "condition_label_visible": self.condition in rendered,
+            "condition_label_visible": condition_label_visible,
         }
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str,

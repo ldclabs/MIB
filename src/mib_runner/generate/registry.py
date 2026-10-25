@@ -100,5 +100,5 @@ def generate_pack(profile: dict[str, Any], seeds: list[int | str] | None = None)
         descriptors.append(descriptor)
         for seed in seeds:
             for rung in range(len(steps)):
-                instances.append(generate_instance(pid, seed, rung=rung, ladder=steps, session_boundary=boundary, parameters=parameters))
+                instances.append(generate_instance(pid, seed, rung=rung, ladder=steps, session_boundary=boundary, parameters=parameters, surface_bank=profile.get("surface_bank")))
     return descriptors, instances
