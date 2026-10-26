@@ -97,6 +97,8 @@ def load_experiment_templates(paths: dict[str, Path]) -> list[dict[str, Any]]:
             template['id'] += f'-R{rung}'
             version = template.pop('instantiation')['program_version']
             template['template'] = {'program': {'id': pid, 'version': version, 'ladder': ladder, 'rung': rung, 'session_boundary': boundary, 'params': params}}
+            if profile.get('surface_bank') is not None:
+                template['template']['program']['surface_bank'] = copy.deepcopy(profile['surface_bank'])
             template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung, canonical_rung=min(canonical_rung, len(ladder) - 1))
             templates.append(template)
     return templates
@@ -668,6 +670,76 @@ def _aggregate_calibration(
     }
 
 
+def _fairness_audit(
+    *, telemetry: dict[str, Any], audit_telemetry: list[dict[str, Any]], model_cfg: dict[str, Any],
+    preflight: dict[str, Any], schedule_audit: dict[str, Any], pairing_audit: dict[str, Any],
+    full_context_reference_not_truncated: bool, lifecycle_clean: bool,
+) -> dict[str, Any]:
+    """Shared aggregation of the recorded same-model audit evidence."""
+    model_errors = sum(int(x.get("model_errors", 0)) for x in audit_telemetry)
+    params = dict(model_cfg.get("parameters") or {})
+    seed_policy = str(model_cfg.get("seed_policy", "paired_per_call"))
+    deterministic_decoding = float(params.get("temperature", 0.0)) == 0.0 or "seed" in params or seed_policy == "paired_per_call"
+
+    # The audit is computed from what the run actually sent to the model, not
+    # asserted from configuration.  Each fingerprint set must collapse to one
+    # value across every condition; the memory policy is the only thing allowed
+    # to differ.
+    def _union(field: str) -> set[str]:
+        out: set[str] = set()
+        for t in audit_telemetry:
+            out.update(t.get(field) or [])
+        return out
+
+    model_identities = _union("model_identities")
+    system_prompt_shas = _union("system_prompt_shas")
+    reasoning_policy_shas = _union("reasoning_policy_shas")
+    decoding_fingerprints = _union("decoding_fingerprints")
+    memory_policy_ids = _union("memory_policy_ids")
+    condition_label_leaks = sum(int(t.get("condition_label_visible_calls", 0)) for t in audit_telemetry)
+    observed_calls = sum(int(t.get("model_calls", 0)) for t in audit_telemetry)
+    # With no calls there is no evidence, so nothing may be reported as verified.
+    have_evidence = observed_calls > 0
+
+    fairness_checks = {
+        "single_model_identity": have_evidence and len(model_identities) == 1,
+        "single_model_client_configuration": have_evidence and len(decoding_fingerprints) == 1,
+        "identical_system_prompt": have_evidence and len(system_prompt_shas) == 1,
+        "identical_reasoning_policy": have_evidence and len(reasoning_policy_shas) == 1,
+        "identical_tool_interface": True,  # Tools come from the Scenario, not the condition.
+        "identical_decoding_parameters": have_evidence and len(decoding_fingerprints) == 1,
+        "deterministic_or_seeded_decoding": deterministic_decoding,
+        "stateless_model_contract": bool(preflight.get("passed")),
+        "statelessness_preflight": bool(preflight.get("passed")),
+        # One memory policy per executed condition, and nothing else varying.
+        "only_memory_policy_varies": (
+            have_evidence
+            and len(memory_policy_ids) == len([b for b in CONDITIONS if telemetry.get(b, {}).get("model_calls")])
+            and len(system_prompt_shas) == 1
+            and len(decoding_fingerprints) == 1
+        ),
+        "condition_label_not_model_visible": have_evidence and condition_label_leaks == 0,
+        "counterbalanced_condition_order": bool(schedule_audit["balanced"]),
+        "paired_agent_seed_and_future_probe": bool(pairing_audit["valid"]),
+        "full_context_reference_not_truncated": full_context_reference_not_truncated,
+        "no_model_transport_or_parse_errors": model_errors == 0,
+        "full_lifecycle_execution_clean": lifecycle_clean,
+    }
+    fairness_evidence = {
+        "observed_model_calls": observed_calls,
+        "distinct_model_identities": len(model_identities),
+        "distinct_system_prompts": len(system_prompt_shas),
+        "distinct_reasoning_policies": len(reasoning_policy_shas),
+        "distinct_decoding_fingerprints": len(decoding_fingerprints),
+        "memory_policy_ids": sorted(memory_policy_ids),
+        "condition_label_visible_calls": condition_label_leaks,
+        "transport_errors": sum(int(t.get("transport_errors", 0)) for t in audit_telemetry),
+        "parse_errors": sum(int(t.get("parse_errors", 0)) for t in audit_telemetry),
+        "verification": "computed from recorded model invocations",
+    }
+    return {"valid": all(fairness_checks.values()), "checks": fairness_checks, "evidence": fairness_evidence}
+
+
 def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     cfg, paths = load_experiment(experiment_path)
     experiment_lock = build_experiment_lock(cfg, paths)
@@ -846,71 +918,16 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     audit_telemetry = list(telemetry.values())
     if reference_required and 'unbounded_reference' in additional_baselines:
         audit_telemetry.append(additional_baselines['unbounded_reference']['telemetry'])
-    model_errors = sum(int(x.get("model_errors", 0)) for x in audit_telemetry)
-    b1_truncations = int(telemetry["B1"].get("memory_truncations", 0))
-    params = dict(model_cfg.get("parameters") or {})
-    seed_policy = str(model_cfg.get("seed_policy", "paired_per_call"))
-    deterministic_decoding = float(params.get("temperature", 0.0)) == 0.0 or "seed" in params or seed_policy == "paired_per_call"
-
-    # The audit is computed from what the run actually sent to the model, not
-    # asserted from configuration.  Each fingerprint set must collapse to one
-    # value across every condition; the memory policy is the only thing allowed
-    # to differ.
-    def _union(field: str) -> set[str]:
-        out: set[str] = set()
-        for t in audit_telemetry:
-            out.update(t.get(field) or [])
-        return out
-
-    model_identities = _union("model_identities")
-    system_prompt_shas = _union("system_prompt_shas")
-    reasoning_policy_shas = _union("reasoning_policy_shas")
-    decoding_fingerprints = _union("decoding_fingerprints")
-    memory_policy_ids = _union("memory_policy_ids")
-    condition_label_leaks = sum(int(t.get("condition_label_visible_calls", 0)) for t in audit_telemetry)
-    observed_calls = sum(int(t.get("model_calls", 0)) for t in audit_telemetry)
-    # With no calls there is no evidence, so nothing may be reported as verified.
-    have_evidence = observed_calls > 0
-
-    fairness_checks = {
-        "single_model_identity": have_evidence and len(model_identities) == 1,
-        "single_model_client_configuration": have_evidence and len(decoding_fingerprints) == 1,
-        "identical_system_prompt": have_evidence and len(system_prompt_shas) == 1,
-        "identical_reasoning_policy": have_evidence and len(reasoning_policy_shas) == 1,
-        "identical_tool_interface": True,  # Tools come from the Scenario, not the condition.
-        "identical_decoding_parameters": have_evidence and len(decoding_fingerprints) == 1,
-        "deterministic_or_seeded_decoding": deterministic_decoding,
-        "stateless_model_contract": bool(preflight.get("passed")),
-        "statelessness_preflight": bool(preflight.get("passed")),
-        # One memory policy per executed condition, and nothing else varying.
-        "only_memory_policy_varies": (
-            have_evidence
-            and len(memory_policy_ids) == len([b for b in CONDITIONS if telemetry.get(b, {}).get("model_calls")])
-            and len(system_prompt_shas) == 1
-            and len(decoding_fingerprints) == 1
-        ),
-        "condition_label_not_model_visible": have_evidence and condition_label_leaks == 0,
-        "counterbalanced_condition_order": bool(schedule_audit["balanced"]),
-        "paired_agent_seed_and_future_probe": bool(pairing_audit["valid"]),
-        "full_context_reference_not_truncated": (reference_truncations == 0 if memory_limits.get("B1") is not None and reference_scores
-                                                  else b1_truncations == 0 if memory_limits.get("B1") is None else False),
-        "no_model_transport_or_parse_errors": model_errors == 0,
-        "full_lifecycle_execution_clean": bool(audit_runs) and all(r.get('validity', {}).get('runner_valid') is True
-                                                                    for r in audit_runs.values()),
-    }
-    fairness_evidence = {
-        "observed_model_calls": observed_calls,
-        "distinct_model_identities": len(model_identities),
-        "distinct_system_prompts": len(system_prompt_shas),
-        "distinct_reasoning_policies": len(reasoning_policy_shas),
-        "distinct_decoding_fingerprints": len(decoding_fingerprints),
-        "memory_policy_ids": sorted(memory_policy_ids),
-        "condition_label_visible_calls": condition_label_leaks,
-        "transport_errors": sum(int(t.get("transport_errors", 0)) for t in audit_telemetry),
-        "parse_errors": sum(int(t.get("parse_errors", 0)) for t in audit_telemetry),
-        "verification": "computed from recorded model invocations",
-    }
-    fairness_valid = all(fairness_checks.values())
+    fairness_audit = _fairness_audit(
+        telemetry=telemetry, audit_telemetry=audit_telemetry, model_cfg=model_cfg,
+        preflight=preflight, schedule_audit=schedule_audit, pairing_audit=pairing_audit,
+        full_context_reference_not_truncated=(
+            reference_truncations == 0 if reference_required and reference_scores else
+            int(telemetry["B1"].get("memory_truncations", 0)) == 0 if not reference_required else False),
+        lifecycle_clean=bool(audit_runs) and all(r.get('validity', {}).get('runner_valid') is True
+                                                for r in audit_runs.values()),
+    )
+    fairness_valid = fairness_audit["valid"]
     n = int(base_report["summary"]["template_count"])
     empirical_gate_count = int(base_report["summary"]["provisional_full_gate_including_causal"])
     all_templates_pass = empirical_gate_count == n
@@ -938,7 +955,7 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
         "statelessness_preflight": preflight,
         "condition_order_audit": schedule_audit,
         "pairing_audit": pairing_audit,
-        "fairness_audit": {"valid": fairness_valid, "checks": fairness_checks, "evidence": fairness_evidence},
+        "fairness_audit": fairness_audit,
         "telemetry": telemetry,
         "additional_baselines": additional_baselines,
         "empirical_release_gate": {
@@ -1031,7 +1048,14 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
 
 
 def verify_same_model_report(report: dict[str, Any]) -> dict[str, Any]:
-    """Verify structural and audit invariants of a MIBSameModelCalibrationReport."""
+    """Recompute consistency from the report's retained aggregate evidence."""
+    try:
+        return _verify_same_model_report(report)
+    except (KeyError, TypeError, ValueError, AttributeError) as exc:
+        return {"valid": False, "verification_level": "same_model_calibration", "errors": [f"malformed evidence: {exc}"]}
+
+
+def _verify_same_model_report(report: dict[str, Any]) -> dict[str, Any]:
     errors: list[str] = []
     if report.get("kind") != "MIBSameModelCalibrationReport":
         errors.append("unexpected report kind")
@@ -1045,21 +1069,63 @@ def verify_same_model_report(report: dict[str, Any]) -> dict[str, Any]:
     checks = fa.get("checks") or {}
     if not checks or fa.get("valid") != all(checks.values()):
         errors.append("fairness_audit.valid disagrees with fairness_audit.checks")
+    telemetry = report["telemetry"]
+    audit_telemetry = [telemetry[bid] for bid in CONDITIONS]
+    reference = (report.get("additional_baselines") or {}).get("unbounded_reference") or {}
+    reference_required = (lock.get("memory_runtime", {}).get("memory_char_limits") or {}).get("B1") is not None
+    if reference_required and reference:
+        audit_telemetry.append(reference["telemetry"])
+    reference_untruncated = (
+        int(reference["telemetry"].get("memory_truncations", 0)) == 0
+        if reference_required and reference.get("templates") else
+        int(telemetry["B1"].get("memory_truncations", 0)) == 0 if not reference_required else False
+    )
+    rebuilt_audit = _fairness_audit(
+        telemetry=telemetry, audit_telemetry=audit_telemetry, model_cfg=lock["model"],
+        preflight=report["statelessness_preflight"], schedule_audit=report["condition_order_audit"],
+        pairing_audit=report["pairing_audit"], full_context_reference_not_truncated=reference_untruncated,
+        # Raw lifecycle receipts are not retained in this report family.
+        lifecycle_clean=checks.get("full_lifecycle_execution_clean", False),
+    )
+    if report.get("report_version") == "0.2.0":
+        if fa != rebuilt_audit:
+            errors.append("fairness_audit disagrees with retained telemetry/preflight/pairing evidence")
+    else:
+        # Version 0.1.0 did not retain invocation fingerprints. Verify only
+        # checks with stored evidence; absence is not proof of an audit failure.
+        legacy_checks = {name: rebuilt_audit["checks"][name] for name in (
+            "deterministic_or_seeded_decoding", "stateless_model_contract", "statelessness_preflight",
+            "counterbalanced_condition_order", "paired_agent_seed_and_future_probe",
+            "no_model_transport_or_parse_errors")}
+        legacy_checks["b1_full_context_not_truncated"] = int(telemetry["B1"].get("memory_truncations", 0)) == 0
+        if any(checks.get(name) != value for name, value in legacy_checks.items()):
+            errors.append("fairness_audit checks disagree with retained evidence")
+        rebuilt_audit["valid"] = all({**checks, **legacy_checks}.values())
     cal = report.get("calibration") or {}
     summary = cal.get("summary") or {}
     gate = report.get("empirical_release_gate") or {}
     full_gate = gate.get("template_full_gate") or {}
-    expected_total = int(summary.get("template_count", 0))
-    expected_passed = int(summary.get("provisional_full_gate_including_causal", 0))
+    cards = cal["templates"]
+    ids = [card["template_id"] for card in cards]
+    if not cards or len(ids) != len(set(ids)):
+        errors.append("calibration must contain nonempty, unique template evidence")
+    admission_gates = ("full_context", "no_memory", "mdi", "causal_sensitivity", "irrelevant_stability")
+    expected_total = len(cards)
+    expected_passed = sum(all(card["gates"].get(name) is True for name in admission_gates) for card in cards)
+    if summary.get("template_count") != expected_total or summary.get("provisional_full_gate_including_causal") != expected_passed:
+        errors.append("calibration.summary disagrees with template gate evidence")
     if full_gate.get("total") != expected_total or full_gate.get("passed") != expected_passed:
-        errors.append("empirical_release_gate.template_full_gate disagrees with calibration.summary")
+        errors.append("empirical_release_gate.template_full_gate disagrees with template gate evidence")
     if full_gate.get("all_pass") != (expected_passed == expected_total):
         errors.append("empirical_release_gate.template_full_gate.all_pass inconsistent")
     if gate.get("fairness_valid") != fa.get("valid"):
         errors.append("empirical_release_gate.fairness_valid disagrees with fairness_audit.valid")
+    non_stub = report["model_identity"]["client"] != "deterministic_stub"
+    if gate.get("non_stub_model") != non_stub:
+        errors.append("empirical_release_gate.non_stub_model disagrees with model identity")
     purpose = (lock.get("calibration_plan") or {}).get("purpose", "full")
     expected_eligible = bool(
-        gate.get("non_stub_model") and fa.get("valid") and (expected_passed == expected_total) and purpose == "full"
+        non_stub and rebuilt_audit["valid"] and expected_total > 0 and (expected_passed == expected_total) and purpose == "full"
     )
     if gate.get("eligible") != expected_eligible or cal.get("release_calibration_eligible") != expected_eligible:
         errors.append("release eligibility disagrees with non-stub/fairness/gate/purpose requirements")
@@ -1067,4 +1133,5 @@ def verify_same_model_report(report: dict[str, Any]) -> dict[str, Any]:
         "valid": not errors,
         "verification_level": "same_model_calibration",
         "errors": errors,
+        "limitations": ["Aggregate consistency only: raw model outputs, lifecycle receipts and per-instance causal evidence are not retained in this report family."],
     }

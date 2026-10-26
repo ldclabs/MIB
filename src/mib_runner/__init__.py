@@ -5,7 +5,7 @@ Runner, evaluators, calibration harness, and evaluation service for MIB.
 single source for every version string emitted into reports and artifacts.
 """
 
-__version__ = "0.14.1"
+__version__ = "0.14.2"
 
 # Benchmark specification version, independent of the implementation version.
 MIB_VERSION = "0.2"

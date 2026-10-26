@@ -1,6 +1,6 @@
 # 2026-09-23 第二轮设计审查实施台账
 
-实施版本 **0.14.1**，Core 度量版本 **0.5.0**，题库报告 **0.6.0**。Core 开发 Profile 为 **0.5.0**；Mechanism Challenges 和 Brain 产品回归 Profile 以及产品程序为 **0.2.0**（因为共享生成器变更了它们的实例）。场景格式保持为 **0.2**。内存后端报告、纵向度量及内嵌的原生工作流契约保持不变。
+实施版本 **0.14.2**，Core 度量版本 **0.5.0**，题库报告 **0.6.0**。Core 开发 Profile 为 **0.5.0**；Mechanism Challenges 和 Brain 产品回归 Profile 以及产品程序为 **0.2.0**（因为共享生成器变更了它们的实例）。场景格式保持为 **0.2**。内存后端报告、纵向度量及内嵌的原生工作流契约保持不变。
 
 本台账落实了[第二轮设计审查](../../reviews/MIB-Design-Review-2026-09-23b.md)。它将工程实现与实证验证严格区分开来。来自度量版本 0.4.0 的报告与示例保留其源/版本标识（`examples/validation/measurement-0.4.0.json` 属于历史记录），不得与 0.5.0 的结果直接对比。上一版本的台账见 [MIB-v0.4-Review-Resolution.md](MIB-v0.4-Review-Resolution.md)。
 
@@ -55,6 +55,18 @@
 
 精简验证记录与同模型 stub 工件已针对 0.14.1 重新生成。这些依然是工程 fixture，而非真实模型证据。
 
+## commit 445715e 后续修正（实现版本 0.14.2）
+
+10 月 26 日审查修复了三处回归，保持已声明的 measurement-0.5 契约：
+
+- 前置条件失败仍取消能力分及基于正确性的追踪得分，但保留 CFE 两侧的内容匹配。恒定答案 fixture 此前在撤回孪生中得到 CFE -1，现在得到 0，同时保留零能力分和所有计划配对。
+- 校准与隐藏题库的 Program 模板在按种子实例化时保留 `surface_bank`。Schema 校验及两个独立种子确认实际历史、请求和措辞库摘要与直接生成一致。
+- 同模型核验复用执行阶段的遥测聚合逻辑重算公平性，将准入计数与模板门槛明细核对，并按模型身份核对非 stub 标记。历史报告 0.1.0 仅按该版本保留的证据核验；缺失调用指纹不被判定为执行失败。由于未保留原始模型输出、生命周期回执和逐实例因果证据，该核验仍仅确立聚合一致性。
+
+`examples/validation/measurement-0.5.0.json` 已按 0.14.2 源码摘要重新生成。仓库中的同模型 stub 报告及其渲染摘要保留历史实验锁，不作为 0.14.2 证据。新运行的 42 模板 stub 检查仍仅属工程验证，公平性审计有效、发布资格为 false。审查与修复：Codex（OpenAI）；未使用 subagents，也未调用模型提供方。
+
+macOS 验证结果：**539 passed, 8 skipped**；其中五项跳过需要评测方私有题库，三项需要 Linux namespaces。十组工程 fixture 均通过 Schema 与报告核验；新的 stub 及两份已提交的历史同模型报告也通过核验。
+
 ## 复现命令
 
 ```bash
@@ -65,7 +77,7 @@ python -m mib_runner.same_model_cli examples/same-model/same-model-generated.stu
   --output-json /tmp/mib-smoke-0.5.json --report-schema schemas/mib-same-model-report.schema.json
 ```
 
-本地最终验证（0.14.1）：在 Python 3.14.7/macOS 上 **522 passed, 8 skipped**；跳过的测试需要 Linux 沙箱或评测方私有题库包。验证脚本在 Core、Expanded 和（仅针对 recover-only）Mechanism Challenges 上运行 grammar-only 和 recover-only fixture，若任一 fixture 在任何维度获得超过 10 分或通过依赖门槛则判定失败。其精简记录为 `examples/validation/measurement-0.5.0.json`：完整 fixture 在 Core、Expanded 和 Session 上得分 100 且 CFE 为 1，在 Mechanism Challenges 上得分 100；仅前缀 fixture 得分 63.72 且不具备依赖资格；仅语法与仅恢复 fixture 得分 0 且不具备资格。42 单元 stub 运行包含 `fairness_valid: true` 和 `release_eligible: false`，属于无界参考机制。这些均不是真实模型证据。
+历史本地验证（0.14.1）：在 Python 3.14.7/macOS 上 **522 passed, 8 skipped**；跳过的测试需要 Linux 沙箱或评测方私有题库包。验证脚本在 Core、Expanded 和（仅针对 recover-only）Mechanism Challenges 上运行 grammar-only 和 recover-only fixture，若任一 fixture 在任何维度获得超过 10 分或通过依赖门槛则判定失败。当前精简记录为 `examples/validation/measurement-0.5.0.json`：完整 fixture 在 Core、Expanded 和 Session 上得分 100 且 CFE 为 1，在 Mechanism Challenges 上得分 100；仅前缀 fixture 得分 63.72 且不具备依赖资格；仅语法与仅恢复 fixture 得分 0 且不具备资格。42 单元 stub 运行包含 `fairness_valid: true` 和 `release_eligible: false`，属于无界参考机制。这些均不是真实模型证据。
 
 Pilot 当前预估在相同排除规则下执行 **482 次条件运行**和**至少 1,927 次业务模型调用**；已包含无界参考臂。
 

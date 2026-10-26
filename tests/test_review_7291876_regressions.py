@@ -253,6 +253,7 @@ def test_admission_reference_is_included_in_fairness_audit(tmp_path, monkeypatch
         assert reference[f'{fault}_errors'] == audit['evidence'][f'{fault}_errors'] == 1
     assert report['empirical_release_gate']['eligible'] is False  # engineering stub only
     jsonschema.Draft202012Validator(json.loads((SCHEMAS / 'mib-same-model-report.schema.json').read_text())).validate(report)
+    assert verify_score(report)['valid']  # An honestly reported failed audit is still consistent evidence.
 
 
 def test_unused_reference_failures_remain_diagnostic(tmp_path, monkeypatch):
@@ -272,6 +273,7 @@ def test_unused_reference_failures_remain_diagnostic(tmp_path, monkeypatch):
     assert report['additional_baselines']['unbounded_reference']['enters_release_gate'] is False
     assert report['fairness_audit']['valid'] is True
     assert report['fairness_audit']['evidence']['observed_model_calls'] == sum(t['model_calls'] for t in report['telemetry'].values())
+    assert verify_score(report)['valid']
 
 
 def test_worldmodel_chained_correction_exclusion_and_inplace_cache():
@@ -288,7 +290,7 @@ def test_worldmodel_chained_correction_exclusion_and_inplace_cache():
     assert model.truth_series('x', 'code') == [(1, 'MID', 's0')]
 
 
-def test_conditional_probe_clears_counterfactual_follows_when_prerequisite_fails():
+def test_conditional_probe_preserves_content_following_when_prerequisite_fails():
     from mib_runner.runner import run_condition
 
     class FailKeptFollowForgottenAgent(StructuredMemoryAgent):
@@ -315,7 +317,7 @@ def test_conditional_probe_clears_counterfactual_follows_when_prerequisite_fails
     assert by_id['p-forgotten']['score'] == 0.0
     assert 'prerequisite_failed' in by_id['p-forgotten']['failure_codes']
     assert by_id['p-forgotten']['counterfactual']['tracks'] is False
-    assert by_id['p-forgotten']['counterfactual']['follows'] is False
+    assert by_id['p-forgotten']['counterfactual']['follows'] is True
 
 
 def test_relearning_and_feature_policy_program_structure():

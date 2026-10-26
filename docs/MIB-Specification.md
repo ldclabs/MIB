@@ -2,7 +2,7 @@
 
 ## Memory Intelligence Benchmark — format v0.2, measurement revision 0.5.0
 
-**Implementation:** 0.14.1. **Status:** normative executable development specification.
+**Implementation:** 0.14.2. **Status:** normative executable development specification.
 
 This revision addresses the second September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.5-Review-Resolution.md); the preceding revision's ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and Core development Profiles are version 0.5.0 (the Mechanism Challenges Profile is 0.2.0), and new pack reports use `report_version: "0.6.0"`. Static v0.1 scenarios remain executable.
 
@@ -96,6 +96,8 @@ Queries, oracle data, evaluator labels, support sets, and intervention labels ar
 `generate/` constructs deterministic Instances. Separate random streams control semantic choices, surface realization, clocks, interference, interference wording, respond-probe order, opaque identifiers, questioning controls, and content twins. Probe wording and accepted answers remain fixed across a seed's rungs.
 
 An evaluator may supply a private surface bank (statement/mention/retraction templates, question prompts and Program phrases). It changes wording only: semantic sampling, world-model assertions and every Oracle are unchanged, and the Instance records `surface_bank_digest`. A parser of the public grammar is not expected to transfer to it. Hidden seeds protect Instance answers; only a private surface protects against public-grammar solvers. Commitment, rule and brief wording are not yet covered by the bank.
+
+Generated calibration and hidden-store Templates retain that evaluator-side configuration in `template.program.surface_bank`, so materializing a new seed uses the same wording bank. Only delivered observations and requests are participant-visible.
 
 The world model records assertions with source, subject, attribute, value, kind, observation sequence, optional validity interval, supersession, and optional derivation dependencies. It separates truth-bearing assertions from statements and nonassertive mentions.
 
@@ -290,6 +292,8 @@ Repetitions are averaged inside an Instance (`total_n` and `eligible_n` count ru
 
 `joint_twin_success` (full and twin both fully correct) is reported per dimension as a diagnostic. It approximates accuracy squared, so as a gate it was a capability threshold: at five seeds, a system with 90% joint success passed the revision-0.4 gate in about 15% of packs. Conditional content tracking is still reported separately. Revision 0.4 Profiles retain `joint_twin_success`, and legacy Profiles retain their explicitly declared conditional/Wilson policy.
 
+`conditional_on` failures suppress capability credit and correctness-based tracking, but do not change either side's content-following match. A constant answer must retain CFE zero even when its prerequisite answer is wrong.
+
 These are development policy choices, not calibrated psychometric thresholds. CFE establishes that answers follow the declared history under the declared construction; it does not identify a persistent-memory mechanism. A degenerate empirical bootstrap interval is explicitly flagged and does not establish population certainty; five uniformly successful Instances are not proof of broad generality. Formal sample size and useful-effect thresholds still require a preregistered pilot.
 
 # 8. Statistics
@@ -382,5 +386,7 @@ Further empirical validation, real-system storage/cost instrumentation, broader 
 `MIB-Mechanism-Challenges-0.1-Dev` adds feature-based recipe composition for unseen families and multiple commitment/cancellation/renewal/repeated-trigger behavior. It is a separate Profile, not an expansion of the Core score. The feature task supplies the composition convention, but operations must come from actual feedback; it tests bounded composition, not open-ended rule discovery.
 
 Use `mib run` with a Scenario, generated Profile, same-model configuration, memory-backend configuration, or longitudinal configuration. `mib compare` compares compatible verified pack reports; `mib verify` aliases `verify-score`. Existing commands remain supported. Scenario/Profile runs require `--schema`; configured experiments resolve their own schemas and prompts. `same-model-generated.pilot.json` is a bounded seven-mechanism, one-rung pilot under memory pressure; the existing stub/full configurations remain separate.
+
+For same-model calibration reports, verification checks the experiment lock, recomputes fairness from retained telemetry and audit evidence, and checks release counts against the template gate rows and model identity. It establishes aggregate consistency only: these reports do not retain raw model outputs, lifecycle receipts or per-Instance causal evidence for independent replay.
 
 The optional `observe_decision_types` routes business-model observation decisions by public observation type. All observations still reach memory formation. The same declared router applies to every memory arm and never reads probe, relevance, oracle, or trigger labels.

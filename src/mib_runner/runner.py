@@ -661,7 +661,8 @@ def run_condition(
                 row["failure_codes"] = sorted(set(row.get("failure_codes") or []) | {"prerequisite_failed"})
                 if isinstance(row.get("counterfactual"), dict):
                     row["counterfactual"]["tracks"] = False
-                    row["counterfactual"]["follows"] = False
+                    # CFE measures content following, independently of accuracy.
+                    # Keep it paired with the unchanged full-run cross match.
 
     def maintain(event: dict[str, Any]) -> None:
         declared = contract["capabilities"].get("maintenance")

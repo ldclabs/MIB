@@ -1,6 +1,6 @@
 # Second September 23 design-review implementation
 
-Implementation **0.14.1**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
+Implementation **0.14.2**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
 
 This ledger resolves [the second review](../reviews/MIB-Design-Review-2026-09-23b.md). It separates implementation from empirical validation. Reports and examples from measurement 0.4.0 keep their source/version identity (`examples/validation/measurement-0.4.0.json` is historical) and must not be compared with 0.5.0 results. The preceding ledger is [MIB-v0.4-Review-Resolution.md](MIB-v0.4-Review-Resolution.md).
 
@@ -55,6 +55,18 @@ The implementation patch corrects four failures of the existing measurement-0.5.
 
 The compact validation record and same-model stub artifacts are regenerated for 0.14.1. These remain engineering fixtures, not real-model evidence. Chinese mirrors (`docs/cn/`, `README_cn.md`) are synchronized with this revision.
 
+## Follow-up to commit 445715e (implementation 0.14.2)
+
+The October 26 review repairs three regressions without changing the declared measurement-0.5 contract:
+
+- Failed prerequisites still zero capability credit and correctness-based tracking, but leave both CFE content matches intact. A constant-answer fixture previously received CFE -1 on withdrawal twins; it now receives 0 while retaining zero capability credit and all planned pairs.
+- Calibration and hidden-store Program Templates retain `surface_bank` through seeded materialization. Schema validation and two independently generated seeds confirm that the delivered history, requests and bank digest match direct generation.
+- Same-model verification recomputes fairness with the same telemetry aggregation used during execution, checks admission counts against template gate rows, and checks the non-stub flag against model identity. Historical report 0.1.0 checks use the evidence that version retained; missing invocation fingerprints are not treated as failed execution. Verification remains aggregate consistency, since raw model outputs, lifecycle receipts and per-Instance causal evidence are not retained.
+
+`examples/validation/measurement-0.5.0.json` is regenerated with the 0.14.2 source digest. Committed same-model stub reports and their rendered summaries retain their historical experiment locks; they are not 0.14.2 evidence. The fresh 42-template stub check remains engineering-only, with a valid fairness audit and release eligibility false. Review and fixes: Codex (OpenAI); no subagents or provider runs.
+
+Validation on macOS: **539 passed, 8 skipped**; five skips require the evaluator-private pack and three require Linux namespaces. All ten engineering fixture runs passed schema and report verification; the new stub and both committed historical same-model reports also verified.
+
 ## Reproduction
 
 ```bash
@@ -65,7 +77,7 @@ python -m mib_runner.same_model_cli examples/same-model/same-model-generated.stu
   --output-json /tmp/mib-smoke-0.5.json --report-schema schemas/mib-same-model-report.schema.json
 ```
 
-Final local validation (0.14.1): **522 passed, 8 skipped** on Python 3.14.7/macOS; the skips require Linux sandboxing or evaluator-private packs. The validation script runs the grammar-only and recover-only fixtures on Core, Expanded and (recover-only) Mechanism Challenges and fails if either earns more than 10 in any dimension or passes the dependence gate. Its compact record is `examples/validation/measurement-0.5.0.json`: complete fixture 100 with CFE 1 on Core, Expanded and Session, and 100 on Mechanism Challenges; prefix-only fixture 63.72 and not dependence-eligible; grammar-only and recover-only fixtures 0 and not eligible. The 42-unit stub run has `fairness_valid: true` and `release_eligible: false` and is an unbounded-reference regime. None of this is real-model evidence.
+Historical local validation (0.14.1): **522 passed, 8 skipped** on Python 3.14.7/macOS; the skips require Linux sandboxing or evaluator-private packs. The validation script runs the grammar-only and recover-only fixtures on Core, Expanded and (recover-only) Mechanism Challenges and fails if either earns more than 10 in any dimension or passes the dependence gate. The current compact record is `examples/validation/measurement-0.5.0.json`: complete fixture 100 with CFE 1 on Core, Expanded and Session, and 100 on Mechanism Challenges; prefix-only fixture 63.72 and not dependence-eligible; grammar-only and recover-only fixtures 0 and not eligible. The 42-unit stub run has `fairness_valid: true` and `release_eligible: false` and is an unbounded-reference regime. None of this is real-model evidence.
 
 The pilot now estimates **482 condition runs** and **at least 1,927 business-model calls**, under the same exclusions as before; the unbounded reference arm is included.
 

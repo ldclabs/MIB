@@ -84,6 +84,8 @@ class HiddenEvalStore:
                                              surface_bank=surface_bank)
                 template.pop('instantiation')
                 template['template'] = {'program': {**config, 'session_boundary': boundary}}
+                if surface_bank is not None:
+                    template['template']['program']['surface_bank'] = copy.deepcopy(surface_bank)
                 vr = validate_scenario(template, schema)
                 if not vr.valid:
                     raise HiddenStoreError(f'generated template invalid: {vr.errors}')

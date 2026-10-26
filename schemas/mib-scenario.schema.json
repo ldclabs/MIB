@@ -384,6 +384,10 @@
             },
             "session_boundary": {
               "type": "boolean"
+            },
+            "surface_bank": {
+              "type": "object",
+              "description": "Evaluator-side wording configuration preserved when materializing this Program template."
             }
           }
         }

@@ -68,7 +68,8 @@ def materialize(scenario: dict[str, Any], seed: int | str = 0) -> dict[str, Any]
     if program:
         from .generate import generate_instance
         instance = generate_instance(program['id'], seed, rung=int(program.get('rung', 0)), ladder=program.get('ladder'),
-                                     session_boundary=bool(program.get('session_boundary', False)), parameters=program.get('params'))
+                                     session_boundary=bool(program.get('session_boundary', False)), parameters=program.get('params'),
+                                     surface_bank=program.get('surface_bank'))
         if program.get('version') and program['version'] != instance['instantiation']['program_version']:
             raise MaterializationError('Program version differs from the experiment lock')
         instance['id'] = scenario['id']
