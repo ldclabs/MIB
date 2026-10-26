@@ -9,6 +9,7 @@ import pytest
 from mib_runner import same_model_calibration as calibration
 from mib_runner.agents import NoMemoryAgent
 from mib_runner.dependence import joint_evidence
+from mib_runner.evaluation_service import ServiceConfigError
 from mib_runner.generate import generate_instance
 from mib_runner.hidden import HiddenEvalStore
 from mib_runner.materialize import materialize
@@ -17,8 +18,11 @@ from mib_runner.runner import run_scenario
 from mib_runner.scoring import validate_causal_pairs
 from mib_runner.types import AgentOutput
 from mib_runner.validation import load_json, validate_scenario
+from mib_runner.worldmodel import Assertion, Source, WorldModel
 from paths import EXAMPLES, SCENARIO_SCHEMA_PATH
+from test_commit_673631a_regressions import _generated_store
 from test_design_review_20260923b import PRIVATE_BANK
+from test_evaluation_service import make_service
 from test_review_7291876_regressions import bounded_experiment
 
 
@@ -106,3 +110,50 @@ def test_same_model_verification_rejects_inconsistent_evidence(same_model_report
     else:
         report['pairing_audit']['valid'] = False
     assert not verify_score(report)['valid']
+
+
+def test_world_model_cache_hit_does_not_rescan_the_record():
+    class CountingList(list):
+        scans = 0
+
+        def __iter__(self):
+            CountingList.scans += 1
+            return super().__iter__()
+
+    model = WorldModel()
+    model.add_source(Source(id='s', authority=0.9))
+    for i in range(3):
+        model.add(Assertion(event_id=f'e{i}', seq=i + 1, source='s', subject='x', attribute='code', value=str(i), kind='state'))
+    model.assertions = CountingList(model.assertions)
+    model.truth_series('x', 'code')
+    scans = CountingList.scans
+    model._rows(())
+    assert CountingList.scans == scans  # O(1) key: long ladders issue thousands of queries.
+    model.assertions.pop()
+    assert [a.event_id for a in model._rows(())[0]] == ['e0', 'e1']
+
+
+def test_cycle_registration_binds_a_declared_surface_bank(tmp_path):
+    _, profile, profile_path = _generated_store(tmp_path)
+    manifest_path = tmp_path / 'manifest.private.json'
+    manifest = json.loads(manifest_path.read_text())
+    other = copy.deepcopy(PRIVATE_BANK)
+    other['templates']['state.first'] = ['For the record, my {label} is {value}.']
+
+    def register(profile_bank, store_bank, cycle):
+        profile.pop('surface_bank', None)
+        manifest.pop('surface_bank', None)
+        if profile_bank is not None:
+            profile['surface_bank'] = profile_bank
+        if store_bank is not None:
+            manifest['surface_bank'] = store_bank
+        profile_path.write_text(json.dumps(profile))
+        manifest_path.write_text(json.dumps(manifest))
+        return make_service(tmp_path).register_cycle(cycle, store_path=tmp_path, profile_path=profile_path)
+
+    # A public Profile may omit the evaluator-private bank held by the store.
+    register(None, PRIVATE_BANK, 'private-store-bank')
+    register(PRIVATE_BANK, PRIVATE_BANK, 'same-bank')
+    for cycle, store_bank in [('missing-store-bank', None), ('different-store-bank', other)]:
+        with pytest.raises(ServiceConfigError, match='surface_bank'):
+            register(PRIVATE_BANK, store_bank, cycle)

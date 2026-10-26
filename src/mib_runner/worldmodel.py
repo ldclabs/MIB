@@ -105,10 +105,12 @@ class WorldModel:
     def __init__(self) -> None:
         self.sources: dict[str, Source] = {}
         self.assertions: list[Assertion] = []
-        # Live-row cache keyed by record length and exclusion set. Long ladders
-        # evaluate thousands of queries over thousands of assertions; withdrawal
-        # closure and ordering are identical for every query over the same rows.
-        self._live_cache: dict[tuple[int, frozenset[str]], tuple[list[Assertion], set[str]]] = {}
+        # Live-row cache keyed by record identity, length and exclusion set. Long
+        # ladders evaluate thousands of queries over thousands of assertions;
+        # withdrawal closure and ordering are identical for every query over the
+        # same rows. The key must stay O(1): hashing every assertion per query
+        # doubles 10,000-event generation. Other in-place edits call invalidate().
+        self._live_cache: dict[tuple[int, int, frozenset[str]], tuple[list[Assertion], set[str]]] = {}
 
     def invalidate(self) -> None:
         """Drop cached live rows after mutating assertions in place."""
@@ -192,7 +194,7 @@ class WorldModel:
 
     def _rows(self, exclude: Iterable[str]) -> tuple[list[Assertion], set[str]]:
         excluded = frozenset(exclude)
-        key = (tuple((a.event_id, a.seq, a.kind, a.supersedes) for a in self.assertions), excluded)
+        key = (id(self.assertions), len(self.assertions), excluded)
         hit = self._live_cache.get(key)
         if hit is None:
             rows = sorted((a for a in self.assertions if a.event_id not in excluded), key=lambda a: a.seq)

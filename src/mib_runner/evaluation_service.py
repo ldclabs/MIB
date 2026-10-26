@@ -152,6 +152,9 @@ class EvaluationService:
                         validate_bank(bank)
                     except ValueError as exc:
                         raise ServiceConfigError(f'invalid surface_bank: {exc}') from exc
+            # A public Profile may omit the private bank; a declared bank binds the store.
+            if profile.get('surface_bank') is not None and profile['surface_bank'] != store.manifest.get('surface_bank'):
+                raise ServiceConfigError('generated store surface_bank differs from the Profile')
             required = {c['id']: c for e in profile['programs']
                         for c in [resolve_program_config(e, profile.get('ladder'))]}
             actual = {c['id']: c for e in store.manifest.get('programs', [])

@@ -67,6 +67,13 @@ The October 26 review repairs three regressions without changing the declared me
 
 Validation on macOS: **539 passed, 8 skipped**; five skips require the evaluator-private pack and three require Linux namespaces. All ten engineering fixture runs passed schema and report verification; the new stub and both committed historical same-model reports also verified.
 
+A second review of 445715e and e134c45 fixes two defects without changing generated Instances or scores:
+
+- The live-row cache key hashed every assertion on every query, so a 10,000-event Instance took about twice as long to generate (Recall 26 s → 13 s, Temporal 31–41 s → 19 s on one macOS machine). The key is again O(1): record identity, length and exclusion set. In-place edits still call `invalidate()`. All 24 Programs × 2 seeds × 3 default rungs generate byte-identical Instances.
+- Cycle registration validated a Profile-declared `surface_bank` but never compared it with the store's bank. A declared bank must now match the store; a public Profile may still omit an evaluator-private bank.
+
+Validation: **541 passed, 8 skipped** (same skips). The engineering validation record is unchanged except for its source digest, and the 42-template same-model stub verified with release eligibility false. Review and fixes: Claude (Anthropic); no subagents or provider runs. Chinese mirrors are intentionally unchanged.
+
 ## Reproduction
 
 ```bash
