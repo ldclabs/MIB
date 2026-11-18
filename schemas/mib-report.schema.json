@@ -19,6 +19,15 @@
     "coverage",
     "statistics"
   ],
+  "allOf": [
+    {
+      "if": {"properties": {"report_version": {"const": "0.6.0"}}},
+      "then": {
+        "required": ["evaluation_policy"],
+        "properties": {"evaluation_policy": {"required": ["runner_source_digest"]}}
+      }
+    }
+  ],
   "properties": {
     "mib": {
       "type": "string",

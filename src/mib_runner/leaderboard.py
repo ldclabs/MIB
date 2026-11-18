@@ -86,10 +86,6 @@ def _profile_weights(report: dict[str, Any]) -> dict[str, float]:
     return {d["dimension"]: float(d.get("weight", 0.0)) for d in report["aggregates"]["dimensions"]}
 
 
-def _instance_map(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    return {x["scenario_instance_id"]: x for x in report["aggregates"]["scenario_instances"]}
-
-
 def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *, resamples: int = 5000, seed: int | str = 20260819, confidence_level: float = 0.95) -> dict[str, Any]:
     """Bootstrap the same canonical score functional used to publish the points."""
     from .aggregation import canonical_instances, score_aggregates
@@ -105,6 +101,8 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
             raise ValueError(f"paired comparison requires identical {key}")
     if report_a.get('evaluation_policy') != report_b.get('evaluation_policy'):
         raise ValueError('paired comparison requires identical evaluation policies')
+    if report_a.get('report_version') != report_b.get('report_version') or report_a.get('environment', {}).get('runner') != report_b.get('environment', {}).get('runner'):
+        raise ValueError('paired comparison requires identical report and Runner versions')
     if _profile_weights(report_a) != _profile_weights(report_b):
         raise ValueError('paired comparison requires identical dimension weights')
     if report_a.get('retention') or report_b.get('retention'):
@@ -126,6 +124,14 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
     b = {x['scenario_instance_id']: x for x in canonical_instances(report_b['aggregates']['scenario_instances'], profile)}
     if not a or set(a) != set(b):
         raise ValueError('paired comparison requires complete identical Scenario Instance coverage')
+    if any(a[iid].get('repetitions') != b[iid].get('repetitions') for iid in a):
+        raise ValueError('paired comparison requires identical repetitions')
+    if all(report.get('results', {}).get('runs') for report in (report_a, report_b)):
+        def full_inputs(report):
+            return {(r['scenario_instance_id'], r['repetition']): (r.get('agent_seed'), r.get('validity', {}).get('instance_spec_digest'))
+                    for r in report['results']['runs'] if r['condition'] == 'full' and r['scenario_instance_id'] in a}
+        if full_inputs(report_a) != full_inputs(report_b):
+            raise ValueError('paired comparison requires identical full-condition inputs and seeds')
     by_template = {}
     for iid in sorted(a):
         if a[iid]['template_id'] != b[iid]['template_id']:
@@ -139,6 +145,8 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
         return score_aggregates(rows, ts, profile)
     point_a, point_b = score(list(a.values()), templates), score(list(b.values()), templates)
     for report, point in [(report_a, point_a), (report_b, point_b)]:
+        if any(d['weight'] > 0 and d['coverage'] == 0 for d in point['dimensions']):
+            raise ValueError('paired comparison requires evidence for every weighted dimension')
         if not math.isclose(point['score'], float(report['aggregates']['mib_score']['final_score']), abs_tol=1e-9):
             raise ValueError('published score does not match paired evidence')
     rng = random.Random(str(seed))
@@ -155,7 +163,7 @@ def paired_compare_reports(report_a: dict[str, Any], report_b: dict[str, Any], *
                 ra.append({**a[iid], 'template_id': alias})
                 rb.append({**b[iid], 'template_id': alias})
         sa, sb = score(ra, ts), score(rb, ts)
-        if any(d['weight'] > 0 and d['coverage'] == 0 for d in sa['dimensions']):
+        if any(d['weight'] > 0 and d['coverage'] == 0 for s in (sa, sb) for d in s['dimensions']):
             continue
         boot.append(sa['score'] - sb['score'])
         db = {d['dimension']: d['score'] for d in sb['dimensions']}

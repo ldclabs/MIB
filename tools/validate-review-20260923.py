@@ -54,6 +54,8 @@ def main():
             raise ValueError('complete reference regressed')
         if factory is PrefixMemory and summary['mib_score'] >= 90:
             raise ValueError('prefix shortcut remains effective')
+        if factory in zero_memory and (summary['coverage'] != 1 or report['execution']['execution_failed_probe_attempts']):
+            raise ValueError('zero-memory floor check requires complete, executed evidence')
         if factory in zero_memory and (max(summary['dimensions'].values()) > 10 or summary['memory_dependence']['eligible']):
             raise ValueError('a zero-memory policy earns a structural floor or passes the dependence gate')
         filename = name + '-' + factory.__name__ + '.report.json'

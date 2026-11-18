@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import secrets
-import shutil
 import traceback
 import uuid
 from dataclasses import dataclass
@@ -39,7 +38,7 @@ def tree_digest(path: str | Path) -> str:
     root=Path(path)
     rows=[]
     for p in sorted(x for x in root.rglob("*") if x.is_file()):
-        rows.append({"path":str(p.relative_to(root)),"sha256":sha256_hex(p.read_bytes())})
+        rows.append({"path":p.relative_to(root).as_posix(),"sha256":sha256_hex(p.read_bytes())})
     return digest_json(rows)
 
 
@@ -143,28 +142,10 @@ class EvaluationService:
 
     def register_cycle(self, cycle_id: str, *, store_path: str|Path, profile_path: str|Path, activate: bool=False) -> dict[str,Any]:
         store_path=Path(store_path).resolve(); profile_path=Path(profile_path).resolve(); store=HiddenEvalStore(store_path); profile=load_json(profile_path)
-        if profile.get('programs'):
-            from .generate.registry import resolve_program_config
-            from .generate.surface import validate_bank
-            for bank in (profile.get('surface_bank'), store.manifest.get('surface_bank')):
-                if bank is not None:
-                    try:
-                        validate_bank(bank)
-                    except ValueError as exc:
-                        raise ServiceConfigError(f'invalid surface_bank: {exc}') from exc
-            # A public Profile may omit the private bank; a declared bank binds the store.
-            if profile.get('surface_bank') is not None and profile['surface_bank'] != store.manifest.get('surface_bank'):
-                raise ServiceConfigError('generated store surface_bank differs from the Profile')
-            required = {c['id']: c for e in profile['programs']
-                        for c in [resolve_program_config(e, profile.get('ladder'))]}
-            actual = {c['id']: c for e in store.manifest.get('programs', [])
-                      for c in [resolve_program_config(e, store.manifest.get('ladder'))]}
-            if {pid: c['ladder'] for pid, c in required.items()} != {pid: c['ladder'] for pid, c in actual.items()}:
-                raise ServiceConfigError('generated store Programs/ladder differ from the Profile')
-            if bool(profile.get('measurement_regime', {}).get('session_boundary')) != bool(store.manifest.get('session_boundary')):
-                raise ServiceConfigError('generated store session regime differs from the Profile')
-            if {pid: c['params'] for pid, c in required.items()} != {pid: c['params'] for pid, c in actual.items()}:
-                raise ServiceConfigError('generated store parameters differ from the Profile')
+        try:
+            store.validate_profile(profile)
+        except ValueError as exc:
+            raise ServiceConfigError(str(exc)) from exc
         row={"id":cycle_id,"profile_id":profile["id"],"store_path":str(store_path),"profile_path":str(profile_path),
              "store_digest":tree_digest(store_path),"profile_digest":file_digest(profile_path),"public_manifest":store.public_manifest(),"status":"registered",
              "transfer_digest":store.transfer_digest()}
@@ -225,9 +206,13 @@ class EvaluationService:
         manifest=json.loads(job["manifest_json"]); sig=json.loads(job["manifest_signature_json"])
         if not verify_json_ed25519(manifest,sig,expected_context="mib-evaluation-job-manifest/v1",expected_public_key=public_key_b64(self.job_key)): raise RuntimeError("job manifest signature invalid")
         sub=self.db.submission(job["submission_id"]); cycle=self.db.cycle(job["cycle_id"])
-        if digest_json({k:v for k,v in load_submission_spec(sub["spec_path"]).items() if not k.startswith("_")}) != manifest["submission_spec_digest"]: raise RuntimeError("submission spec changed after job enqueue")
+        spec=load_submission_spec(sub["spec_path"])
+        if digest_json({k:v for k,v in spec.items() if not k.startswith("_")}) != manifest["submission_spec_digest"]: raise RuntimeError("submission spec changed after job enqueue")
         if tree_digest(cycle["store_path"]) != manifest["private_store_digest"]: raise RuntimeError("private evaluation store changed after job enqueue")
         if file_digest(cycle["profile_path"]) != manifest["profile_digest"]: raise RuntimeError("profile changed after job enqueue")
+        for key, path in (("scenario_schema_digest", self.config.scenario_schema), ("report_schema_digest", self.config.report_schema)):
+            if file_digest(path) != manifest[key]:
+                raise RuntimeError(f"{key} changed after job enqueue")
         from .util import runner_source_digest
         if manifest.get('runner_source_digest') != runner_source_digest():
             raise RuntimeError('Runner sources changed after job enqueue')
@@ -236,13 +221,12 @@ class EvaluationService:
         if sub['track'] != profile.get('track', 'integrated_agent'):
             raise RuntimeError('submission track changed or differs from the signed evaluation Profile')
         templates,instances,aliases=store.materialize_instances(schema=schema,evaluation_key=self.eval_key,cycle_id=cycle["id"])
-        spec=load_submission_spec(sub["spec_path"])
         # Hidden-store masking is an evaluator decision, never a submission one.
         runtime=build_submission_runtime(
             spec,
             persistent_stdio=False,
             network=self.config.sandbox_network,
-            hide_paths=[str(Path(cycle["store_path"]).resolve())],
+            hide_paths=[str(Path(cycle["store_path"]).resolve()), str(Path(cycle["profile_path"]).resolve())],
             allow_remote_http=self.config.allow_remote_http_submissions,
             confine_stage_to_spec_dir=True,
         )
@@ -309,7 +293,9 @@ class EvaluationService:
         att=json.loads(row["attestation_json"]); sig=json.loads(row["attestation_signature_json"])
         sig_ok=verify_json_ed25519(att,sig,expected_context="mib-service-result-attestation/v1",expected_public_key=public_key_b64(self.result_key))
         pub_ok=file_digest(row["public_report_path"])==att["public_report_digest"]; int_ok=file_digest(row["internal_report_path"])==att["internal_report_digest"]
-        job_ok=self.verify_job_manifest(row["job_id"])
+        job=self.get_job(row["job_id"])
+        job_ok=(self.verify_job_manifest(row["job_id"]) and att["job_id"] == job["id"]
+                and att["result_id"] == result_id and att["job_manifest_digest"] == digest_json(job["manifest"]))
         return {"valid":bool(sig_ok and pub_ok and int_ok and job_ok),"signature_valid":sig_ok,"public_report_digest_valid":pub_ok,"internal_report_digest_valid":int_ok,"job_manifest_valid":job_ok,"result_id":result_id}
 
     def leaderboard(self,*,cycle_id:str|None=None,profile_id:str|None=None)->dict[str,Any]: return build_leaderboard(self.db,cycle_id=cycle_id,profile_id=profile_id)

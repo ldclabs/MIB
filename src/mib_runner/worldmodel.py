@@ -145,9 +145,9 @@ class WorldModel:
         return assertion
 
     def copy(self) -> "WorldModel":
-        twin = copy.deepcopy(self)
-        twin._live_cache = {}
-        return twin
+        # Cached views can be much larger than the underlying record. A twin
+        # owns its assertions and rebuilds its own views after the edit.
+        return copy.deepcopy(self, {id(self._live_cache): {}})
 
     def with_value(self, event_id: str, value: Any) -> "WorldModel":
         """A counterfactual twin in which one assertion carries another value."""
@@ -396,10 +396,17 @@ class WorldModel:
         every single removal, the redundant group carrying the answer is the
         causal information set, verified by removing it whole.
         """
-        base = self.evaluate(query, exclude)
         gone = set(exclude)
+        base = self.evaluate(query, gone)
         cands = [e for e in self.candidates(query) if e not in gone]
-        necessary = [e for e in cands if self.evaluate(query, gone | {e}) != base]
+        # Removing an unreferenced, nonassertive question or hypothetical
+        # cannot change a query. Retain linked mentions for lineage checks and
+        # keep the full candidate list for the existing group-removal test.
+        linked = {a.supersedes for a in self.assertions if a.supersedes}
+        linked.update(parent for a in self.assertions for parent in a.derived_from)
+        inert = {a.event_id for a in self.assertions if a.kind in MENTION_KINDS
+                 and not a.truth_bearing and a.event_id not in linked}
+        necessary = [e for e in cands if e not in inert and self.evaluate(query, gone | {e}) != base]
         if necessary:
             return SupportSet(necessary=necessary)
         if base.kind == "unknown":

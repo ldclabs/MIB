@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from .benchmark import build_instance_aggregate, validate_causal_pairs
+from .benchmark import build_instance_aggregate, session_isolation_policy, validate_causal_pairs
+from .episode import validate_seeds
 from .calibration import DEFAULT_THRESHOLDS, _baseline_stat, _metric, _recommend, load_private_templates
 from .materialize import materialize
 from .model_clients import build_model_client, DeterministicStubModelClient
@@ -57,7 +58,7 @@ def directory_digest(root: str | Path, pattern: str = "MIB-*.json") -> str:
     root = Path(root)
     rows = []
     for p in sorted(root.rglob(pattern)):
-        rows.append((str(p.relative_to(root)), sha256_file(p)))
+        rows.append((p.relative_to(root).as_posix(), sha256_file(p)))
     return canonical_digest(rows)
 
 
@@ -85,12 +86,11 @@ def load_experiment_templates(paths: dict[str, Path]) -> list[dict[str, Any]]:
     if not profile.get('programs'):
         return load_private_templates(paths['pack'])
     from .generate import generate_instance
-    from .generate.registry import resolve_program_config
+    from .generate.registry import profile_program_configs
     templates = []
     boundary = bool(profile.get('measurement_regime', {}).get('session_boundary'))
     canonical_rung = int(profile.get('canonical_rung', 0))
-    for entry in profile['programs']:
-        config = resolve_program_config(entry, profile.get('ladder'))
+    for config in profile_program_configs(profile):
         pid, ladder, params = config['id'], config['ladder'], config['params']
         for rung in range(len(ladder)):
             template = generate_instance(pid, 0, rung=rung, ladder=ladder, session_boundary=boundary, parameters=params, surface_bank=profile.get('surface_bank'))
@@ -99,7 +99,7 @@ def load_experiment_templates(paths: dict[str, Path]) -> list[dict[str, Any]]:
             template['template'] = {'program': {'id': pid, 'version': version, 'ladder': ladder, 'rung': rung, 'session_boundary': boundary, 'params': params}}
             if profile.get('surface_bank') is not None:
                 template['template']['program']['surface_bank'] = copy.deepcopy(profile['surface_bank'])
-            template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung, canonical_rung=min(canonical_rung, len(ladder) - 1))
+            template.setdefault('metadata', {}).update(visibility='public_dev', program=pid, rung=rung, canonical_rung=canonical_rung)
             templates.append(template)
     return templates
 
@@ -268,44 +268,57 @@ def require_memory_pressure(cfg: dict[str, Any], pressure: dict[str, Any]) -> No
 
 def estimate_experiment(cfg: dict[str, Any], templates: list[dict[str, Any]]) -> dict[str, Any]:
     cal = cfg.get("calibration") or {}
-    seeds = list(cal.get("instance_seeds") or [101, 202, 303, 404])
+    seeds = list(cal.get("instance_seeds", [101, 202, 303, 404]))
     reps = int(cal.get("repetitions", 1))
-    cseeds = list(cal.get("causal_instance_seeds") or seeds)
+    cseeds = list(cal.get("causal_instance_seeds", seeds))
     creps = int(cal.get("causal_repetitions", 1))
+    validate_seeds(seeds)
+    validate_seeds(cseeds)
+    if min(reps, creps) < 1:
+        raise ValueError("at least one repetition is required in each calibration arm")
     full_condition_runs = len(templates) * len(seeds) * reps * 4
     causal_ablation_runs = 0
     calls = 0
-    observe = bool(cfg['agent'].get('observe_decisions', any(t.get('template', {}).get('program') for t in templates)))
-    maintain = bool(cfg['agent'].get('maintenance_decisions', observe))
+    generated = any(t.get('template', {}).get('program') for t in templates)
+    observe = bool(cfg['agent'].get('observe_decisions', generated))
+    maintain = bool(cfg['agent'].get('maintenance_decisions', generated))
     def minimum_calls(instance, ablation=None):
         from .runner import _EVENT_TYPE_MAP
         removed = set((ablation or {}).get('targets', {}).get('event_ids', [])) if (ablation or {}).get('method') == 'replay_excluding_events' else set()
-        events = [e for e in instance['timeline'] if e['id'] not in removed]
+        events = [e for e in instance['timeline'] if e['id'] not in removed and e.get('visibility') in {'agent', 'both'}]
         decision_types = cfg['agent'].get('observe_decision_types')
         def active(typ): return decision_types is None or typ in decision_types
-        visible = sum(e.get('visibility') in {'agent', 'both'} and e['type'] not in {'task', 'checkpoint', 'world_update'}
+        visible = sum(e['type'] not in {'task', 'checkpoint', 'world_update'}
                       and active(_EVENT_TYPE_MAP.get(e['type'], e['type'])) for e in events)
         return (sum(e['type'] == 'task' for e in events) + sum(p['delivery'] in {'respond', 'act'} for p in instance['probes'])
                 + int(observe) * (visible + sum(active(_EVENT_TYPE_MAP.get(e['type'], e['type'])) for e in (ablation or {}).get('injections', []))
                     + sum(p['delivery'] == 'observe_only' and active(p['input']['observation'].get('type', 'environment_event')) for p in instance['probes']))
                 + int(maintain) * sum(e['type'] == 'maintenance_window' for e in events))
-    for template in templates:
-        for seed in seeds:
-            calls += 4 * reps * minimum_calls(materialize(template, seed))
-        for seed in cseeds:
-            instance = materialize(template, seed)
-            causal_ablation_runs += len(instance.get('ablations', [])) * creps
-            calls += creps * sum(minimum_calls(instance, a) for a in instance.get('ablations', []))
     additional = cal.get('additional_baselines') or {}
     extra_count = int(bool(additional.get('recent_window'))) + int(bool(additional.get('oracle_reference'))) + int(bool(additional.get('unbounded_reference')))
     extra_runs = len(templates) * len(seeds) * reps * extra_count
+    causal_full_runs = 0
+    baseline_seeds = {str(seed) for seed in seeds}
+    for template in templates:
+        for seed in dict.fromkeys([*seeds, *cseeds]):
+            instance = materialize(template, seed)
+            full_calls = minimum_calls(instance)
+            if seed in seeds:
+                calls += (len(CONDITIONS) + extra_count) * reps * full_calls
+            if seed in cseeds:
+                new_controls = max(0, creps - reps) if str(seed) in baseline_seeds else creps
+                causal_full_runs += new_controls
+                ablations = instance.get('ablations', [])
+                causal_ablation_runs += len(ablations) * creps
+                calls += new_controls * full_calls + creps * sum(minimum_calls(instance, a) for a in ablations)
     return {
         'template_count': len(templates), 'instance_seeds': len(seeds), 'repetitions': reps,
-        'minimum_condition_runs': full_condition_runs + causal_ablation_runs + extra_runs,
+        'minimum_condition_runs': full_condition_runs + causal_full_runs + causal_ablation_runs + extra_runs,
+        'additional_causal_full_runs': causal_full_runs,
         'full_baseline_condition_runs': full_condition_runs, 'additional_causal_ablation_runs': causal_ablation_runs,
         'additional_diagnostic_runs': extra_runs, 'minimum_model_turns': calls,
         'memory_pressure': memory_pressure(cfg, templates),
-        'note': 'minimum_model_turns covers core baseline/causal calls, including observation and maintenance decisions. Tool-loop continuations, tool-result decisions, retries, preflight and optional additional baselines add calls. This is a lower bound, not a cost quote.'}
+        'note': 'Includes scheduled baseline, additional reference and causal runs. Tool-loop continuations, injected reference decisions, retries, preflight and optional transfer cells can add calls.'}
 
 
 def _preflight_statelessness(model_cfg: dict[str, Any], system_prompt: str) -> dict[str, Any]:
@@ -379,15 +392,15 @@ def _run_interleaved_full(
     schedule = _condition_schedule(templates, seeds, repetitions)
     materialized: dict[tuple[str, str], dict[str, Any]] = {}
 
-    for unit in schedule:
-        tid, seed, rep = unit["template_id"], unit["seed"], unit["repetition"]
-        t = template_by_id[tid]
+    for tid, t in template_by_id.items():
         vr = validate_scenario(t, schema)
         if not vr.valid:
             raise ValueError(f"Template {tid} invalid: {vr.errors}")
+    for unit in schedule:
+        tid, seed, rep = unit["template_id"], unit["seed"], unit["repetition"]
         mk = (tid, str(seed))
         if mk not in materialized:
-            instance = materialize(t, seed)
+            instance = materialize(template_by_id[tid], seed)
             vr2 = validate_scenario(instance, schema)
             if not vr2.valid:
                 raise ValueError(f"Instance {tid}:{seed} invalid: {vr2.errors}")
@@ -745,6 +758,8 @@ def run_same_model_calibration(experiment_path: str | Path) -> dict[str, Any]:
     experiment_lock = build_experiment_lock(cfg, paths)
     schema = load_json(paths["scenario_schema"])
     profile = load_json(paths["profile"])
+    if session_isolation_policy(profile) == "persisted_state":
+        raise ValueError("the same-model calibration adapter supports acknowledged session boundaries only")
     templates = load_experiment_templates(paths)
     system_prompt = load_prompt(paths["system_prompt"])
     reasoning_policy = load_prompt(paths["reasoning_policy"])
@@ -990,6 +1005,9 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
     gate = report["empirical_release_gate"]
     fa = report["fairness_audit"]
     sched = report["condition_order_audit"]
+    memory_runtime = report["experiment"]["experiment_lock"].get("memory_runtime", {})
+    b1_limit = memory_runtime.get("memory_char_limits", {}).get("B1")
+    b1_label = "Full Visible History" if b1_limit is None else f"Recent Visible History ({b1_limit} characters)"
     lines = [
         f"# MIB v{report.get('mib', '0.1')} Same-Model Calibration Report",
         "",
@@ -1005,13 +1023,13 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
         "The base model, system prompt, reasoning policy, tool interface, decoding parameters, Scenario instances, and pairing policy are locked. Only long-term memory policy/context varies:",
         "",
         "- **B0** — No Memory",
-        "- **B1** — Full Visible History",
+        f"- **B1** — {b1_label}",
         "- **B2** — Simple Lexical Retrieval",
         "- **B3** — Heuristic Salience Retrieval",
         "",
         "## Release Gate",
         "",
-        f"- Official Templates passing full gate: **{gate['template_full_gate']['passed']} / {gate['template_full_gate']['total']}**",
+        f"- Calibration units passing the full gate: **{gate['template_full_gate']['passed']} / {gate['template_full_gate']['total']}**",
         f"- Non-stub fixed model: **{gate['non_stub_model']}**",
         f"- Fairness valid: **{gate['fairness_valid']}**",
         f"- Release eligible: **{gate['eligible']}**",
@@ -1042,8 +1060,12 @@ def write_same_model_markdown(report: dict[str, Any]) -> str:
         "",
         "## Interpretation",
         "",
-        "A result is release-eligible only when a real fixed model—not the engineering stub—runs all four memory conditions under the same experiment lock, the condition schedule is balanced, paired seeds/Probes are intact, B1 is complete rather than truncated, statelessness checks pass, transport/parsing is clean, and every official Template passes the empirical admission gates.",
+        "Release eligibility requires a full experiment with a real fixed model, balanced conditions, matched seeds and Probes, a complete full-history reference, successful statelessness and execution checks, and passing admission gates for every calibration unit.",
     ]
+    if b1_limit is not None:
+        reference = report.get("additional_baselines", {}).get("unbounded_reference", {})
+        lines.append("The unbounded reference supplies full-history admission evidence." if reference.get("enters_release_gate")
+                     else "Full-history admission evidence is unavailable in this run.")
     return "\n".join(lines) + "\n"
 
 

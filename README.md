@@ -495,9 +495,9 @@ The harness also counterbalances condition execution order and checks model stat
 
 ## Current Status
 
-MIB uses scenario format v0.2, measurement revision **0.5.0**, and implementation **0.14.1**.
+MIB uses scenario format v0.2, measurement revision **0.5.0**, and implementation **0.14.3**.
 
-Implementation 0.14.1 keeps failed Instances in the dependence denominator, completes `restore` dispatch in the stdio/HTTP host, invalidates malformed persisted-state replies, and audits the unbounded reference whenever it supplies same-model admission evidence. These are corrections to the existing measurement contract; see [the review ledger](docs/harness/MIB-v0.5-Review-Resolution.md).
+Implementation 0.14.3 checks the capabilities required by materialized Probes, replays execution counts and session evidence in pack reports, and accounts for additional reference and causal runs in fixed-model estimates. The single-Scenario CLI runs the selected submission. [Review and verification history](docs/harness/MIB-v0.5-Review-Resolution.md).
 
 Pack report **0.6.0** adds content-following evidence, conditional-credit records and the scheduled-intervention policy; report 0.5.0 added explicit lifecycle success gates and replayable failure evidence. The evaluator-owned HTTP memory backend harness now supports fixed-business-model B0/candidate comparisons; integrated Bots remain Track B. Unknown costs remain unknown. See [runtime backend protocol, commands and limitations](docs/harness/MIB-Memory-Backend.md).
 
@@ -603,9 +603,8 @@ MIB/
 │   │   ├── time/          4      ├── causal/      3
 │   │   ├── epistemic/     4      └── cross/       3
 │   │   └── experience/    3
-│   └── transfer/                          transfer diagnostics, 6 Templates
-│                                          (kept outside dev/ so the MIB-Core
-│                                          pack stays exactly 24)
+│   ├── transfer/                          transfer diagnostics, 6 Templates
+│   └── adversarial/                       interrogation scenarios, 3 Templates
 │
 ├── reality/                               MIB-R prototype Reality Packs
 │
@@ -639,7 +638,7 @@ MIB/
     ├── calibration/                       calibration reports
     ├── same-model/                        fixed-model experiment artifacts
     ├── scenario-instances/                materialized Scenario instances
-    │                                      (generated/ holds one Instance per Program)
+    │                                      (generated/ holds 14 historical Core examples)
     └── validation/                        schema validation results
 ```
 
@@ -650,24 +649,6 @@ through `MIB_OFFICIAL_PACK`; calibration tests skip when it is absent.
 ---
 
 ## Quick Start
-
-### Start with a bounded pilot
-
-The standard entry points are `mib run`, `mib compare`, and `mib verify`. Existing commands remain aliases or supported specialized entry points.
-
-```bash
-mib run examples/same-model/same-model-generated.pilot.json --estimate-only
-# Configure an immutable stateless model endpoint before running this:
-mib run examples/same-model/same-model-generated.pilot.json --output /tmp/mib-pilot.json
-# For a Core/backend child report produced by the matching source bundle:
-mib verify /tmp/mib-core-report.json
-mib compare /tmp/mib-agent-a.json /tmp/mib-agent-b.json
-```
-
-The pilot fixes seven mechanisms, one rung (100 interference events), five independent seeds, one repetition, and a common 3,500-character context budget; the median visible history is about 4.2 times that budget, and the preflight refuses a bounded experiment whose budget does not bind. Business-model observation decisions use the public `environment_event` type; every observation still reaches memory formation. It is not release calibration. The existing `.stub.json` and `.external-http.json` configurations cover smoke and full calibration respectively. Small pilot results determine the next preregistered sample plan; they do not establish general superiority.
-
-The Core fixture examples retained from previous revisions keep their original source/version identity. New validation evidence must name measurement revision 0.5.0 (see `examples/validation/measurement-0.5.0.json`); old reports require their matching executable bundle.
-
 
 Install the reference implementation:
 
@@ -685,6 +666,23 @@ installing, invoke the same entry point directly:
 ```bash
 PYTHONPATH=src python -m mib_runner.cli --help
 ```
+
+### Start with a bounded pilot
+
+The standard entry points are `mib run`, `mib compare`, and `mib verify`. Existing commands remain aliases or supported specialized entry points.
+
+```bash
+mib run examples/same-model/same-model-generated.pilot.json --estimate-only
+# Configure an immutable stateless model endpoint before running this:
+mib run examples/same-model/same-model-generated.pilot.json --output /tmp/mib-pilot.json
+# For a Core/backend child report produced by the matching source bundle:
+mib verify /tmp/mib-core-report.json
+mib compare /tmp/mib-agent-a.json /tmp/mib-agent-b.json
+```
+
+The pilot fixes seven mechanisms, one rung (100 interference events), five independent seeds, one repetition, and a common 3,500-character context budget; the median visible history is about 4.2 times that budget, and the preflight refuses a bounded experiment whose budget does not bind. Business-model observation decisions use the public `environment_event` type; every observation still reaches memory formation. It is not release calibration. The existing `.stub.json` and `.external-http.json` configurations cover smoke and full calibration respectively. Small pilot results determine the next preregistered sample plan; they do not establish general superiority.
+
+The Core fixture examples retained from previous revisions keep their original source/version identity. New validation evidence must name measurement revision 0.5.0 (see `examples/validation/measurement-0.5.0.json`); old reports require their matching executable bundle.
 
 Generate one Scenario Instance from a Program (seed 7, rung 1 = 20 interference events):
 
@@ -920,8 +918,8 @@ bodies must never be committed here. Report security issues through the process 
 
 ## License
 
-MIB is released under the **GNU General Public License v3.0**. The full text is in
-[LICENSE](LICENSE).
+MIB is licensed under the GNU General Public License, version 3 or any later
+version (`GPL-3.0-or-later`). The full license text is in [LICENSE](LICENSE).
 
 ---
 

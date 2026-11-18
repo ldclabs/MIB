@@ -41,17 +41,20 @@ jobs:
       # Data regressions are as damaging as code regressions: a Scenario that no
       # longer satisfies the Scenario schema cannot be run or scored.
       - name: Validate every Scenario against the Scenario schema
+        shell: python
         run: |
-          status=0
-          count=0
-          for scenario in scenarios/dev/*/MIB-*.json; do
-            count=$((count + 1))
-            if ! mib validate "$scenario" --schema schemas/mib-scenario.schema.json >/dev/null; then
-              echo "::error file=${scenario}::Scenario failed schema validation"
-              mib validate "$scenario" --schema schemas/mib-scenario.schema.json || true
-              status=1
-            fi
-          done
-          echo "validated ${count} Scenarios"
-          test "${count}" -gt 0 || { echo "::error::no Scenarios were found to validate"; status=1; }
-          exit "${status}"
+          from pathlib import Path
+          from mib_runner.validation import load_json, validate_scenario
+
+          schema = load_json("schemas/mib-scenario.schema.json")
+          scenarios = sorted(Path("scenarios").rglob("MIB-*.json"))
+          if not scenarios:
+              raise SystemExit("No Scenarios found")
+          failed = 0
+          for path in scenarios:
+              result = validate_scenario(load_json(path), schema)
+              if not result.valid:
+                  failed += 1
+                  print(f"::error file={path}::{result.errors}")
+          print(f"Validated {len(scenarios)} Scenarios, {failed} failed")
+          raise SystemExit(bool(failed))

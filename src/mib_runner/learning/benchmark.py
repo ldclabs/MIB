@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import os
 import secrets
@@ -13,9 +12,10 @@ from .. import __version__
 from ..adapter_contract import digest
 from .workflow import CONTRACT, CONTRACT_DIGEST, TOOLS
 from ..runner import run_condition
+from ..report import validate_report
 from ..submission import build_submission_runtime, load_submission_spec
 from ..validation import load_json, validate_scenario
-from .contract import AuditedAgent, CONDITIONS, EXTENSION, check_learning_descriptor
+from .contract import AuditedAgent, CONDITIONS, check_learning_descriptor
 from .programs import MEASUREMENT_REVISION, PROGRAMS, generate
 from .scoring import aggregate, score_unit
 
@@ -276,6 +276,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="P6 three-arm longitudinal engineering/behavioral experiment")
     parser.add_argument("config")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--report-schema")
     parser.add_argument("--allow-remote-http", action="store_true")
     parser.add_argument("--resume-lock", help="Reuse the exact predeclared world/business seeds with fresh isolated runs")
     args = parser.parse_args(argv)
@@ -286,6 +287,8 @@ def main(argv=None):
             raise FileExistsError(f"refusing existing experiment output: {path}")
     report = run_config(args.config, allow_remote_http=args.allow_remote_http,
         lock_path=args.output + ".lock.json", resume_lock=args.resume_lock, progress_path=args.output + ".units.jsonl")
+    if args.report_schema:
+        validate_report(report, load_json(args.report_schema))
     persist_json(args.output, report)
     verification = verify_report(report)
     print(json.dumps({"report": args.output, **verification, "fairness_valid": report["fairness_audit"]["valid"]}, indent=2))

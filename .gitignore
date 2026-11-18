@@ -22,6 +22,7 @@ __pycache__/
 *.py[cod]
 .DS_Store
 *.egg-info/
+/build/
 .eggs/
 
 # MIB — local Python environments and lockfiles

@@ -10,7 +10,7 @@ from mib_runner import same_model_calibration as calibration
 from mib_runner.agents import NoMemoryAgent
 from mib_runner.dependence import joint_evidence
 from mib_runner.evaluation_service import ServiceConfigError
-from mib_runner.generate import generate_instance
+from mib_runner.generate import generate_instance, generate_pack
 from mib_runner.hidden import HiddenEvalStore
 from mib_runner.materialize import materialize
 from mib_runner.report import verify_score
@@ -50,7 +50,7 @@ def test_constant_answers_have_zero_cfe_even_when_prerequisites_fail():
     assert evidence['content_following_effect'] == 0
 
 
-@pytest.mark.parametrize('source', ['calibration', 'hidden_store'])
+@pytest.mark.parametrize('source', ['calibration', 'hidden_store', 'public_pack'])
 def test_surface_bank_survives_seed_materialization(tmp_path, source):
     schema = load_json(SCENARIO_SCHEMA_PATH)
     if source == 'calibration':
@@ -60,12 +60,17 @@ def test_surface_bank_survives_seed_materialization(tmp_path, source):
         profile['surface_bank'] = PRIVATE_BANK
         paths['profile'].write_text(json.dumps(profile), encoding='utf-8')
         template = calibration.load_experiment_templates(paths)[0]
+    elif source == 'public_pack':
+        profile = {'programs': ['mib.recall.v1'], 'ladder': [0], 'surface_bank': PRIVATE_BANK}
+        descriptors, _ = generate_pack(profile, seeds=[0])
+        template = descriptors[0]
     else:
         manifest = {'programs': [{'id': 'mib.recall.v1', 'public_id': 'demo', 'instances': 1}],
                     'ladder': [0], 'surface_bank': PRIVATE_BANK}
         (tmp_path / 'manifest.private.json').write_text(json.dumps(manifest), encoding='utf-8')
         template = HiddenEvalStore(tmp_path).load_templates(schema)[0][0]
-    assert validate_scenario(template, schema).valid
+    if source != 'public_pack':  # The public descriptor has no seed-specific timeline yet.
+        assert validate_scenario(template, schema).valid
     for seed in [101, 202]:
         actual = materialize(template, seed)
         expected = generate_instance('mib.recall.v1', seed, ladder=[0], surface_bank=PRIVATE_BANK)
@@ -110,6 +115,12 @@ def test_same_model_verification_rejects_inconsistent_evidence(same_model_report
     else:
         report['pairing_audit']['valid'] = False
     assert not verify_score(report)['valid']
+
+
+def test_bounded_calibration_summary_names_the_actual_full_history_reference(same_model_report):
+    text = calibration.write_same_model_markdown(same_model_report)
+    assert "Recent Visible History (400 characters)" in text
+    assert "The unbounded reference supplies full-history admission evidence." in text
 
 
 def test_world_model_cache_hit_does_not_rescan_the_record():

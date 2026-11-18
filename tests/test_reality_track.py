@@ -199,6 +199,45 @@ def test_reality_adapter_uses_the_run_id_that_was_reset(pack, graph):
     assert row["condition"] == "no_memory"
 
 
+def test_unpaired_reality_run_omits_negative_transfer_rate(pack):
+    report, summary = run_reality_benchmark(pack=pack, pack_path=PACK_PATH, agent_factory=NaiveRealityAgent,
+                                           conditions=("natural_memory",))
+    assert summary["run_count"] == len(pack["test_tasks"])
+    assert "negative_transfer_rate" not in report["extensions"][REALITY_EXTENSION]["transfer_metrics"]
+
+
+@pytest.mark.parametrize("operation", ["reset", "observe"])
+def test_reality_rejected_operations_close_the_run(pack, operation):
+    from mib_runner.adapter_contract import AdapterLifecycleError
+    closed = []
+
+    class RejectingAgent(NaiveRealityAgent):
+        def close(self, *, run_id):
+            closed.append(run_id)
+
+    setattr(RejectingAgent, operation, lambda self, **kwargs: {"accepted": False})
+    with pytest.raises(AdapterLifecycleError, match=operation):
+        run_reality_benchmark(pack=pack, pack_path=PACK_PATH, agent_factory=RejectingAgent,
+                              conditions=("natural_memory",))
+    assert len(closed) == 1
+
+
+def test_reality_cli_honors_profile_schedule(tmp_path):
+    from mib_runner.cli import main
+    profile_path = tmp_path / "profile.json"
+    profile_path.write_text(json.dumps({**PROFILE, "task_seeds": [3, 5], "conditions": ["no_memory"],
+                                        "repetitions": 2, "statistics": {"bootstrap_resamples": 3}}))
+    output = tmp_path / "report.json"
+    args = ["reality-benchmark", str(PACK_PATH), "--profile", str(profile_path), "--output-report", str(output)]
+    assert main(args) == 0
+    report = json.loads(output.read_text())
+    runs = report["results"]["runs"]
+    assert len(runs) == 4 * len(held_out_tasks())
+    assert {r["seed"] for r in runs} == {3, 5}
+    assert {r["condition"] for r in runs} == {"no_memory"}
+    assert report["statistics"]["overall"]["task_count"]["resamples"] == 3
+
+
 def test_irrelevant_ablation_never_removes_load_bearing_experience(pack, graph):
     adapter = load_adapter(pack)
     train = {r["task_id"]: adapter.load_task(r) for r in pack["train_tasks"]}

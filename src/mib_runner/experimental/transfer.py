@@ -257,17 +257,6 @@ def oracle_artifact_bundle_digest(scenarios: list[dict[str, Any]]) -> str | None
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _event_text(scenario: dict[str, Any]) -> dict[str, str]:
-    out: dict[str, str] = {}
-    for event in scenario.get("timeline") or []:
-        parts = [str(event.get("content") or "")]
-        payload = event.get("payload")
-        if payload is not None:
-            parts.append(json.dumps(payload, ensure_ascii=False))
-        out[str(event.get("id"))] = " ".join(parts)
-    return out
-
-
 def _secret_strings(scenario: dict[str, Any]) -> list[tuple[str, str]]:
     """Values an oracle artifact must never restate verbatim."""
     out: list[tuple[str, str]] = []

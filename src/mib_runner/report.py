@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import math
 import uuid
 from collections import defaultdict
 from typing import Any
 
 import jsonschema
 
-from . import __version__
+from . import MEASUREMENT_REVISION, __version__
 from .scoring import (
     build_instance_aggregate,
     instance_dimension_scores,
@@ -91,7 +92,7 @@ def build_basic_report(
             "track": "integrated_agent",
             "scale": "MIB-S",
             "scenario_pack": {"id": "single-scenario-dev", "version": "0.1.0"},
-            "scoring_spec_version": "0.2" if mib_format != "0.1" else "0.1-draft",
+            "scoring_spec_version": MEASUREMENT_REVISION if instance.get("program") else ("0.2" if mib_format != "0.1" else "0.1-draft"),
             "scenario_schema_version": mib_format,
             "agent_adapter_protocol": "mib-agent/0.1",
         },
@@ -117,7 +118,7 @@ def build_basic_report(
             "started_at": min(r.get("started_at") for r in runs),
             "completed_at": max(r.get("completed_at") for r in runs),
             "scheduled_runs": len(runs),
-            "completed_runs": len(runs),
+            "completed_runs": sum(r["status"] in {"succeeded", "failed"} for r in runs),
             "scheduled_probe_attempts": scheduled,
             "execution_failed_probe_attempts": failed,
             "execution_failure_rate": failed / scheduled if scheduled else 0.0,
@@ -183,7 +184,7 @@ def strip_extensions_for_report(run: dict[str, Any]) -> dict[str, Any]:
         "run_id", "scenario_instance_id", "scenario_instance_version", "template_id",
         "template_version", "instance_seed", "condition", "ablation_id", "ablation_method",
         "ablation_tolerance", "repetition", "agent_seed", "status", "started_at", "completed_at",
-        "reference_ablation_id", "adapter_contract",
+        "reference_ablation_id", "adapter_contract", "session_isolation",
         "scenario_score", "penalty", "probe_results", "usage", "validity", "trace_ref", "warnings", "task_results",
     }
     result = {k: v for k, v in run.items() if k in allowed and v is not None}
@@ -208,6 +209,14 @@ def validate_report(report: dict[str, Any], schema: dict[str, Any]) -> None:
 
 
 def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, Any]:
+    """Verify a supported report, returning diagnostics for incomplete evidence."""
+    try:
+        return _verify_score(report, tolerance)
+    except (KeyError, TypeError, ValueError, AttributeError, IndexError) as exc:
+        return {"valid": False, "errors": [f"invalid report evidence: {exc}"]}
+
+
+def _verify_score(report: dict[str, Any], tolerance: float) -> dict[str, Any]:
     """Recompute every aggregation layer the report carries (MIB-Specification §9.2).
 
     With ``results.runs`` present (internal reports) verification is ``full``:
@@ -225,6 +234,8 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     if report.get("kind") == "MIBSameModelCalibrationReport":
         from .same_model_calibration import verify_same_model_report
         return verify_same_model_report(report)
+    if report.get("kind") != "MIBReport":
+        return {"valid": False, "errors": ["unsupported report kind"]}
     errors: list[str] = []
     if report.get("report_version") not in {"0.1.0", "0.1.1", "0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0"}:
         errors.append("unsupported report version")
@@ -235,6 +246,9 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     dimension_rows = aggregates.get("dimensions", [])
     runs = (report.get("results") or {}).get("runs") or []
     level = "full" if runs else "aggregates_only"
+    current_pack = report.get("report_version") == "0.6.0"
+    if current_pack and not runs and (report.get("scope") == "internal" or report["results"].get("redacted") is not True):
+        errors.append("unredacted pack report has no run evidence")
     instance_ids = [row['scenario_instance_id'] for row in instance_rows]
     if len(instance_ids) != len(set(instance_ids)):
         errors.append('duplicate Instance aggregates cannot count as independent evidence')
@@ -244,6 +258,21 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
 
     def close(a: float, b: float) -> bool:
         return abs(a - b) <= tolerance
+
+    def same(actual, expected) -> bool:
+        if isinstance(actual, bool) or isinstance(expected, bool):
+            return type(actual) is type(expected) and actual == expected
+        if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
+            return math.isclose(actual, expected, abs_tol=tolerance, rel_tol=0)
+        if isinstance(actual, dict) and isinstance(expected, dict):
+            return set(actual) == set(expected) and all(same(actual[k], expected[k]) for k in actual)
+        if isinstance(actual, list) and isinstance(expected, list):
+            return len(actual) == len(expected) and all(same(a, b) for a, b in zip(actual, expected))
+        return actual == expected
+
+    def check(label, actual, expected):
+        if not same(actual, expected):
+            errors.append(f'{label}: differs from policy/evidence recomputation')
 
     run_checks: list[dict[str, Any]] = []
     instance_checks: list[dict[str, Any]] = []
@@ -258,13 +287,14 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             if not ok:
                 errors.append(f"run {r.get('run_id')}: stored={stored} recomputed={recomputed}")
             runs_by_iid[r["scenario_instance_id"]].append(r)
+        if set(runs_by_iid) != set(instance_ids):
+            errors.append("run and aggregate Instance coverage differ")
 
         # Reconstruct causal eligibility before using it to recompute metrics.
         # Report flags cannot turn an invalid lifecycle into causal evidence.
         from .scoring import validate_causal_pairs
-        import copy
         for iid, original in list(runs_by_iid.items()):
-            rebuilt_runs = copy.deepcopy(original)
+            rebuilt_runs = [{**r, "validity": dict(r.get("validity", {}))} for r in original]
             validate_causal_pairs(rebuilt_runs)
             for actual, expected in zip(original, rebuilt_runs):
                 if actual.get("condition") != "full" and actual.get("validity", {}).get("causal_pair_valid") != expected.get("validity", {}).get("causal_pair_valid"):
@@ -282,12 +312,16 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             if not full_runs:
                 errors.append(f"instance {iid}: no full runs in report")
                 continue
+            if current_pack and any(r["template_id"] != inst["template_id"] or r.get("instance_seed") != inst.get("instance_seed") for r in rr):
+                errors.append(f"instance {iid}: aggregate Template or seed differs from its runs")
             recomputed_full = mean([float(r.get("scenario_score", 0.0)) for r in full_runs])
             ok = close(recomputed_full, float(inst["full_score"]))
             if not ok:
                 errors.append(f"instance {iid} full_score: stored={inst['full_score']} recomputed={recomputed_full}")
             # Tolerances travel on the Run Artifacts, so no Scenario body is needed.
             metrics = paired_causal_metrics(rr) + full_run_metrics(full_runs)
+            if current_pack:
+                check(f'instance {iid} causal_metrics', inst.get('causal_metrics'), metrics)
             recomputed_metrics = {m["name"]: float(m["value"]) for m in metrics}
             metric_ok = True
             for m in inst.get("causal_metrics", []):
@@ -367,29 +401,12 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
     if report.get('report_version') in {'0.3.0', '0.4.0', '0.5.0', '0.6.0'} and policy is None:
         errors.append('evaluation_policy: required for this report version')
     if policy is not None:
-        from .aggregation import canonical_instances, score_aggregates, tracking_totals
-        from .scoring import aggregate_dependence_evidence, counterfactual_evidence, counterfactual_counts, memory_dependence, retention_block, validate_causal_pairs
-        import math
-
-        def same(actual, expected) -> bool:
-            if isinstance(actual, bool) or isinstance(expected, bool):
-                return type(actual) is type(expected) and actual == expected
-            if isinstance(actual, (int, float)) and isinstance(expected, (int, float)):
-                return math.isclose(actual, expected, abs_tol=tolerance, rel_tol=0)
-            if isinstance(actual, dict) and isinstance(expected, dict):
-                return set(actual) == set(expected) and all(same(actual[k], expected[k]) for k in actual)
-            if isinstance(actual, list) and isinstance(expected, list):
-                return len(actual) == len(expected) and all(same(a, b) for a, b in zip(actual, expected))
-            return actual == expected
-
-        def check(label, actual, expected):
-            if not same(actual, expected):
-                errors.append(f'{label}: differs from policy/evidence recomputation')
-
+        from .aggregation import score_aggregates
+        from .scoring import counterfactual_evidence, counterfactual_counts, retention_block
         profile, templates = policy['profile'], policy['templates']
-        if policy.get('runner_source_digest'):
+        if current_pack or policy.get('runner_source_digest'):
             from .util import runner_source_digest
-            check('runner_source_digest', policy['runner_source_digest'], runner_source_digest())
+            check('runner_source_digest', policy.get('runner_source_digest'), runner_source_digest())
         check('benchmark.profile', report['benchmark']['profile'], {k: profile[k] for k in ['id', 'version']})
         check('benchmark.track', report['benchmark']['track'], profile.get('track', 'integrated_agent'))
         rebuilt = score_aggregates(instance_rows, templates, profile)
@@ -404,12 +421,17 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
         coverage = math.fsum(d['weight'] * d['coverage'] for d in rebuilt['dimensions'])
         eligible = coverage + 1e-12 >= float(profile.get('required_coverage', 1))
         check('coverage.overall', report.get('coverage', {}).get('overall'), coverage)
+        if current_pack:
+            check('coverage.by_dimension', report['coverage'].get('by_dimension'), {d['dimension']: d['coverage'] for d in rebuilt['dimensions']})
+            check('coverage.profile_required', report['coverage'].get('profile_required'), float(profile.get('required_coverage', 1)))
+            check('global_guardrail_penalty', penalty, 0)
         check('mib_score.partial', aggregates['mib_score'].get('partial'), not eligible)
         check('mib_score.profile_eligible', aggregates['mib_score'].get('profile_eligible'), eligible)
         failure_rate = float(report.get('execution', {}).get('execution_failure_rate', 0))
         official = bool(profile.get('official')) and eligible and (dependence['eligible'] is True if profile.get('memory_dependence') else True) and failure_rate <= float(profile.get('max_execution_failure_rate', 0))
         check('mib_score.official', aggregates['mib_score'].get('official'), official)
         stats_block = report.get('statistics', {})
+        check('statistics.mib_score.value', stats_block.get('mib_score', {}).get('value'), rebuilt['score'])
         check('mib_score.ci', aggregates['mib_score'].get('ci'), stats_block.get('mib_score', {}).get('ci'))
         for group, items in [('dimensions', dimension_rows), ('causal_metrics', report.get('causal_metrics', []))]:
             key = 'dimension' if group == 'dimensions' else 'name'
@@ -420,9 +442,16 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
             attempts = sum(len(r.get('probe_results', [])) for r in runs)
             failures = sum(p.get('outcome') == 'execution_failure' for r in runs for p in r.get('probe_results', []))
             check('execution.failure_rate', failure_rate, failures / attempts if attempts else 0.0)
+            if current_pack:
+                execution = report['execution']
+                check('execution.scheduled_runs', execution.get('scheduled_runs'), len(runs))
+                check('execution.completed_runs', execution.get('completed_runs'), sum(r['status'] in {'succeeded', 'failed'} for r in runs))
+                check('execution.scheduled_probe_attempts', execution.get('scheduled_probe_attempts'), attempts)
+                check('execution.execution_failed_probe_attempts', execution.get('execution_failed_probe_attempts'), failures)
+                template_dimensions = {t['id']: t['dimensions'] for t in templates}
             for inst in instance_rows:
                 rr = runs_by_iid.get(inst['scenario_instance_id'], [])
-                valid, _, notes = validate_causal_pairs(rr)
+                valid, pair_ids, notes = validate_causal_pairs(rr)
                 if not valid and any(not n.startswith('runner invalid:') for n in notes):
                     errors.append(f'causal pairing: {notes}')
                 check('dependence_evidence', inst.get('dependence_evidence', []), counterfactual_evidence(rr))
@@ -431,11 +460,23 @@ def verify_score(report: dict[str, Any], tolerance: float = 1e-9) -> dict[str, A
                     if any('counterfactual_plan' not in r.get('validity', {}) for r in rr):
                         errors.append('missing frozen counterfactual plan')
                 check('counterfactual_counts', inst.get('counterfactual_counts', {}), counterfactual_counts(rr))
+                if current_pack and rr:
+                    from .scoring import condition_scores, session_isolation_summary
+                    full = [r for r in rr if r['condition'] == 'full']
+                    check('instance.condition_scores', inst.get('condition_scores'), condition_scores(rr))
+                    check('instance.dimension_scores', inst.get('dimension_scores'),
+                          instance_dimension_scores(template_dimensions[inst['template_id']], full, inst.get('causal_metrics', [])))
+                    check('instance.causal_pair_ids', inst.get('causal_pair_ids'), pair_ids)
+                    check('instance.repetitions', inst.get('repetitions'), len(full))
+                    check('execution.repetitions_policy', execution.get('repetitions_policy'), {'per_instance': len(full)})
+                    session = session_isolation_summary(full) if any(r.get('session_isolation') for r in full) else None
+                    check('instance.session_isolation', inst.get('session_isolation'), session)
             boot = report.get('statistics', {}).get('bootstrap')
             if boot and int(boot.get('resamples', 0)):
                 from .benchmark import hierarchical_bootstrap
                 stats = hierarchical_bootstrap(templates=templates, runs_by_instance=runs_by_iid, profile=profile,
                     resamples=int(boot['resamples']), seed=boot['seed'], confidence_level=report['statistics']['confidence_level'])
+                stats['mib_score']['value'] = rebuilt['score']
                 check('statistics', report['statistics'], stats)
 
     return {

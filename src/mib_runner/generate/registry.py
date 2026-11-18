@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from .base import ScenarioBuilder, template_id_for
@@ -50,10 +51,20 @@ def resolve_program_config(entry: str | dict[str, Any], default_ladder: list[int
     """Resolve the same Program overrides for public, private and calibration packs."""
     entry = entry if isinstance(entry, dict) else {'id': entry}
     p = _program(entry['id'])
-    steps = list(entry.get('ladder') or default_ladder or p.LADDER)
+    steps = list(entry.get('ladder', default_ladder if default_ladder is not None else p.LADDER))
     if not steps or any(type(step) is not int or step < 0 for step in steps):
         raise ValueError('Program ladder must contain nonnegative integer counts')
     return {'id': p.ID, 'version': p.VERSION, 'ladder': steps, 'params': dict(entry.get('params') or {})}
+
+
+def profile_program_configs(profile: dict[str, Any]) -> list[dict[str, Any]]:
+    configs = [resolve_program_config(entry, profile.get("ladder")) for entry in profile["programs"]]
+    if len({c["id"] for c in configs}) != len(configs):
+        raise ValueError("duplicate generated Program")
+    canonical = profile.get("canonical_rung")
+    if canonical is not None and any(type(canonical) is not int or not 0 <= canonical < len(c["ladder"]) for c in configs):
+        raise ValueError("the canonical rung must exist on every Program ladder")
+    return configs
 
 
 def generate_instance(program_id: str, seed: int | str, *, rung: int = 0, ladder: list[int] | None = None,
@@ -68,7 +79,7 @@ def generate_instance(program_id: str, seed: int | str, *, rung: int = 0, ladder
     if surface_bank is not None:
         validate_bank(surface_bank)
     p = _program(program_id)
-    steps = list(ladder or p.LADDER)
+    steps = resolve_program_config(program_id, ladder)['ladder']
     if rung < 0 or rung >= len(steps):
         raise ValueError(f"rung {rung} outside ladder {steps}")
     builder = ScenarioBuilder(
@@ -83,18 +94,19 @@ def generate_instance(program_id: str, seed: int | str, *, rung: int = 0, ladder
 
 def generate_pack(profile: dict[str, Any], seeds: list[int | str] | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Materialize every (program, seed, rung) of a Profile: returns (descriptors, instances)."""
-    programs = profile.get("programs") or []
-    if not programs:
+    if not profile.get("programs"):
         raise ValueError("profile declares no programs")
-    seeds = list(seeds if seeds is not None else profile.get("instance_seeds") or [101, 202])
-    ladder = list(profile.get("ladder") or [])
+    from ..episode import validate_seeds
+    seeds = list(seeds if seeds is not None else profile.get("instance_seeds", [101, 202]))
+    validate_seeds(seeds)
     descriptors, instances = [], []
-    for entry in programs:
-        config = resolve_program_config(entry, ladder)
+    for config in profile_program_configs(profile):
         pid, steps, parameters = config['id'], config['ladder'], config['params']
         descriptor = program_descriptor(pid)
         boundary = bool(profile.get('measurement_regime', {}).get('session_boundary'))
         descriptor['template']['program'].update(config, session_boundary=boundary)
+        if profile.get("surface_bank") is not None:
+            descriptor['template']['program']['surface_bank'] = copy.deepcopy(profile['surface_bank'])
         if boundary:
             descriptor['requirements']['capabilities'].append('session_boundary')
         descriptors.append(descriptor)

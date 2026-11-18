@@ -102,6 +102,9 @@
         "minimum": 0
       }
     },
+    "surface_bank": {
+      "type": "object"
+    },
     "session_boundary": {
       "type": "boolean"
     }

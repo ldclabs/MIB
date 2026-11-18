@@ -453,9 +453,9 @@ B3 —— 启发式显著性检索基线（Heuristic Salience Retrieval）
 
 ## 当前开发进展
 
-MIB 采用场景格式 v0.2、度量修订版本 **0.5.0** 与实现版本 **0.14.1**。
+MIB 采用场景格式 v0.2、度量修订版本 **0.5.0** 与实现版本 **0.14.3**。
 
-实现版本 0.14.1 将失败的实例保留在依赖分母中、补齐了 stdio/HTTP host 中的 `restore` 调度、判定畸形的持久化状态（persisted-state）应答为无效，并在无界参考提供同模型准入证据时对其进行全面审计。这些是对现有度量契约的修正；详见[审查决议台账](docs/cn/harness/MIB-v0.5-Review-Resolution.md)。
+0.14.3 按实际生成的探针检查 Agent 能力，复核题库报告中的执行次数与会话证据，并将额外参考组和因果对照计入同模型预算。单场景命令也会执行用户指定的提交。详见[审查与验证记录](docs/cn/harness/MIB-v0.5-Review-Resolution.md)。
 
 Pack 报告 **0.6.0** 增加内容跟随证据、条件计分记录以及干预调度策略；报告 0.5.0 增加了显式生命周期成功门禁与可重验失败证据。评测方控制的 HTTP memory backend 接缝已支持固定业务模型的 B0/candidate 对照；集成 Bot 仍属于 Track B。未测成本保留未知，不能按 0 汇总。协议、可运行命令、公平性与实证边界见[运行时 backend 文档](docs/harness/MIB-Memory-Backend.md)。
 
@@ -568,8 +568,8 @@ MIB/
 │   │   ├── time/          4 篇    ├── causal/      3 篇
 │   │   ├── epistemic/     4 篇    └── cross/       3 篇
 │   │   └── experience/    3 篇
-│   └── transfer/                          迁移诊断包，6 篇（置于 dev/ 之外，
-│                                          以确保 MIB-Core 恰好为 24 篇）
+│   ├── transfer/                          迁移诊断包，6 篇
+│   └── adversarial/                       询问干预场景，3 篇
 │
 ├── reality/                               MIB-R 原型 Reality Pack
 │
@@ -602,7 +602,7 @@ MIB/
     ├── calibration/                       校准产物示例
     ├── same-model/                        固定模型实验产物示例
     ├── scenario-instances/                物化的场景实例文件
-    │                                      （generated/ 包含各程序生成的实例）
+    │                                      （generated/ 保留了 14 个历史 Core 示例）
     └── validation/                        Schema 校验结果示例
 ```
 
@@ -611,6 +611,20 @@ MIB/
 ---
 
 ## 快速上手
+
+本地安装参考实现：
+
+```bash
+python -m pip install -e .
+```
+
+要求 Python 3.10+、`jsonschema >= 4.18` 以及 `cryptography >= 46`。
+
+安装后会在系统 `PATH` 中注册六个 CLI 命令 —— `mib`、`mib-service`、`mib-calibrate`、`mib-same-model-calibrate`、`mib-memory-backend-benchmark` 以及 `mib-learning-benchmark`。它们是在 `pyproject.toml` 的 `[project.scripts]` 中声明的控制台脚本入口；其中 `mib` 映射到 `mib_runner.cli:main`。如果不想全局安装，可直接通过模块方式调用：
+
+```bash
+PYTHONPATH=src python -m mib_runner.cli --help
+```
 
 ### 从有预算约束的 Pilot 开始
 
@@ -628,21 +642,6 @@ mib compare /tmp/mib-agent-a.json /tmp/mib-agent-b.json
 该 pilot 固定了 7 种机制、单个阶梯档位（100 个干扰事件）、5 个独立种子、1 次重复运行以及统一的 3,500 字符上下文预算；中位数可见历史约为该预算的 4.2 倍，且预检会拒绝预算未实质生效的有界实验。业务模型观测决策采用公开的 `environment_event` 类型；所有观测依然进入记忆形成。这不属于发布级校准。现有的 `.stub.json` 与 `.external-http.json` 配置分别覆盖冒烟测试与完整校准。小规模 pilot 的结果用于指导下一步预先登记的样本计划，不能确立通用的优越性。
 
 从先前修订版本保留下来的 Core fixture 示例保留其原始源/版本标识。新的验证证据必须声明度量修订版本 0.5.0（见 `examples/validation/measurement-0.5.0.json`）；旧报告需要其匹配的可执行源码包。
-
-
-本地安装参考实现：
-
-```bash
-python -m pip install -e .
-```
-
-要求 Python 3.10+、`jsonschema >= 4.18` 以及 `cryptography >= 46`。
-
-安装后会在系统 `PATH` 中注册六个 CLI 命令 —— `mib`、`mib-service`、`mib-calibrate`、`mib-same-model-calibrate`、`mib-memory-backend-benchmark` 以及 `mib-learning-benchmark`。它们是在 `pyproject.toml` 的 `[project.scripts]` 中声明的控制台脚本入口；其中 `mib` 映射到 `mib_runner.cli:main`。如果不想全局安装，可直接通过模块方式调用：
-
-```bash
-PYTHONPATH=src python -m mib_runner.cli --help
-```
 
 从生成程序中实例化生成单个场景（种子为 7，阶梯档位 rung 1 = 20 个干扰事件）：
 
@@ -838,7 +837,7 @@ Consolidation Benefit:          +5.4 pp
 
 ## 开源协议
 
-本项目采用 **GNU General Public License v3.0**（GPL-3.0）开源协议。完整的协议文本请参阅 [LICENSE](LICENSE) 文件。
+本项目采用 GNU 通用公共许可证第 3 版或任何后续版本（`GPL-3.0-or-later`）。许可证全文见 [LICENSE](LICENSE)。
 
 ---
 

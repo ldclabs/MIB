@@ -16,7 +16,6 @@ warning (``disabled_best_effort``) or refuse to run (``disabled_strict``).
 from __future__ import annotations
 
 import os
-import resource
 import shutil
 import signal
 import subprocess
@@ -107,6 +106,8 @@ def _mb(n) -> int:
 
 
 def _preexec(policy: SandboxPolicy):
+    import resource
+
     # RLIMIT_AS is unusable on macOS: the child is killed before it can exec.
     # The sandbox is only *containing* on Linux anyway, so elsewhere we set the
     # portable limits and let spawn_sandboxed_stdio warn about the rest.
@@ -223,6 +224,8 @@ def spawn_sandboxed_stdio(
     stage: list[dict] | None = None,
 ) -> SandboxProcess:
     policy = policy or SandboxPolicy()
+    if os.name != "posix" and policy.network != "inherit":
+        raise SandboxPolicyError("stdio submission isolation requires POSIX resource controls")
     warnings: list[str] = []
     workdir = tempfile.mkdtemp(prefix="mib-submission-")
     try:

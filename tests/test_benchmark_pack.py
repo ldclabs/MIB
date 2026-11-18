@@ -102,6 +102,25 @@ def test_template_first_dimension_aggregation_ignores_instance_count_as_vote_cou
     assert d["score"] == 50.0
 
 
+@pytest.mark.parametrize("seeds", [[101, 101], [101, "101"], []])
+def test_static_pack_rejects_duplicate_or_missing_seeds(seeds):
+    template = load_templates(CROSS / "MIB-X-003.json")[0]
+    with pytest.raises(ValueError, match="seeds"):
+        run_benchmark_pack(templates=[template], schema=SCHEMA, profile={}, instance_seeds=seeds,
+                           agent_factory=ReferenceMemoryAgent, repetitions=1)
+
+
+def test_prebuilt_static_instance_cannot_be_counted_twice():
+    template = load_templates(CROSS / "MIB-X-003.json")[0]
+    instance = materialize(template, 101)
+    with pytest.raises(ValueError, match="repetitions"):
+        run_benchmark_pack(templates=[instance], schema=SCHEMA, profile={}, instance_seeds=[1, 2],
+                           agent_factory=ReferenceMemoryAgent, repetitions=1)
+    with pytest.raises(ValueError, match="duplicate Instance"):
+        run_materialized_pack(templates=[template], instances=[instance, instance], schema=SCHEMA,
+                              profile={}, agent_factory=ReferenceMemoryAgent, repetitions=1)
+
+
 def test_causal_pair_validator_detects_mismatch():
     full = {
         "condition": "full", "repetition": 0, "scenario_instance_id": "i", "template_id": "t",

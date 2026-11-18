@@ -142,6 +142,24 @@ def test_withdrawal_removes_dependent_corrections_and_allows_fresh_authorization
     assert m.current('p', 'code')[0] == 'C'
 
 
+def test_support_set_skips_irrelevant_questions_and_preserves_linked_ones():
+    class CountingWorld(WorldModel):
+        def evaluate(self, query, exclude=()):
+            attempts.append(set(exclude))
+            return super().evaluate(query, exclude)
+
+    attempts = []
+    world = CountingWorld()
+    world.add_source(Source('p'))
+    query = {'op': 'current', 'subject': 'p', 'attribute': 'code'}
+    world.add(Assertion('fact', 1, 'p', 'p', 'code', 'A'))
+    world.add(Assertion('question', 2, 'p', 'p', 'code', 'Q', 'question', False))
+    assert world.support_set(query).necessary == ['fact']
+    assert {'question'} not in attempts
+    world.add(Assertion('correction', 3, 'p', 'p', 'code', 'B', 'correction', True, 'question'))
+    assert 'question' in world.support_set(query).necessary
+
+
 class FeedbackModel:
     """A deterministic stateless model that follows explicit workflow feedback."""
     def __init__(self): self.calls = []
@@ -278,3 +296,57 @@ def test_generated_hidden_pack_redacts_seeds_and_remains_verifiable(tmp_path):
     validate_report(pub, load_json(REPORT_SCHEMA_PATH))
     assert verify_score(pub)['valid']
     assert 'hs_' not in json.dumps(pub)
+    assert 'mib.recall.v1' not in json.dumps(pub)
+
+
+def test_public_partial_pack_preserves_scores_and_aliases():
+    profile = {**PROFILE, 'repetitions': 3}
+    class NoEmissions(StructuredMemoryAgent):
+        def describe(self):
+            descriptor = super().describe()
+            descriptor['capabilities']['spontaneous_emissions'] = False
+            return descriptor
+
+    report, _ = run_generated_pack(profile=profile, agent_factory=NoEmissions, seeds=[101],
+                                    repetitions=1, bootstrap_resamples=5)
+    assert report['execution']['repetitions_policy'] == {'per_instance': 1}
+    assert report['aggregates']['mib_score']['partial']
+    assert verify_score(report)['valid']
+    tids = sorted(t['id'] for t in report['evaluation_policy']['templates'])
+    aliases = {tid: f'family-{len(tids) - i}' for i, tid in enumerate(tids)}
+    public = redact_report_for_public(report, aliases=aliases, redaction_key='test')
+    assert all(tid not in json.dumps(public) for tid in tids)
+    assert 'per_run_costs' not in public['efficiency']['participant_reported']
+    validate_report(public, load_json(REPORT_SCHEMA_PATH))
+    assert verify_score(public)['valid']
+
+
+@pytest.mark.parametrize('field', ['source', 'runs', 'counts', 'conditions', 'penalty'])
+def test_full_report_rejects_missing_or_inconsistent_evidence(revised_report, field):
+    report = copy.deepcopy(revised_report)
+    instance = report['aggregates']['scenario_instances'][0]
+    if field == 'source':
+        del report['evaluation_policy']['runner_source_digest']
+    elif field == 'runs':
+        report['results']['runs'] = []
+    elif field == 'counts':
+        report['execution']['scheduled_probe_attempts'] += 1
+    elif field == 'conditions':
+        instance['condition_scores']['full'] = 0
+    else:
+        score = report['aggregates']['mib_score']
+        score['global_guardrail_penalty'] = 1
+        score['final_score'] -= 1
+    assert not verify_score(report)['valid']
+
+
+def test_compare_requires_matching_materialized_inputs(revised_report):
+    other = copy.deepcopy(revised_report)
+    for run in other['results']['runs']:
+        run['validity']['instance_spec_digest'] = 'different materialized scenario'
+    with pytest.raises(ValueError, match='inputs'):
+        paired_compare_reports(revised_report, other, resamples=1)
+    public = redact_report_for_public(revised_report, aliases={}, redaction_key='test')
+    other_public = redact_report_for_public(other, aliases={}, redaction_key='test')
+    with pytest.raises(ValueError, match='Instance coverage'):
+        paired_compare_reports(public, other_public, resamples=1)

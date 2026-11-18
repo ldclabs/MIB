@@ -13,7 +13,7 @@ def runner_source_digest() -> str:
     root = Path(__file__).resolve().parent
     digest = hashlib.sha256()
     for path in sorted(root.rglob('*.py')):
-        digest.update(str(path.relative_to(root)).encode())
+        digest.update(path.relative_to(root).as_posix().encode())
         digest.update(b'\0')
         digest.update(path.read_bytes())
         digest.update(b'\0')

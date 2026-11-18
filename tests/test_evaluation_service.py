@@ -82,6 +82,33 @@ def test_recover_running_jobs(tmp_path):
     assert svc.db.job(job['id'])['status']=='queued'
 
 
+def test_store_and_profile_identity_must_match(tmp_path):
+    svc = make_service(tmp_path)
+    store, profile_path = tiny_store(tmp_path)
+    profile = json.loads(profile_path.read_text())
+    profile['id'] = 'different-profile'
+    profile_path.write_text(json.dumps(profile))
+    with pytest.raises(ValueError, match='different Profile'):
+        svc.register_cycle('test', store_path=store, profile_path=profile_path)
+
+
+@pytest.mark.parametrize("field", ["scenario_schema", "report_schema"])
+def test_worker_checks_the_signed_schema_before_starting_a_submission(tmp_path, field):
+    svc = make_service(tmp_path)
+    store, profile = tiny_store(tmp_path)
+    schema_copy = tmp_path / f"{field}.json"
+    shutil.copyfile(getattr(svc.config, field), schema_copy)
+    setattr(svc.config, field, schema_copy)
+    svc.register_submission(EXAMPLES / 'submissions/reference-stdio.json', smoke_test=False)
+    svc.register_cycle('test', store_path=store, profile_path=profile, activate=True)
+    svc.enqueue('mib-reference-fixture-stdio')
+    with schema_copy.open("a") as handle:
+        handle.write("\n")
+    result = svc.worker_once()
+    assert result["status"] == "failed"
+    assert f"{field}_digest changed after job enqueue" in result["error"]
+
+
 def test_service_http_requires_api_token(tmp_path, monkeypatch):
     """Mutating endpoints run participant code, so the API must not start open."""
     svc=make_service(tmp_path)

@@ -203,3 +203,25 @@ def test_replay_with_injections_delivers_memory_before_the_probe():
     harmful = next(r for r in runs if r["condition"] == "harmful_memory")
     assert harmful["scenario_score"] == 0.0
     assert harmful["ablation_method"] == "replay_with_injections"
+
+
+def test_run_pack_returns_validation_errors_for_bad_files_and_empty_packs(tmp_path, capsys):
+    from mib_runner.cli import main
+
+    args = ['run-pack', str(tmp_path), '--schema', str(SCENARIO_SCHEMA_PATH), '--full-only']
+    assert main(args) == 2
+    assert json.loads(capsys.readouterr().out)['count'] == 0
+    (tmp_path / 'MIB-malformed.json').write_text('{')
+    (tmp_path / 'MIB-wrong-shape.json').write_text('{"probes": [null]}')
+    (tmp_path / 'MIB-valid.json').write_bytes((PACK / 'recall/MIB-RET-001.json').read_bytes())
+    assert main(args) == 2
+    summary = json.loads(capsys.readouterr().out)
+    assert (summary['count'], summary['passed_validation']) == (3, 1)
+    assert all(row['errors'] for row in summary['results'] if not row['valid'])
+
+
+def test_offline_cli_imports_without_posix_resource_module():
+    import subprocess
+    import sys
+    code = "import sys; sys.modules['resource'] = None; from mib_runner.cli import build_parser; build_parser()"
+    subprocess.run([sys.executable, "-c", code], check=True)

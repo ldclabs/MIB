@@ -104,7 +104,9 @@ def joint_dependence(instances, profile, field='joint_score', metric=METRIC):
         if n and valid:
             seed = str(policy.get('bootstrap_seed', 'joint-twin-v1' if metric == METRIC else 'content-following-v1')) + ':' + d
             rng = random.Random(seed)
-            boot = [mean([mean([rng.choice(scores) for _ in scores]) for _, scores in sorted(strata.items())])
+            # The report preserves Instance order when it replaces private
+            # Template IDs with public aliases. Draw from that same order.
+            boot = [mean([mean([rng.choice(scores) for _ in scores]) for scores in strata.values()])
                     for _ in range(resamples)]
             ci = ci_percentile(boot, level, 'stratified_instance_cluster_percentile', resamples, seed)
             ci['degenerate'] = len(set(boot)) == 1

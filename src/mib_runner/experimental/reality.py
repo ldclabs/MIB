@@ -27,11 +27,12 @@ import math
 import random
 import uuid
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
 from .. import __version__
+from ..adapter_contract import require_accepted
+from ..episode import validate_seeds
 from .reality_graph import (
     RealityTransferGraph,
     load_reality_graph,
@@ -46,6 +47,7 @@ from .transfer import (
     RECALL_PREFIX,
 )
 from ..types import Observation
+from ..util import utc_now
 
 REALITY_EXTENSION = "mib.reality.v1"
 
@@ -111,10 +113,6 @@ class RealityTaskAdapter(Protocol):
         ...
 
 
-def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
 def mean(values: list[float]) -> float | None:
     return math.fsum(values) / len(values) if values else None
 
@@ -141,7 +139,7 @@ def pack_digest(pack: dict[str, Any]) -> str:
 
 def _observe(agent: Any, run_id: str, counter: list[int], content: str, obs_type: str = "environment_event") -> None:
     counter[0] += 1
-    agent.observe(
+    result = agent.observe(
         run_id=run_id,
         request_id=f"req_{counter[0]:06d}",
         observation=Observation(
@@ -151,6 +149,7 @@ def _observe(agent: Any, run_id: str, counter: list[int], content: str, obs_type
             content=content,
         ),
     )
+    require_accepted("observe", result)
 
 
 def _training_task_ids(
@@ -214,7 +213,6 @@ def run_reality_pair(
     run_id = f"reality_{uuid.uuid4().hex[:16]}"
     counter = [0]
     started = utc_now()
-    agent.reset(run_id=run_id, seed=seed, virtual_time=None)
 
     allowed_set = set(allowed)
     contents = _oracle_contents(graph, target_id) if condition in {"oracle_skill", "oracle_routing"} else []
@@ -228,6 +226,7 @@ def run_reality_pair(
 
     acquisition: list[dict[str, Any]] = []
     try:
+        require_accepted("reset", agent.reset(run_id=run_id, seed=seed, virtual_time=None))
         # --- Phase A: experience acquisition ---------------------------
         for task_id in train_ids:
             if task_id not in allowed_set:
@@ -318,11 +317,16 @@ def run_reality_benchmark(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     adapter = adapter or load_adapter(pack)
     graph = graph or load_reality_graph(pack_path, pack)
-    conditions = tuple(conditions or pack.get("conditions") or DEFAULT_CONDITIONS)
-    unknown = [c for c in conditions if c not in CONDITIONS]
+    conditions = tuple(pack.get("conditions", DEFAULT_CONDITIONS) if conditions is None else conditions)
+    if not conditions or len(set(conditions)) != len(conditions):
+        raise RealityPackError("at least one distinct condition is required; duplicate conditions are invalid")
+    unknown = [c for c in conditions if c not in CONDITIONS or c not in pack.get("conditions", CONDITIONS)]
     if unknown:
         raise RealityPackError(f"unknown MIB-R conditions: {unknown}")
-    seeds = list(seeds or pack.get("task_seeds") or [101])
+    seeds = list(pack.get("task_seeds", [101]) if seeds is None else seeds)
+    validate_seeds(seeds)
+    if repetitions < 1:
+        raise RealityPackError("at least one repetition is required")
 
     train_tasks = {
         ref["task_id"]: adapter.load_task(ref) for ref in pack.get("train_tasks") or []
@@ -494,7 +498,7 @@ def reality_metrics(runs: list[dict[str, Any]]) -> dict[str, Any]:
         if r.get("natural_transfer_gain") is not None and r["natural_transfer_gain"] < -1e-9
     ]
     overall = block(runs)
-    if per_task:
+    if per_task and all("natural_transfer_gain" in row for row in per_task):
         overall["negative_transfer_rate"] = len(negative_rows) / len(per_task)
     if near_match:
         overall["near_match_resistance"] = _by_condition(near_match).get("natural_memory")

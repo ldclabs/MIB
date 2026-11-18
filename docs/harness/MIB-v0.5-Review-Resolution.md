@@ -1,6 +1,6 @@
 # Second September 23 design-review implementation
 
-Implementation **0.14.2**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
+Implementation **0.14.3**, Core measurement **0.5.0**, pack report **0.6.0**. Core development Profiles are **0.5.0**; the Mechanism Challenges and Brain product-regression Profiles, and the product Programs, are **0.2.0** because the shared generator changed their Instances. Scenario format remains **0.2**. Backend report, longitudinal measurement and the vendored native workflow contract are unchanged.
 
 This ledger resolves [the second review](../reviews/MIB-Design-Review-2026-09-23b.md). It separates implementation from empirical validation. Reports and examples from measurement 0.4.0 keep their source/version identity (`examples/validation/measurement-0.4.0.json` is historical) and must not be compared with 0.5.0 results. The preceding ledger is [MIB-v0.4-Review-Resolution.md](MIB-v0.4-Review-Resolution.md).
 
@@ -74,6 +74,16 @@ A second review of 445715e and e134c45 fixes two defects without changing genera
 
 Validation: **541 passed, 8 skipped** (same skips). The engineering validation record is unchanged except for its source digest, and the 42-template same-model stub verified with release eligibility false. Review and fixes: Claude (Anthropic); no subagents or provider runs. Chinese mirrors are intentionally unchanged.
 
+## Implementation 0.14.3
+
+- Single-Scenario execution honors the selected submission. Static and generated packs reject duplicate evidence. Capability checks include the actual Probes before admitting a Program to coverage.
+- Pack verification checks the source digest, effective repetitions, condition scores, session evidence, coverage and execution counts. Public projection retains score verification across Template aliases, including partial reports. Paired comparisons check the materialized inputs when available.
+- The backend uses the frozen episode plan for both arms. Same-model estimates include extra reference calls and any B3 controls missing from the baseline schedule.
+- Long-distance generation skips individual removal tests for unreferenced, nonassertive mentions. All 24 Programs at seeds 101 and 202 and all three standard rungs produced identical content, allowing for the implementation version field.
+- The compact 0.14.3 record covers ten no-model fixture runs. The zero-memory controls execute with full coverage and zero execution-failed attempts. Earlier stored reports keep their original source identities.
+
+On macOS, the full suite passed on Python 3.10, 3.11, 3.12, 3.13 and 3.14. Each interpreter reported 566 passed and 8 skipped. Five skips require the evaluator-private pack and three require Linux namespaces. The 42-unit same-model stub report passed aggregate verification and its fairness audit. Zero units passed the full admission gate and release eligibility was false.
+
 ## Reproduction
 
 ```bash
@@ -86,13 +96,13 @@ python -m mib_runner.same_model_cli examples/same-model/same-model-generated.stu
 
 Historical local validation (0.14.1): **522 passed, 8 skipped** on Python 3.14.7/macOS; the skips require Linux sandboxing or evaluator-private packs. The validation script runs the grammar-only and recover-only fixtures on Core, Expanded and (recover-only) Mechanism Challenges and fails if either earns more than 10 in any dimension or passes the dependence gate. The current compact record is `examples/validation/measurement-0.5.0.json`: complete fixture 100 with CFE 1 on Core, Expanded and Session, and 100 on Mechanism Challenges; prefix-only fixture 63.72 and not dependence-eligible; grammar-only and recover-only fixtures 0 and not eligible. The 42-unit stub run has `fairness_valid: true` and `release_eligible: false` and is an unbounded-reference regime. None of this is real-model evidence.
 
-The pilot now estimates **482 condition runs** and **at least 1,927 business-model calls**, under the same exclusions as before; the unbounded reference arm is included.
+The pilot estimates **482 condition runs** and **at least 2,257 business-model calls**, including the two additional reference arms. Tool continuations, retries and preflight can add calls.
 
 ## Not done, and remaining empirical work
 
 - **Real fixed-model pilot (carried over).** Not run. It should now be run in the budgeted regime above; the unbounded external configuration remains a historical-information-use reference, not an architecture comparison.
 - **Track B memory pressure.** The Runner cannot bound an integrated Agent's context. The Core canonical rung is a raw-context regime and the Capability Card now says so with the visible history size; `Horizon-Dev` and enforced session isolation are the two pressures the Runner can apply, and neither identifies the mechanism. No integrated Agent has been run on either.
-- **Private surface deployment.** The bank hook exists, but hidden-store manifests do not yet carry a bank; commitment, rule and brief wording are not yet covered; an independently authored bank, a real-model public/private contrast and blinded semantic Oracle review are still required.
+- **Private surface deployment.** Generated store manifests accept an evaluator-side bank. Commitment, rule and brief wording still need coverage; an independently authored bank, a real-model public/private contrast and blinded semantic Oracle review are still required.
 - **Weak dependence** still cannot be certified at five seeds (70% following passes about a third of packs); the merged procedural dimension has three twin opportunities per Instance, but the sample size must come from a preregistered pilot.
 - **Chance-corrected reporting.** The Programs are redesigned so zero-memory floors are 0 rather than reported and subtracted. Pool guessing still has a small positive expected score in some probes; Track A reports B0, and Track B has no measured floor.
 - **Merged relevant ablation** (one "withhold all support" run per Instance) and a **physical package split** of legacy/experimental code were not implemented; only the import boundary is enforced, and `diagnostics: "off"` removes the controls where they are not needed.

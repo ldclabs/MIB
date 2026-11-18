@@ -2,7 +2,7 @@
 
 ## Memory Intelligence Benchmark — format v0.2, measurement revision 0.5.0
 
-**Implementation:** 0.14.2. **Status:** normative executable development specification.
+**Implementation:** 0.14.3. **Status:** normative executable development specification.
 
 This revision addresses the second September 23 design review. The detailed implementation ledger is [here](harness/MIB-v0.5-Review-Resolution.md); the preceding revision's ledger is [here](harness/MIB-v0.4-Review-Resolution.md). Scores from earlier revisions are not interchangeable with these scores. The scenario format remains `mib: "0.2"`; Core Programs and Core development Profiles are version 0.5.0 (the Mechanism Challenges Profile is 0.2.0), and new pack reports use `report_version: "0.6.0"`. Static v0.1 scenarios remain executable.
 
@@ -55,7 +55,7 @@ Causal quantities are diagnostics. They do not enter a v0.2 capability dimension
 
 A Profile fixes its identity/version, track, scale, official flag, Program set and parameters, ladder, canonical rung, instance seeds or evaluator sampling policy, repetitions, dimension weights, coverage, statistics, dependence policy, and measurement regime.
 
-Programs may override their ladder and supply `params`. Ladder precedence is the Program entry, then the pack/Profile default, then the Program's built-in default. Public generation, hidden materialization, and same-model calibration share this resolution. The interleaved recall Program accepts `fact_count` from 8 to 4096. The generated hidden-store manifest must match the Profile's Programs, parameters, effective per-Program ladders, and session regime. Registration rejects a mismatch; execution checks every Instance's Program/version, rung, and interference count and requires all of that Program's rungs for each seed.
+Programs may override their ladder and supply `params`. Every Program ladder must contain the declared canonical rung. Ladder precedence is the Program entry, then the pack/Profile default, then the Program's built-in default. Public generation, hidden materialization, and same-model calibration share this resolution. The interleaved recall Program accepts `fact_count` from 8 to 4096. The generated hidden-store manifest must match the Profile's Programs, parameters, effective per-Program ladders, and session regime. Registration rejects a mismatch; execution checks every Instance's Program/version, rung, and interference count and requires all of that Program's rungs for each seed.
 
 Shipped development Profiles:
 
@@ -330,7 +330,7 @@ New reports embed the score-relevant evaluation policy and required Program evid
 
 Bootstrap estimation and replay use the effective ablation tolerances carried by Run Artifacts. A reduced Template descriptor lacking private ablation definitions does not imply zero tolerance. Legacy artifacts without a carried tolerance may use the Scenario declaration during estimation.
 
-Displayed intervals must match the statistics block. Tampering with a dependence gate, official flag, aggregate causal value, retention curve, or interval is rejected. New reports require the matching executable source bundle to reproduce their interpretation.
+Displayed intervals must match the statistics block. Tampering with a dependence gate, official flag, aggregate causal value, retention curve, or interval is rejected. Pack report 0.6.0 requires the executable source digest. Full verification also checks run coverage, effective repetition counts, condition scores, session summaries and probe attempt counts. Public reports retain opaque Instance aliases bound to the materialized inputs and omit per-run cost receipts.
 
 Arithmetic consistency, source identity, service attestation, trusted Profile admission, and scientific validity are distinct claims.
 
@@ -388,5 +388,7 @@ Further empirical validation, real-system storage/cost instrumentation, broader 
 Use `mib run` with a Scenario, generated Profile, same-model configuration, memory-backend configuration, or longitudinal configuration. `mib compare` compares compatible verified pack reports; `mib verify` aliases `verify-score`. Existing commands remain supported. Scenario/Profile runs require `--schema`; configured experiments resolve their own schemas and prompts. `same-model-generated.pilot.json` is a bounded seven-mechanism, one-rung pilot under memory pressure; the existing stub/full configurations remain separate.
 
 For same-model calibration reports, verification checks the experiment lock, recomputes fairness from retained telemetry and audit evidence, and checks release counts against the template gate rows and model identity. It establishes aggregate consistency only: these reports do not retain raw model outputs, lifecycle receipts or per-Instance causal evidence for independent replay.
+
+The fixed-model calibration and runtime memory-backend adapters support acknowledged session boundaries. Execution rejects a Profile that requires reconstruction from `persisted_state` before contacting the model.
 
 The optional `observe_decision_types` routes business-model observation decisions by public observation type. All observations still reach memory formation. The same declared router applies to every memory arm and never reads probe, relevance, oracle, or trigger labels.

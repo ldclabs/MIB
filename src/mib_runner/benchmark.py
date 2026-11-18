@@ -79,9 +79,11 @@ def select_profile_templates(templates: list[dict[str, Any]], profile: dict[str,
     if profile.get('programs'):
         from .generate import program_descriptor
         required = [program_descriptor(e['id'] if isinstance(e, dict) else e)['id'] for e in profile['programs']]
+    by_id = {t["id"] for t in templates}
+    if len(by_id) != len(templates) or (required and len(set(required)) != len(required)):
+        raise ValueError("duplicate Template in the pack or Profile")
     if not required:
         return list(templates)
-    by_id = {t["id"]: t for t in templates}
     missing = sorted(set(required) - set(by_id))
     if missing:
         raise ValueError(f"profile requires missing Templates: {missing}")
@@ -90,12 +92,7 @@ def select_profile_templates(templates: list[dict[str, Any]], profile: dict[str,
         raise ValueError(
             f"Templates not listed by profile {profile.get('id')!r}: {extra}; pass only the profile's pack"
         )
-    required_set = set(required)
-    return [t for t in templates if t["id"] in required_set]
-
-
-# Scenario ``requirements.capabilities`` names that differ from the Agent descriptor keys.
-_CAPABILITY_KEYS = {"tools": "runner_managed_tools"}
+    return list(templates)
 
 
 def agent_supports_template(descriptor: dict[str, Any], template: dict[str, Any]) -> bool:
@@ -398,7 +395,6 @@ def build_pack_report(
 ) -> dict[str, Any]:
     if not all_runs:
         raise ValueError("no runs to report: every required Template was unsupported or skipped")
-    templates_by_id = {t["id"]: t for t in templates}
     instance_by_iid = {instance_key(s): s for s in instances}
     runs_by_instance: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in all_runs:
@@ -407,14 +403,11 @@ def build_pack_report(
     # Generated packs carry a ladder; the capability score is read at the
     # Profile's canonical rung and every rung feeds the retention curve (§8).
     canonical_rung = profile.get("canonical_rung")
-    instance_aggs = []
-    instances_by_template: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for iid, runs in sorted(runs_by_instance.items()):
-        scenario = instance_by_iid[iid]
-        agg = build_instance_aggregate(scenario, runs)
-        instance_aggs.append(agg)
-        if canonical_rung is None or agg.get("rung") is None or int(agg["rung"]) == int(canonical_rung):
-            instances_by_template[agg["template_id"]].append(agg)
+    instance_aggs = [build_instance_aggregate(instance_by_iid[iid], runs)
+                     for iid, runs in sorted(runs_by_instance.items())]
+    repetitions = {row["repetitions"] for row in instance_aggs}
+    if len(repetitions) != 1:
+        raise ValueError("Instances have different numbers of full-condition repetitions")
 
     aggregated = score_aggregates(instance_aggs, templates, profile)
     template_aggs, dims, base_score = aggregated['templates'], aggregated['dimensions'], aggregated['score']
@@ -541,7 +534,7 @@ def build_pack_report(
             "unsupported_required_weight": float(len(unsupported_templates)),
             "total_required_weight": float(len(templates)),
             "unsupported_rate": len(unsupported_templates) / len(templates) if templates else 0.0,
-            "repetitions_policy": {"per_instance": int(profile.get("repetitions", 1))},
+            "repetitions_policy": {"per_instance": repetitions.pop()},
             "condition_order_policy": "full_then_declared_ablations",
         },
         "results": {
@@ -572,7 +565,7 @@ def build_pack_report(
             "runner_source_digest": runner_source_digest(),
             "profile": {k: copy.deepcopy(v) for k, v in profile.items() if k in {
                 'id', 'version', 'track', 'scale', 'official', 'required_coverage', 'required_templates', 'dimensions',
-                'statistics', 'scenario_pack', 'canonical_rung', 'programs', 'memory_dependence', 'measurement_regime',
+                'statistics', 'scenario_pack', 'canonical_rung', 'ladder', 'programs', 'memory_dependence', 'measurement_regime',
                 'repetitions', 'max_execution_failure_rate'}},
             "templates": [{'id': t['id'], 'version': t.get('version'), 'dimensions': t.get('dimensions', []),
                            'scoring': {'dimension_weights': copy.deepcopy(t.get('scoring', {}).get('dimension_weights', {}))}}
@@ -587,7 +580,7 @@ def build_pack_report(
             "unsupported_required_templates": unsupported_templates,
             **({"partial_score_reason": "One or more required development dimensions lack full evidence coverage."} if not profile_eligible else {}),
         },
-        "statistics": statistics or {"confidence_level": float(profile.get("statistics", {}).get("confidence_level", 0.95)), "mib_score": {"value": base_score, "n": len(instance_aggs)}},
+        "statistics": statistics or {"confidence_level": float(profile.get("statistics", {}).get("confidence_level", 0.95)), "mib_score": {"value": base_score, "n": len(canonical_instances(instance_aggs, profile))}},
         "warnings": warnings,
         "provenance": {
             "generated_by": "MIB Reference Runner",
@@ -631,14 +624,21 @@ def run_benchmark_pack(
     transfer_matrix: bool = False,
     transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
+    from .episode import validate_seeds
+    validate_seeds(instance_seeds)
+    if repetitions < 1:
+        raise ValueError("at least one repetition is required")
     templates = select_profile_templates(templates, profile)
     all_instances: list[dict[str, Any]] = []
     all_runs: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in templates if not agent_supports_template(descriptor, t)]
+    include_interventions, skip_kinds = intervention_schedule(profile, descriptor)
 
     for template in templates:
+        if "template" not in template and len(instance_seeds) > 1:
+            raise ValueError("duplicate static Instance; use repetitions for an already materialized scenario")
         vr = validate_scenario(template, schema)
         if not vr.valid:
             raise ValueError(f"Template {template['id']} invalid: {vr.errors}")
@@ -655,9 +655,11 @@ def run_benchmark_pack(
                 runs = run_scenario(
                     scenario=instance,
                     agent_factory=agent_factory,
-                    include_ablations=include_ablations,
+                    include_ablations=include_interventions(instance, include_ablations),
                     repetition=rep,
                     agent_seed=agent_seed,
+                    skip_ablation_kinds=skip_kinds,
+                    session_isolation=session_isolation_policy(profile),
                 )
                 _, _, notes = validate_causal_pairs(runs)
                 warnings.extend(pair_warnings(runs[0]["scenario_instance_id"], notes))
@@ -741,6 +743,8 @@ def run_materialized_pack(
     transfer_epsilon: float = DEFAULT_EPSILON,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Execute evaluator-materialized instances without exposing generation seeds to the submission."""
+    if repetitions < 1:
+        raise ValueError("at least one repetition is required")
     templates = select_profile_templates(templates, profile)
     templates_by_id = {t["id"]: t for t in templates}
     expected_ids = set(templates_by_id)
@@ -758,10 +762,13 @@ def run_materialized_pack(
     if profile.get('programs'):
         from .episode import validate_generated_instances
         validate_generated_instances(profile, instances)
+    else:
+        from .episode import validate_instance_keys
+        validate_instance_keys(instances)
     descriptor = describe_agent_factory(agent_factory)
     unsupported = [t["id"] for t in templates if not agent_supports_template(descriptor, t)]
     warnings: list[dict[str, Any]] = []
-    include_interventions, skip_kinds = _intervention_schedule(profile, descriptor)
+    include_interventions, skip_kinds = intervention_schedule(profile, descriptor)
 
     all_runs: list[dict[str, Any]] = []
     for instance in instances:
@@ -859,7 +866,7 @@ def session_isolation_policy(profile: dict[str, Any]) -> str:
     return mode
 
 
-def _intervention_schedule(profile: dict[str, Any], descriptor: dict[str, Any]):
+def intervention_schedule(profile: dict[str, Any], descriptor: dict[str, Any]):
     """Which interventions an Instance runs (measurement 0.5.0 Profiles).
 
     Only canonical-rung interventions enter any aggregate, so other rungs run
@@ -896,12 +903,18 @@ def run_generated_pack(
     bootstrap_seed: int | str = 20260819,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Generate and execute a v0.2 pack: every program of the Profile, every seed, every ladder rung."""
+    if repetitions < 1:
+        raise ValueError("at least one repetition is required")
     from .episode import materialize_episode_plan
-    descriptors, instances = materialize_episode_plan(profile, list(seeds if seeds is not None else profile.get("instance_seeds") or [101, 202]))
+    seeds = list(seeds if seeds is not None else profile.get("instance_seeds", [101, 202]))
+    descriptors, instances = materialize_episode_plan(profile, seeds)
     descriptor = describe_agent_factory(agent_factory)
-    unsupported = [t["id"] for t in descriptors if not agent_supports_template(descriptor, t)]
+    # Program descriptors carry no Probes. Materialized Probes can require
+    # additional capabilities such as spontaneous emissions.
+    unsupported = sorted({s["instantiation"]["template_id"] for s in instances
+                          if not agent_supports_template(descriptor, s)})
     warnings: list[dict[str, Any]] = []
-    include_interventions, skip_kinds = _intervention_schedule(profile, descriptor)
+    include_interventions, skip_kinds = intervention_schedule(profile, descriptor)
     all_runs: list[dict[str, Any]] = []
     executed: list[dict[str, Any]] = []
     for instance in instances:
@@ -958,7 +971,7 @@ def run_generated_pack(
         "instance_count": len(executed),
         "run_count": len(all_runs),
         "repetitions": repetitions,
-        "instance_seeds": list(seeds if seeds is not None else profile.get("instance_seeds") or [101, 202]),
+        "instance_seeds": seeds,
         "ladder": list(profile.get("ladder") or []),
         "canonical_rung": profile.get("canonical_rung"),
         "mib_score": report["aggregates"]["mib_score"]["final_score"],

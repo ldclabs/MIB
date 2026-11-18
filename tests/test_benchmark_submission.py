@@ -20,7 +20,13 @@ def test_public_benchmark_submission_uses_real_http_adapter(tmp_path, monkeypatc
         runtime_options.update(kwargs)
         return real_build(*args, **kwargs)
     monkeypatch.setattr(cli, 'build_submission_runtime', build_runtime)
-    server = ThreadingHTTPServer(('127.0.0.1', 0), make_http_handler(ReferenceMemoryAgent))
+    class ExternalFixture(ReferenceMemoryAgent):
+        def describe(self):
+            descriptor = super().describe()
+            descriptor["implementation"]["name"] = "HTTP fixture for CLI tests"
+            return descriptor
+
+    server = ThreadingHTTPServer(('127.0.0.1', 0), make_http_handler(ExternalFixture))
     thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
     template = json.loads((DEV_PACK/'epistemic/MIB-EPI-002.json').read_text())
     profile = {'id':'http-cli','version':'0.1.0','required_templates':[template['id']],
@@ -41,6 +47,14 @@ def test_public_benchmark_submission_uses_real_http_adapter(tmp_path, monkeypatc
         assert runtime_options['confine_stage_to_spec_dir'] is True
         assert str(profile_path.resolve()) in runtime_options['hide_paths']
         assert str((DEV_PACK/'epistemic/MIB-EPI-002.json').resolve()) in runtime_options['hide_paths']
+        assert main(['run', str(DEV_PACK/'epistemic/MIB-EPI-002.json'), '--schema', str(SCENARIO_SCHEMA_PATH),
+                     '--submission', str(spec), '--output', str(output), '--full-only']) == 0
+        single = json.loads(output.read_text())['report']
+        assert single['system']['agent']['name'] == 'HTTP fixture for CLI tests'
+        assert single['execution']['execution_failure_rate'] == 0
+        assert verify_score(single)['valid']
+        assert runtime_options['network'] == 'disabled_strict'
+        assert str(output.resolve()) in runtime_options['hide_paths']
     finally:
         server.shutdown();server.server_close();thread.join()
 

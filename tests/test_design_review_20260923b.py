@@ -67,6 +67,9 @@ def test_participant_visible_text_names_no_test_role(program):
 @pytest.mark.parametrize('agent', [GrammarOnlyAgent, NoMemoryAgent, RecoverOnlyAgent])
 def test_zero_memory_policies_earn_no_structural_floor(name, agent):
     report, summary = run_generated_pack(profile=profile(name), agent_factory=agent, include_ablations=False)
+    if agent in {GrammarOnlyAgent, RecoverOnlyAgent}:
+        assert summary['coverage'] == 1.0
+        assert report['execution']['execution_failed_probe_attempts'] == 0
     assert summary['dimensions'] and all(score <= 10 for score in summary['dimensions'].values()), summary['dimensions']
     _, full = run_generated_pack(profile=profile(name), agent_factory=StructuredMemoryAgent, seeds=[101], include_ablations=False)
     assert full['mib_score'] == 100

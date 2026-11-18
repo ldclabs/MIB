@@ -68,12 +68,18 @@ def main(argv=None):
     elif args.cmd=="register-cycle": emit(s.register_cycle(args.cycle,store_path=args.store,profile_path=args.profile,activate=args.activate))
     elif args.cmd=="activate-cycle": emit(s.activate_cycle(args.cycle))
     elif args.cmd=="enqueue": emit(s.enqueue(args.submission,cycle_id=args.cycle,backend=args.backend))
-    elif args.cmd=="worker-once": emit(s.worker_once(backend=args.backend))
+    elif args.cmd=="worker-once":
+        result = s.worker_once(backend=args.backend)
+        emit(result)
+        return 3 if result["status"] == "failed" else 0
     elif args.cmd=="recover-running": emit({"requeued":s.db.requeue_running_jobs()})
     elif args.cmd=="job": emit(s.get_job(args.job))
     elif args.cmd=="jobs": emit({"jobs":s.db.jobs()})
     elif args.cmd=="leaderboard": emit(s.leaderboard(cycle_id=args.cycle,profile_id=args.profile))
-    elif args.cmd=="verify-result": emit(s.verify_result_attestation(args.result))
+    elif args.cmd=="verify-result":
+        result = s.verify_result_attestation(args.result)
+        emit(result)
+        return 0 if result["valid"] else 5
     elif args.cmd=="compare": emit(s.compare(args.result_a,args.result_b,resamples=args.resamples,seed=args.seed))
     return 0
 

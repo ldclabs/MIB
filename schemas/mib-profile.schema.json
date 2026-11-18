@@ -128,6 +128,7 @@
         },
         "required_templates": {
           "type": "array",
+          "uniqueItems": true,
           "minItems": 1,
           "items": {
             "type": "string",
@@ -136,6 +137,7 @@
         },
         "instance_seeds": {
           "type": "array",
+          "uniqueItems": true,
           "minItems": 1,
           "items": {
             "type": [

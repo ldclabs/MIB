@@ -211,5 +211,6 @@ Security issues do not go in pull requests or public issues. Follow
 
 ## License
 
-MIB is licensed under the GNU General Public License v3.0. By contributing you agree
-that your contribution is licensed under the same terms.
+MIB is licensed under the GNU General Public License, version 3 or any later
+version (`GPL-3.0-or-later`). By contributing you agree that your contribution
+is licensed under the same terms.

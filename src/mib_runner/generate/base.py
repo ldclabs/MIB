@@ -317,7 +317,8 @@ class ScenarioBuilder:
             query = p.get("query")
             if not query:
                 continue
-            rows = [a for a in self.model.assertions if a.event_id in set(self.model.candidates(query))
+            candidates = set(self.model.candidates(query))
+            rows = [a for a in self.model.assertions if a.event_id in candidates
                     and a.asserts() and a.event_id in position]
             if [a.event_id for a in sorted(rows, key=lambda a: a.seq)] != [a.event_id for a in sorted(rows, key=lambda a: position[a.event_id])]:
                 raise GenerationError(f"{p['id']}: timeline order differs from world-model order")

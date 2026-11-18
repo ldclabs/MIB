@@ -50,9 +50,14 @@ def validate_scenario(
     warnings: list[str] = []
 
     validator = jsonschema.Draft202012Validator(schema)
-    for err in sorted(validator.iter_errors(scenario), key=lambda e: list(e.path)):
+    schema_errors = sorted(validator.iter_errors(scenario), key=lambda e: list(e.path))
+    for err in schema_errors:
         where = "/".join(str(x) for x in err.path)
         errors.append(f"schema:{where or '$'}: {err.message}")
+    # Semantic checks can explain an unsupported enum or missing reference,
+    # but cannot safely traverse data of the wrong shape.
+    if any(err.validator in {"type", "oneOf", "anyOf"} for err in schema_errors):
+        return ValidationResult(False, errors, warnings)
 
     timeline = scenario.get("timeline", [])
     probes = scenario.get("probes", [])

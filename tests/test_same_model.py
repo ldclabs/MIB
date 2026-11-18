@@ -263,3 +263,17 @@ def test_same_model_transfer_diagnostics_report_the_missing_formation_cell(tmp_p
     assert body["diagnostic_mode"] == "behavioral"
     assert "formation_efficiency" not in body["aggregate"]
     assert [e["class"] for e in body["distance_profile"]] == ["D0", "D1", "D2", "D3"]
+
+
+def test_estimate_counts_extra_reference_and_missing_causal_controls():
+    from mib_runner.same_model_calibration import estimate_experiment
+
+    template = {"id": "estimate", "version": "0.1.0", "template": {"parameters": []},
+                "timeline": [], "probes": [{"delivery": "respond"}], "ablations": [{"id": "a"}]}
+    cfg = {"agent": {}, "calibration": {"instance_seeds": [1], "causal_instance_seeds": [1, 2],
+            "repetitions": 1, "causal_repetitions": 2, "additional_baselines": {"unbounded_reference": True}}}
+    plan = estimate_experiment(cfg, [template])
+    # Four baseline calls, one reference, four ablations. Only seed 1's
+    # first B3 control was already run, leaving three extra full controls.
+    assert plan["additional_causal_full_runs"] == 3
+    assert plan["minimum_condition_runs"] == plan["minimum_model_turns"] == 12

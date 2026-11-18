@@ -12,8 +12,8 @@ authors:
     website: "https://github.com/ldclabs"
 repository-code: "https://github.com/ldclabs/MIB"
 url: "https://github.com/ldclabs/MIB"
-license: GPL-3.0
-version: "0.14.2"
+license: GPL-3.0-or-later
+version: "0.14.3"
 keywords:
   - benchmark
   - memory

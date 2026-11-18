@@ -361,3 +361,9 @@ def test_bca_intervals_and_efficiency_on_a_generated_pack():
     validate_report(report, REPORT_SCHEMA)
     v = verify_score(report)
     assert v["valid"] and v["verification_level"] == "full", v["errors"][:3]
+
+
+def test_canonical_rung_must_exist_on_each_program_ladder():
+    profile = {"programs": [{"id": "mib.recall.v1", "ladder": [0]}], "canonical_rung": 1}
+    with pytest.raises(ValueError, match="canonical rung"):
+        generate_pack(profile, seeds=[1])

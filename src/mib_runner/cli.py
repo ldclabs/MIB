@@ -7,10 +7,10 @@ import os
 from pathlib import Path
 
 from .agents import ReferenceMemoryAgent
-from .benchmark import load_templates, run_benchmark_pack, run_generated_pack, run_materialized_pack
+from .benchmark import describe_agent_factory, load_templates, run_benchmark_pack, run_generated_pack, run_materialized_pack
 from .generate import PROGRAMS, generate_instance
 from .capability import render_capability_card
-from .materialize import materialize
+from .materialize import MaterializationError, materialize
 from .hidden import HiddenEvalStore, redact_report_for_public
 from .submission import build_submission_runtime, load_submission_spec
 from .experimental.reality import (
@@ -33,6 +33,18 @@ def _load_agent_factory(spec: str | None):
         raise SystemExit("--agent must be 'reference' or module:Class")
     module_name, class_name = spec.split(":", 1)
     return getattr(importlib.import_module(module_name), class_name)
+
+
+def _participant_factory(args, evaluator_paths):
+    if not args.submission:
+        return _load_agent_factory(args.agent)
+    return build_submission_runtime(
+        load_submission_spec(args.submission),
+        network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
+        hide_paths=[str(Path(path).resolve()) for path in evaluator_paths if path],
+        allow_remote_http=args.allow_remote_http,
+        confine_stage_to_spec_dir=True,
+    ).factory
 
 
 def _parse_seed(value: str):
@@ -72,9 +84,8 @@ def cmd_inspect_transfer(args) -> int:
     return 0 if not out["errors"] else 2
 
 
-def _load_materialized(path: str, schema_path: str, seed: str | int):
+def _load_materialized(src: dict, schema_path: str, seed: str | int):
     schema = load_json(schema_path)
-    src = load_json(path)
     vr = validate_scenario(src, schema)
     if not vr.valid:
         raise SystemExit("Scenario validation failed:\n" + "\n".join(vr.errors))
@@ -98,14 +109,17 @@ def cmd_run(args) -> int:
         return cmd_benchmark(argparse.Namespace(path=None, profile=args.scenario, schema=args.schema,
             report_schema=args.report_schema, agent=args.agent, submission=args.submission,
             allow_degraded_sandbox=False, allow_remote_http=args.allow_remote_http,
-            seeds=args.seed, repetitions=None, bootstrap_resamples=None, bootstrap_seed='20260923',
+            seeds=args.seed, repetitions=None, bootstrap_resamples=None, bootstrap_seed='20260819',
             full_only=args.full_only, transfer_diagnostics=False, output_report=args.output,
             output_summary=None, card=None))
     if source.get('memory_backend'):
         from .backend_benchmark import main
         if not args.output:
             raise SystemExit('--output is required for a backend experiment')
-        return main([args.scenario, '--output-json', args.output])
+        options = [args.scenario, '--output-json', args.output]
+        if args.report_schema:
+            options.extend(['--report-schema', args.report_schema])
+        return main(options)
     if source.get('model') and source.get('profile'):
         from .same_model_cli import main
         options = [args.scenario]
@@ -115,20 +129,22 @@ def cmd_run(args) -> int:
             raise SystemExit('--output is required unless --estimate-only is used')
         if args.output:
             options.extend(['--output-json', args.output])
+        if args.report_schema:
+            options.extend(['--report-schema', args.report_schema])
         return main(options)
     if source.get('submissions') and source.get('profile'):
         if not args.output:
             raise SystemExit('--output is required for a longitudinal experiment')
         return cmd_learning_benchmark(argparse.Namespace(config=args.scenario, output=args.output,
-            allow_remote_http=args.allow_remote_http, resume_lock=None))
+            allow_remote_http=args.allow_remote_http, resume_lock=None, report_schema=args.report_schema))
     if args.estimate_only:
         raise SystemExit('--estimate-only requires a same-model experiment')
     if not args.schema:
         raise SystemExit('--schema is required for a Scenario')
     seed = _parse_seed(args.seed or '101')
-    scenario = _load_materialized(args.scenario, args.schema, seed)
-    factory = _load_agent_factory(args.agent)
-    agent_desc = factory().describe()
+    scenario = _load_materialized(source, args.schema, seed)
+    factory = _participant_factory(args, [args.scenario, args.schema, args.report_schema, args.output])
+    agent_desc = describe_agent_factory(factory)
     runs = run_scenario(scenario=scenario, agent_factory=factory, include_ablations=not args.full_only, repetition=0, agent_seed=seed)
     report = build_basic_report(runs=runs, scenario=scenario, agent_descriptor=agent_desc)
     if args.report_schema:
@@ -157,14 +173,27 @@ def cmd_run_pack(args) -> int:
     for p in files:
         if ".example-" in p.name:
             continue
-        scenario = load_json(p)
+        try:
+            scenario = load_json(p)
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            results.append({"path": str(p), "valid": False, "errors": [str(exc)]})
+            continue
         vr = validate_scenario(scenario, schema)
         if not vr.valid:
             results.append({"path": str(p), "valid": False, "errors": vr.errors})
             continue
-        instance = materialize(scenario, args.seed)
+        try:
+            instance = materialize(scenario, args.seed)
+        except MaterializationError as exc:
+            results.append({"path": str(p), "valid": False, "errors": [str(exc)]})
+            continue
+        if "template" in scenario:
+            validation = validate_scenario(instance, schema)
+            if not validation.valid:
+                results.append({"path": str(p), "valid": False, "errors": validation.errors})
+                continue
         runs = run_scenario(scenario=instance, agent_factory=factory, include_ablations=not args.full_only, repetition=0, agent_seed=args.seed)
-        report = build_basic_report(runs=runs, scenario=instance, agent_descriptor=factory().describe())
+        report = build_basic_report(runs=runs, scenario=instance, agent_descriptor=describe_agent_factory(factory))
         if report_schema:
             validate_report(report, report_schema)
         results.append({
@@ -186,29 +215,16 @@ def cmd_run_pack(args) -> int:
         print(args.output)
     else:
         print(text)
-    return 0
+    return 0 if results and len(valid_rows) == len(results) else 2
 
 
 def cmd_benchmark(args) -> int:
     schema = load_json(args.schema)
     report_schema = load_json(args.report_schema) if args.report_schema else None
     profile = load_json(args.profile)
-    if args.submission:
-        spec = load_submission_spec(args.submission)
-        hidden_paths = [
-            str(Path(value).resolve()) for value in (
-                args.path, args.profile, args.schema, args.report_schema,
-                args.output_report, args.output_summary, args.card,
-            ) if value
-        ]
-        runtime = build_submission_runtime(spec,
-            network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
-            hide_paths=hidden_paths, allow_remote_http=args.allow_remote_http,
-            confine_stage_to_spec_dir=True)
-        factory = runtime.factory
-    else:
-        factory = _load_agent_factory(args.agent)
-    seeds = _parse_seeds(args.seeds) if args.seeds else list(profile.get("instance_seeds") or [101, 202])
+    factory = _participant_factory(args, [args.path, args.profile, args.schema, args.report_schema,
+                                           args.output_report, args.output_summary, args.card])
+    seeds = _parse_seeds(args.seeds) if args.seeds is not None else list(profile.get("instance_seeds", [101, 202]))
     repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 2))
     boot = args.bootstrap_resamples if args.bootstrap_resamples is not None else int((profile.get("statistics") or {}).get("bootstrap_resamples", 0))
     if profile.get("programs"):
@@ -281,6 +297,8 @@ def cmd_learning_benchmark(args) -> int:
         argv.append("--allow-remote-http")
     if args.resume_lock:
         argv.extend(["--resume-lock", args.resume_lock])
+    if args.report_schema:
+        argv.extend(["--report-schema", args.report_schema])
     return main(argv)
 
 
@@ -376,6 +394,7 @@ def cmd_evaluate_hidden(args) -> int:
     report_schema = load_json(args.report_schema) if args.report_schema else None
     profile = load_json(args.profile)
     store = HiddenEvalStore(args.store)
+    store.validate_profile(profile)
     eval_key = args.eval_key or os.environ.get("MIB_EVAL_KEY")
     if not eval_key:
         raise SystemExit("--eval-key or MIB_EVAL_KEY is required")
@@ -390,7 +409,8 @@ def cmd_evaluate_hidden(args) -> int:
     runtime = build_submission_runtime(
         spec,
         network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
-        hide_paths=[str(Path(args.store).resolve())],
+        hide_paths=[str(Path(path).resolve()) for path in (args.store, args.profile, args.output_internal) if path],
+        confine_stage_to_spec_dir=True,
         allow_remote_http=args.allow_remote_http,
     )
     repetitions = args.repetitions if args.repetitions is not None else int(profile.get("repetitions", 1))
@@ -447,29 +467,29 @@ def cmd_reality_benchmark(args) -> int:
         import jsonschema
 
         jsonschema.Draft202012Validator(load_json(args.pack_schema)).validate(pack)
-    profile = load_json(args.profile) if args.profile else None
-    if args.submission:
-        spec = load_submission_spec(args.submission)
-        runtime = build_submission_runtime(
-            spec,
-            network="disabled_best_effort" if args.allow_degraded_sandbox else "disabled_strict",
-            allow_remote_http=args.allow_remote_http,
-        )
-        factory = runtime.factory
-    else:
-        factory = _load_agent_factory(args.agent)
-    conditions = tuple(x.strip() for x in args.conditions.split(",") if x.strip()) if args.conditions else None
+    profile = load_json(args.profile) if args.profile else {}
+    if args.profile:
+        identity = {k: profile[k] for k in ("id", "version")}
+        if (profile.get("reality_pack") != {k: pack[k] for k in ("id", "version")}
+                or pack.get("profile", identity) != identity or profile.get("track") != pack.get("track", "integrated_agent")):
+            raise SystemExit("MIB-R Profile and Reality Pack identities and tracks must match")
+    factory = _participant_factory(args, [Path(args.pack).resolve().parent, args.profile, args.pack_schema,
+                                          args.output_report, args.output_public, args.output_attestation, args.card])
+    conditions = tuple(x.strip() for x in args.conditions.split(",") if x.strip()) if args.conditions else profile.get("conditions")
+    statistics = profile.get("statistics", {})
     report, summary = run_reality_benchmark(
         pack=pack,
         pack_path=args.pack,
         agent_factory=factory,
-        seeds=_parse_seeds(args.seeds) if args.seeds else None,
-        repetitions=args.repetitions if args.repetitions is not None else int(pack.get("repetitions", 1)),
+        seeds=_parse_seeds(args.seeds) if args.seeds else profile.get("task_seeds"),
+        repetitions=args.repetitions if args.repetitions is not None else int(profile.get("repetitions", pack.get("repetitions", 1))),
         conditions=conditions,
-        bootstrap_resamples=args.bootstrap_resamples or 0,
+        bootstrap_resamples=args.bootstrap_resamples if args.bootstrap_resamples is not None else int(statistics.get("bootstrap_resamples", 0)),
         bootstrap_seed=args.bootstrap_seed,
-        confidence_level=float((profile or {}).get("statistics", {}).get("confidence_level", 0.95)),
+        confidence_level=float(statistics.get("confidence_level", 0.95)),
     )
+    if args.profile:
+        report["benchmark"]["profile"] = identity
     public = redact_reality_report(report)
     if args.output_report:
         Path(args.output_report).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -522,6 +542,7 @@ def build_parser() -> argparse.ArgumentParser:
     participant.add_argument("--submission")
     r.add_argument("--seed")
     r.add_argument("--allow-remote-http", action="store_true")
+    r.set_defaults(allow_degraded_sandbox=False)
     r.add_argument("--estimate-only", action="store_true")
     r.add_argument("--full-only", action="store_true")
     r.add_argument("--output")
@@ -576,6 +597,7 @@ def build_parser() -> argparse.ArgumentParser:
     lb = sub.add_parser("learning-benchmark", help="Three-arm longitudinal learning behavioral experiment")
     lb.add_argument("config")
     lb.add_argument("--output", required=True)
+    lb.add_argument("--report-schema")
     lb.add_argument("--allow-remote-http", action="store_true")
     lb.add_argument("--resume-lock")
     lb.set_defaults(func=cmd_learning_benchmark)
@@ -599,8 +621,9 @@ def build_parser() -> argparse.ArgumentParser:
     rb.add_argument("pack", help="Path to a MIBRealityPack manifest")
     rb.add_argument("--profile")
     rb.add_argument("--pack-schema")
-    rb.add_argument("--agent", default="reference")
-    rb.add_argument("--submission", help="Run an external Agent submission instead of an in-process factory")
+    reality_agent = rb.add_mutually_exclusive_group()
+    reality_agent.add_argument("--agent")
+    reality_agent.add_argument("--submission", help="External Agent submission for the Reality Pack")
     rb.add_argument("--conditions", help="Comma-separated subset of the pack's declared conditions")
     rb.add_argument("--seeds")
     rb.add_argument("--repetitions", type=int)

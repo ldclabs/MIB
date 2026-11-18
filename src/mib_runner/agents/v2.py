@@ -513,12 +513,15 @@ class NoMemoryAgent(_ActPolicies):
     """Answers from the present only: abstains on every question, acts naively."""
 
     NAME = "MIB No-Memory Fixture"
+    supports_emissions = False
 
     def __init__(self) -> None:
         self.reset(run_id="", seed=None, virtual_time=None)
 
     def describe(self) -> dict[str, Any]:
-        return _describe(self.NAME, memory=False)
+        descriptor = _describe(self.NAME, memory=False)
+        descriptor["capabilities"]["spontaneous_emissions"] = self.supports_emissions
+        return descriptor
 
     def reset(self, *, run_id: str, seed: Any, virtual_time: str | None) -> dict[str, Any]:
         self.observations: list[Observation] = []
@@ -572,6 +575,8 @@ class RecoverOnlyAgent(NoMemoryAgent):
     """
 
     NAME = "MIB Recover-Only Zero-Memory Fixture"
+    # Exercise reminder probes with the fixture's empty emissions response.
+    supports_emissions = True
 
     def act(self, *, run_id: str, request_id: str, task_id: str, goal: str | None, constraints: list[str],
             tools: list[dict[str, Any]], continuation: bool, virtual_time: str | None) -> ActStep:
@@ -603,11 +608,7 @@ class GrammarOnlyAgent(NoMemoryAgent):
     """
 
     NAME = "MIB Grammar-Only Zero-Memory Fixture"
-
-    def describe(self) -> dict[str, Any]:
-        descriptor = _describe(self.NAME, memory=False)
-        descriptor["capabilities"]["spontaneous_emissions"] = True
-        return descriptor
+    supports_emissions = True
 
     def respond(self, *, run_id: str, request_id: str, interaction_id: str, input_data: dict[str, Any], virtual_time: str | None) -> AgentOutput:
         value = "contested" if "resolved or contested" in str(input_data.get("content") or "") else "unknown"

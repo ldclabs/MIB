@@ -152,22 +152,34 @@ def config(tmp_path, url):
     path=tmp_path/'experiment.json';path.write_text(json.dumps(value));return path
 
 
-def test_generated_backend_execution_preserves_each_rung_in_frozen_schedule(server, tmp_path):
+def test_generated_backend_execution_preserves_each_rung_in_frozen_schedule(server, tmp_path, monkeypatch):
     url, _ = server
     path = config(tmp_path, url)
     cfg = json.loads(path.read_text())
     profile = json.loads((BASE / 'profiles/MIB-Core-0.2-Dev.json').read_text())
     profile['programs'] = [{'id': 'mib.recall.v1'}]
     profile['dimensions'] = {'retention_retrieval': {'weight': 1}}
+    profile['ladder'] = [0, 2]
     Path(cfg['profile']).write_text(json.dumps(profile))
-    cfg['execution']['include_ablations'] = False
+    cfg['execution']['include_ablations'] = True
     path.write_text(json.dumps(cfg))
+    import mib_runner.backend_benchmark as backend
+    plans = []
+    real_plan = backend.backend_episode_plan
+    def count_plan(*args):
+        plans.append(1)
+        return real_plan(*args)
+    monkeypatch.setattr(backend, 'backend_episode_plan', count_plan)
     report = run_backend_benchmark(path, model_client=Model())
     assert verify_backend_report(report)['valid']
-    assert len(report['experiment_lock']['episode_plan']) == len(report['schedule']) == 3
+    assert plans == [1]
+    assert report['experiment_lock']['model']['seed_base'] == 'mib-backend-0.1'
+    assert len(report['experiment_lock']['episode_plan']) == len(report['schedule']) == 2
     for child in report['reports'].values():
         assert child['coverage']['overall'] == 1
-        assert len(child['retention']) == 1 and len(child['retention'][0]['rungs']) == 3
+        assert len(child['retention']) == 1 and len(child['retention'][0]['rungs']) == 2
+        assert all(r['condition'] == 'full' for r in child['results']['runs'] if r['scenario_instance_id'].endswith(':r0'))
+        assert any(r['condition'] != 'full' for r in child['results']['runs'])
     report['schedule'].pop()
     assert not verify_backend_report(report)['valid']
 

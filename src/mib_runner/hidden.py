@@ -4,6 +4,7 @@ import copy
 import hashlib
 import hmac
 import json
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -68,6 +69,30 @@ class HiddenEvalStore:
                 title_public=row.get("title_public"),
             ))
         return out
+
+    def validate_profile(self, profile: dict[str, Any]) -> None:
+        if self.manifest.get("profile") is not None and self.manifest["profile"] != profile["id"]:
+            raise HiddenStoreError("private store names a different Profile")
+        if not (self.manifest.get('programs') or profile.get('programs')):
+            return
+        from .generate.registry import profile_program_configs
+        from .generate.surface import validate_bank
+        for bank in (profile.get('surface_bank'), self.manifest.get('surface_bank')):
+            if bank is not None:
+                try:
+                    validate_bank(bank)
+                except ValueError as exc:
+                    raise HiddenStoreError(f'invalid surface_bank: {exc}') from exc
+        if profile.get('surface_bank') is not None and profile['surface_bank'] != self.manifest.get('surface_bank'):
+            raise HiddenStoreError('generated store surface_bank differs from the Profile')
+        if not profile.get('programs') or not self.manifest.get('programs'):
+            raise HiddenStoreError('generated store and Profile must both declare Programs')
+        expected = {c['id']: c for c in profile_program_configs(profile)}
+        actual = {c['id']: c for c in profile_program_configs(self.manifest)}
+        if expected != actual:
+            raise HiddenStoreError('generated store Programs, parameters or ladder differ from the Profile')
+        if bool(profile.get('measurement_regime', {}).get('session_boundary')) != bool(self.manifest.get('session_boundary')):
+            raise HiddenStoreError('generated store session regime differs from the Profile')
 
     def load_templates(self, schema: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, str]]:
         templates = []
@@ -134,16 +159,9 @@ class HiddenEvalStore:
                             raise HiddenStoreError(f'generated hidden instance invalid: {vr.errors}')
                         instances.append(inst)
             return templates, instances, aliases
-        by_id = {t["id"]: t for t in templates}
         instances: list[dict[str, Any]] = []
-        entries_by_path = {e.path.resolve(): e for e in self.entries()}
-        entries_by_id: dict[str, HiddenTemplateEntry] = {}
-        for entry in self.entries():
-            raw = json.loads(entry.path.read_text(encoding="utf-8"))
-            entries_by_id[raw["id"]] = entry
-
-        for tid, template in by_id.items():
-            entry = entries_by_id[tid]
+        for template, entry in zip(templates, self.entries(), strict=True):
+            tid = template["id"]
             for index in range(entry.instances):
                 real_seed, alias = _derived_seed(evaluation_key, cycle=cycle_id, template_id=tid, index=index)
                 inst = materialize(template, real_seed)
@@ -220,7 +238,7 @@ class HiddenEvalStore:
 
 def redact_report_for_public(report: dict[str, Any], *, aliases: dict[str, str], redaction_key: str) -> dict[str, Any]:
     """Create a score-verifiable public report without private evaluator identifiers."""
-    out = copy.deepcopy(report)
+    out = copy.deepcopy({**report, "results": {**report.get("results", {}), "runs": []}})
     out["scope"] = "public"
     out.setdefault("results", {})["redacted"] = True
     out["results"]["raw_output_policy"] = "digest_only"
@@ -228,42 +246,64 @@ def redact_report_for_public(report: dict[str, Any], *, aliases: dict[str, str],
     def alias_value(prefix: str, value: Any) -> str:
         return f"{prefix}_{_hmac_hex(redaction_key, str(value))[:16]}"
 
+    def template_alias(tid: str) -> str:
+        return aliases[tid] if tid in aliases else alias_value("template", tid)
+
     # Public score reports intentionally omit per-run/per-Probe evidence.  The
     # evaluator keeps the internal report.  Template/Dimension aggregates remain
     # sufficient for score recomputation without revealing private Probe shape,
     # ablation IDs, or holdout execution structure.
-    out.get("results", {})["runs"] = []
-
     # Aggregates.  Build an old instance -> public instance map first.
     inst_map: dict[str, str] = {}
+    full_inputs = defaultdict(list)
+    for run in report.get('results', {}).get('runs', []):
+        if run['condition'] == 'full' and run.get('validity', {}).get('instance_spec_digest'):
+            full_inputs[run['scenario_instance_id']].append(
+                (run['repetition'], run.get('agent_seed'), run['validity']['instance_spec_digest']))
     for i in out.get("aggregates", {}).get("scenario_instances", []):
         old = i["scenario_instance_id"]
-        pub = alias_value("inst", old)
+        identity = json.dumps([old, sorted(full_inputs[old])]) if old in full_inputs else old
+        pub = alias_value("inst", identity)
         inst_map[old] = pub
         i["scenario_instance_id"] = pub
-        if i.get("template_id") in aliases:
-            i["template_id"] = aliases[i["template_id"]]
+        i["template_id"] = template_alias(i["template_id"])
         i.pop("instance_seed", None)
         # Pair IDs can reveal private ablation names; replace them with opaque aliases.
         i["causal_pair_ids"] = [alias_value("pair", x) for x in i.get("causal_pair_ids", [])]
     for t in out.get("aggregates", {}).get("templates", []):
-        if t.get("template_id") in aliases:
-            t["template_id"] = aliases[t["template_id"]]
+        t["template_id"] = template_alias(t["template_id"])
     for row in out.get('retention', []):
-        row['template_id'] = aliases.get(row['template_id'], row['template_id'])
+        row['template_id'] = template_alias(row['template_id'])
+    if out.get('retention'):
+        out['retention'].sort(key=lambda row: row['template_id'])
     policy = out.get('evaluation_policy')
     if policy:
         for row in policy['templates']:
-            row['id'] = aliases.get(row['id'], row['id'])
+            row['id'] = template_alias(row['id'])
         if policy['profile'].get('required_templates'):
-            policy['profile']['required_templates'] = [aliases.get(t, t) for t in policy['profile']['required_templates']]
+            policy['profile']['required_templates'] = [template_alias(t) for t in policy['profile']['required_templates']]
+        if policy['profile'].get('programs'):
+            policy['profile']['programs'] = [row['id'] for row in policy['templates']]
+    coverage = out.get('coverage', {})
+    for field in ('missing_required_templates', 'unsupported_required_templates'):
+        if field in coverage:
+            coverage[field] = [template_alias(t) for t in coverage[field]]
+    for warning in out.get('warnings', []):
+        if warning.get('code') == 'coverage.unsupported_templates':
+            warning['message'] = f"Unsupported Templates: {coverage.get('unsupported_required_templates', [])}."
+        if warning.get('code') == 'causal.pair_invalid':
+            warning['message'] = 'The evaluator excluded an invalid causal pair.'
+        if 'ref' in warning:
+            ref = warning['ref']
+            warning['ref'] = inst_map.get(ref) or template_alias(ref)
+    out.get('efficiency', {}).get('participant_reported', {}).pop('per_run_costs', None)
 
     # Causal metric scoped identifiers.
     for m in out.get("causal_metrics", []):
-        if m.get("template_id") in aliases:
-            m["template_id"] = aliases[m["template_id"]]
+        if m.get("template_id"):
+            m["template_id"] = template_alias(m["template_id"])
         if m.get("scenario_instance_id"):
-            m["scenario_instance_id"] = alias_value("inst", m["scenario_instance_id"])
+            m["scenario_instance_id"] = inst_map[m["scenario_instance_id"]]
 
     # Transfer diagnostics: aggregates and aliases only.  A public surface must
     # never let a participant reconstruct which hidden past supports which

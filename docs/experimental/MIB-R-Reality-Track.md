@@ -221,7 +221,7 @@ Tool / turn / latency / cost deltas
 
 All deltas are **signed**. For an over-generalizing system, removing memory it should not have been using *improves* it; an absolute value would hide precisely the finding MIB-R exists to produce.
 
-Confidence intervals use a paired task-level bootstrap that preserves each target task's full condition set.
+The negative transfer rate requires a natural-memory and a no-memory score for each target task. A single-condition run omits that rate. Confidence intervals use a paired task-level bootstrap that preserves each target task's full condition set.
 
 ---
 
